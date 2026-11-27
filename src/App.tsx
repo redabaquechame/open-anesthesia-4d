@@ -619,7 +619,7 @@ export default function App() {
               <div className="px-3 py-1.5 bg-oa-surface2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
                 <span>{REGIONAL_GAS_STANDARDS[gasStandard].safetyBanner[locale]}</span>
                 <span className="font-mono text-[10px] text-cyan-400/90">
-                  {L('Glisser pour tourner • pincer ou molette pour zoomer • particules : O₂ bleu | CO₂ rouge | halogéné couleur ISO 5360 | argon violet', 'Drag to orbit • pinch or scroll to zoom • particles: O₂ blue | CO₂ red | agent ISO 5360 colour | argon violet')}
+                  {L('Glisser pour tourner • pincer ou molette pour zoomer • gaz : O₂ bleu | CO₂ rouge | halogéné couleur ISO 5360 | argon violet', 'Drag to orbit • pinch or scroll to zoom • gas: O₂ blue | CO₂ red | agent ISO 5360 colour | argon violet')}
                 </span>
               </div>
             </div>
