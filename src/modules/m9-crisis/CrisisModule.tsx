@@ -8,6 +8,7 @@ import { buildDebrief, doAction, formatDose, modelSequence, startRun, stepRun, t
 import { CRISES } from './crisisProtocols';
 import { PatientMonitor } from '../../components/PatientMonitor';
 import { ISO_LABEL_BY_ID } from './drugLabels';
+import { MobileDock } from '../../components/MobileDock';
 
 /** Teaching alarm limits (claim m9-alarm-limits, illustrative): the same limits drive the flashing cells and the sounds. */
 const LIMITS = { hr: [45, 120] as [number, number], sbp: [80, 180] as [number, number], spo2Low: 90, etco2: [25, 50] as [number, number] };
@@ -139,7 +140,7 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
   };
 
   return (
-    <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
+    <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 pb-16 md:pb-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
       {/* Scenario strip: choose, weight, speed, run controls */}
       <section className="lg:col-span-12 bg-oa-surface border border-oa-hairline rounded p-2 flex flex-col gap-2">
         <div className="flex gap-1.5 overflow-x-auto pb-0.5">
@@ -202,7 +203,7 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
       </section>
 
       {/* LEFT: monitor + case */}
-      <section className="lg:col-span-5 flex flex-col gap-3">
+      <section id="m9-monitor" className="lg:col-span-5 flex flex-col gap-3 scroll-mt-2">
         {/* Monitor (always sweeping, so the screen is never dead before Start) */}
         <div className="bg-black border border-oa-hairline rounded p-1.5">
           <PatientMonitor vitals={v} running={running} alarms={alarm} limits={LIMITS} rhythmLabel={rhythmText[v.rhythm]} fr={fr} />
@@ -227,7 +228,7 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
           </p>
         </div>
 
-        <div className="bg-oa-surface border border-oa-hairline rounded p-3 flex flex-col gap-2">
+        <div id="m9-context" className="bg-oa-surface border border-oa-hairline rounded p-3 flex flex-col gap-2 scroll-mt-2">
           <div className="text-xs text-slate-200">
             {titleShown && <div className="font-semibold text-white mb-1">{T(protocol.title)}</div>}
             {T(protocol.stem)}
@@ -278,7 +279,7 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
       </section>
 
       {/* MIDDLE: actions */}
-      <section className="lg:col-span-4 bg-oa-surface border border-oa-hairline rounded p-3 flex flex-col gap-2">
+      <section id="m9-actions" className="lg:col-span-4 bg-oa-surface border border-oa-hairline rounded p-3 flex flex-col gap-2 scroll-mt-2">
         <div className="text-sm font-semibold text-white">{L('Vos actions', 'Your actions')}</div>
         <p className="text-[11px] text-slate-400">
           {L('Choisissez dans l’ordre où vous les feriez. Certaines propositions sont des pièges.', 'Pick them in the order you would do them. Some options are traps.')}
@@ -308,7 +309,7 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
       </section>
 
       {/* RIGHT: log + debrief */}
-      <aside className="lg:col-span-3 flex flex-col gap-3">
+      <aside id="m9-journal" className="lg:col-span-3 flex flex-col gap-3 scroll-mt-2">
         <div className="bg-oa-surface border border-oa-hairline rounded p-3 text-xs">
           <div className="font-bold text-slate-200 mb-1.5">{L('Chronologie', 'Timeline')}</div>
           {run.log.length === 0 ? (
@@ -386,6 +387,14 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
           </div>
         )}
       </aside>
+      <MobileDock
+        items={[
+          { id: 'm9-monitor', label: L('Moniteur', 'Monitor') },
+          { id: 'm9-actions', label: L('Actions', 'Actions') },
+          { id: 'm9-journal', label: L('Journal', 'Log') },
+          { id: 'm9-context', label: L('Contexte', 'Context') },
+        ]}
+      />
     </main>
   );
 }

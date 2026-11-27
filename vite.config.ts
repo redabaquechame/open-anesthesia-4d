@@ -18,16 +18,18 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // No update prompt in the UI: activate a new service worker at once so each deploy reaches returning visitors.
-      registerType: 'autoUpdate',
+      // A new version waits until the user taps « Actualiser » in UpdateToast (src/components/UpdateToast.tsx),
+      // so a clinical correction is never served silently from an old offline copy. Registration is done in that component.
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'Open Anesthesia 4D — Transparent Reality Lab',
         short_name: 'Anesthesia 4D',
         description:
           'Free, zero-login, offline-first 4D interactive anesthesia physics, pharmacology, monitoring, and anatomy simulator.',
-        theme_color: '#090e17',
-        background_color: '#090e17',
+        theme_color: '#05070a',
+        background_color: '#05070a',
         display: 'standalone',
         orientation: 'any',
         icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
