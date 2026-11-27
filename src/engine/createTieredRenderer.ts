@@ -115,7 +115,8 @@ export function disposeSceneResources(root: THREE.Object3D): void {
     const mesh = obj as THREE.Mesh;
     if (mesh.geometry && !seen.has(mesh.geometry)) {
       seen.add(mesh.geometry);
-      mesh.geometry.dispose();
+      // Anatomy geometry is shared with the loader cache (see loadAnatomy.ts); keep it for the next visit.
+      if (!mesh.geometry.userData?.sharedAnatomy) mesh.geometry.dispose();
     }
     const mat = (mesh as { material?: THREE.Material | THREE.Material[] }).material;
     const mats = Array.isArray(mat) ? mat : mat ? [mat] : [];

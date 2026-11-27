@@ -76,17 +76,18 @@ export const REGIONAL_GAS_STANDARDS: Record<GasStandardId, RegionalGasStandard> 
 
 /**
  * GWP100 sources.
- * - IPCC_AR6: values as quoted by 2025 secondary sources (desflurane 2590, isoflurane 539,
- *   sevoflurane 195, N2O 273). VERIFY against IPCC AR6 WG1 Ch.7 Table 7.SM.7 before removing the flag.
+ * - IPCC_AR6: desflurane 2590, isoflurane 539, sevoflurane 195, enflurane 654 (Regulation (EU) 2024/573
+ *   Annex II section 2) and N2O 273 (Annex VI). The regulation states these are AR6-based. Checked on
+ *   EUR-Lex 2026-11-26; the IPCC table itself (AR6 WG1 Table 7.SM.7) refused automated access.
  * - SULBAEK_ANDERSEN_2012: Sulbaek Andersen et al., J Phys Chem A 2012 (isoflurane 510,
  *   desflurane 2540, sevoflurane 130), as listed by NASA ESPO. VERIFY against the paper itself.
  *   That paper does not cover N2O, so the AR4 N2O value (298) is used alongside it.
- * Halothane and enflurane have no GWP here (null) rather than an invented number.
+ * Halothane has no GWP here (null) rather than an invented number; enflurane has only the AR6 value.
  */
 export type GwpStandardId = 'IPCC_AR6' | 'SULBAEK_ANDERSEN_2012';
 
 export const GWP_STANDARDS: Record<GwpStandardId, { label: string; unverified: boolean }> = {
-  IPCC_AR6: { label: 'IPCC AR6 (secondary-source values)', unverified: true },
+  IPCC_AR6: { label: 'IPCC AR6 (as listed in EU Reg. 2024/573)', unverified: false },
   SULBAEK_ANDERSEN_2012: { label: 'Sulbaek Andersen 2012 + AR4 N2O', unverified: true },
 };
 
@@ -149,7 +150,7 @@ export const VOLATILE_AGENTS: Record<VolatileAgentId, VolatileAgentSpec> = {
     id: 'enflurane', name: 'Enflurane', iso5360ColorHex: '#f97316', macPct: 1.7, bloodGasPartition: 1.9,
     brainBloodPartition: 1.4, muscleBloodPartition: 1.7, fatBloodPartition: 36,
     svpMmHgAt20C: 175, vaporMlPerLiquidMl: 198, liquidDensityGPerMl: 1.52,
-    gwp100: { IPCC_AR6: null, SULBAEK_ANDERSEN_2012: null },
+    gwp100: { IPCC_AR6: 654, SULBAEK_ANDERSEN_2012: null },
   },
 };
 
