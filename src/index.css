@@ -1,32 +1,176 @@
 @import "tailwindcss";
 
+/*
+ * Clinical instrument design system — Sprint 1 (handoff/gemini/sprint-1/DESIGN.md).
+ * Matte obsidian surfaces, neutral greys with no blue cast, colour reserved for physiological
+ * signals, ISO drug classes and alarms. The slate and cyan scales are remapped here so every
+ * existing class follows the new palette; new code should use the oa-/sig-/alarm- tokens.
+ */
+@theme {
+  /* Instrument surfaces */
+  --color-oa-canvas: #05070a;
+  --color-oa-surface: #0b0f14;
+  --color-oa-surface2: #0e131a;
+  --color-oa-raised: #131922;
+  --color-oa-hover: #1b2330;
+  --color-oa-hairline: #1e2633;
+  --color-oa-border-strong: #2e3a4d;
+  --color-oa-text: #edf2f7;
+  --color-oa-text-dim: #94a3b8;
+  --color-oa-text-muted: #5a677a;
+
+  /* Physiological signals (monitor and telemetry only) */
+  --color-sig-ecg: #00e676;
+  --color-sig-art: #ff453a;
+  --color-sig-spo2: #00d4ff;
+  --color-sig-co2: #ffd60a;
+  --color-sig-temp: #cbd5e1;
+
+  /* Alarm priorities */
+  --color-alarm-high: #ff1744;
+  --color-alarm-med: #ffd60a;
+  --color-alarm-low: #00e5ff;
+
+  /* Neutral greys without the navy cast (replaces Tailwind slate) */
+  --color-slate-50: #f6f8fa;
+  --color-slate-100: #edf2f7;
+  --color-slate-200: #dde3ea;
+  --color-slate-300: #c2cad4;
+  --color-slate-400: #97a2b0;
+  --color-slate-500: #6b7785;
+  --color-slate-600: #4a5463;
+  --color-slate-700: #2e3a4d;
+  --color-slate-800: #1e2633;
+  --color-slate-900: #0e131a;
+  --color-slate-950: #05070a;
+
+  /* Neutral steel accent (replaces the generic SaaS cyan; cyan now means SpO2 only) */
+  --color-cyan-50: #f5f7fa;
+  --color-cyan-100: #eef2f6;
+  --color-cyan-200: #e2e8f0;
+  --color-cyan-300: #d0d8e2;
+  --color-cyan-400: #b4bfcc;
+  --color-cyan-500: #8593a5;
+  --color-cyan-600: #4f5d70;
+  --color-cyan-700: #3d4859;
+  --color-cyan-800: #2a3240;
+  --color-cyan-900: #1a2029;
+  --color-cyan-950: #10141a;
+
+  /* Sharp instrument radii */
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 :root {
   color-scheme: dark;
 }
 
 body {
   margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
+  background: var(--color-oa-canvas);
   overflow-x: hidden;
+  /* Numbers never jitter: every digit has the same width everywhere in the app. */
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
-/* Crisp custom scrollbars for dark clinical workspace */
+[dir="rtl"] body,
+[dir="rtl"] {
+  font-family: "IBM Plex Sans Arabic", var(--font-sans);
+}
+
+.oa-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b111c;
+  background: var(--color-oa-canvas);
 }
 ::-webkit-scrollbar-thumb {
-  background: #273549;
-  border-radius: 3px;
+  background: var(--color-oa-border-strong);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3b4f6b;
+  background: #475263;
 }
 
-/* Clinical range slider styling */
+/* Remaining range inputs (modules not yet converted to steppers): hairline track, flat
+   rectangular thumb like an instrument fader, no bright accent. */
 input[type="range"] {
-  accent-color: #22d3ee;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 18px;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--color-oa-border-strong);
+}
+input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--color-oa-border-strong);
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 8px;
+  height: 16px;
+  margin-top: -7px;
+  border-radius: 1px;
+  background: #dde3ea;
+  border: 1px solid #05070a;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 8px;
+  height: 16px;
+  border-radius: 1px;
+  background: #dde3ea;
+  border: 1px solid #05070a;
+}
+input[type="range"]:focus-visible {
+  outline: 1px solid #3b82f6;
+  outline-offset: 2px;
+}
+input[type="range"]:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/*
+ * ISO 26825:2020 class strip for drug actions. Only the classes whose colour was read in the
+ * standard (Table 1, preview pages) get a colour; the others stay neutral until verified.
+ * Antagonists: white diagonal stripes at 45° (5.2.2). Suxamethonium / adrenaline: black bar with
+ * white lettering (5.4.5 a). Benzodiazepines: white lettering (5.4.5 b).
+ */
+.oa-drug {
+  position: relative;
+  padding-inline-start: 14px !important;
+}
+.oa-drug::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 6px;
+  background: var(--oa-drug-colour, transparent);
+}
+.oa-drug-antagonist::before {
+  background: repeating-linear-gradient(45deg, var(--oa-drug-colour, #6b7785) 0 3px, #ffffff 3px 6px);
+}
+.oa-drug-blackbar::before {
+  background: linear-gradient(to bottom, #000 0 50%, var(--oa-drug-colour, #6b7785) 50% 100%);
+  box-shadow: inset -1px 0 0 #ffffff33;
 }

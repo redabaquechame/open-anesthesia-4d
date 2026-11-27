@@ -170,8 +170,8 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
       <section className="lg:col-span-8 flex flex-col gap-3">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           {/* External 3D */}
-          <div className="md:col-span-3 bg-[#050913] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
+          <div className="md:col-span-3 bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+            <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
               <span className="font-bold text-cyan-300 mr-auto">{L('Arbre trachéobronchique réel', 'Real tracheobronchial tree')}</span>
               {(['front', 'carina', 'left'] as AirwayView[]).map((v) => (
                 <button key={v} onClick={() => sceneRef.current?.setView(v)} className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] text-slate-300 cursor-pointer hover:border-cyan-500">
@@ -199,7 +199,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
 
           {/* Bronchoscope */}
           <div className="md:col-span-2 bg-black border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex justify-between items-center text-xs">
+            <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex justify-between items-center text-xs">
               <span className="font-bold text-amber-300 flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5" /> {L('Fibroscope', 'Bronchoscope')}
               </span>
@@ -233,7 +233,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
 
         {/* Measurements + monitor */}
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          <div className="md:col-span-3 bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
+          <div className="md:col-span-3 bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
               <Metric label={L('Ballonnet ↔ carène', 'Cuff top ↔ carina')} value={out ? (out.toCarina >= 0 ? `${mm(out.toCarina)} ${L('sous', 'below')}` : `${mm(-out.toCarina)} ${L('au-dessus', 'above')}`) : '—'} accent={out && out.toCarina < 0 ? 'text-rose-300' : 'text-emerald-300'} />
               <Metric label={side === 'left' ? L('Extrémité ↔ éperon LSG/LIG', 'Tip ↔ LUL/LLL carina') : L('Extrémité ↔ orifice LSD', 'Tip ↔ RUL orifice')} value={out ? mm(out.toSecondaryCarina) : '—'} accent={out && out.toSecondaryCarina < 0 ? 'text-rose-300' : 'text-slate-100'} />
@@ -269,14 +269,14 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
               </tbody>
             </table>
           </div>
-          <div className="md:col-span-2 bg-[#03060c] border border-slate-800 rounded-xl p-2 flex flex-col">
+          <div className="md:col-span-2 bg-oa-canvas border border-slate-800 rounded-xl p-2 flex flex-col">
             <OlvMonitor out={out} rr={rr} peep={peep} fr={fr} />
           </div>
         </div>
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{L('1. Patient et sonde', '1. Patient and tube')}</h2>
           <div className="grid grid-cols-2 gap-1.5">
             {(['male', 'female', 'shortLeft', 'specimen'] as D.AnatomyVariant[]).map((a) => (
@@ -317,7 +317,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
           {slider(L('Air dans le ballonnet bronchique', 'Air in the bronchial cuff'), cuffMl, `${cuffMl.toFixed(1)} mL`, 0, 4, 0.1, setCuffMl, 'text-sky-300')}
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-violet-300">{L('2. Position', '2. Position')}</h2>
           <div className="grid grid-cols-2 gap-1.5">
             <button className={btn(!lateral)} onClick={() => setLateral(false)}>{L('Décubitus dorsal', 'Supine')}</button>
@@ -340,7 +340,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
           )}
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
             <Wind className="w-3.5 h-3.5" /> {L('3. Ventilation', '3. Ventilation')}
           </h2>
@@ -360,7 +360,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
           {slider(L('Vasoconstriction hypoxique (VPH)', 'Hypoxic pulmonary vasoconstriction'), Math.round(hpv * 100), `${Math.round(hpv * 100)} %`, 0, 100, 5, (v) => setHpv(v / 100))}
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5" /> {L('4. Fibroscope', '4. Bronchoscope')}
@@ -393,7 +393,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
           </p>
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
           <div className="font-bold text-amber-300 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5" /> {L('Pourquoi une sonde gauche', 'Why a left-sided tube')}
           </div>
@@ -549,7 +549,7 @@ function OlvMonitor({ out, rr, peep, fr }: { out: D.DltOutputs | null; rr: numbe
         <span>Paw (cmH2O)</span>
         <span className="text-slate-500">0–60</span>
       </div>
-      <canvas ref={canvasRef} className="w-full h-[96px] rounded bg-[#03060c]" />
+      <canvas ref={canvasRef} className="w-full h-[96px] rounded bg-oa-canvas" />
       <div className="grid grid-cols-3 gap-1 text-center font-mono">
         <Vital label="Ppeak" value={m ? m.pPeak.toFixed(0) : '—'} color={m && m.pPeak > 35 ? 'text-rose-400' : 'text-yellow-300'} />
         <Vital label="Pplat" value={m ? m.pPlat.toFixed(0) : '—'} color={m && m.pPlat > 30 ? 'text-rose-400' : 'text-yellow-300'} />

@@ -67,7 +67,7 @@ export function PvLoopLab({ locale }: { locale: LocaleCode }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
-      <section className="lg:col-span-8 bg-[#060a12] border border-slate-800 rounded-xl p-4 space-y-3">
+      <section className="lg:col-span-8 bg-oa-canvas border border-slate-800 rounded-xl p-4 space-y-3">
         <div className="flex flex-wrap justify-between items-center gap-2">
           <h2 className="text-sm font-bold text-white flex items-center gap-1.5">
             <Activity className="w-4 h-4 text-rose-400" /> {fr ? 'Boucle pression–volume du VG (modèle à élastance)' : 'LV pressure–volume loop (elastance model)'}
@@ -84,8 +84,8 @@ export function PvLoopLab({ locale }: { locale: LocaleCode }) {
             ))}
           </div>
         </div>
-        <canvas ref={loopRef} className="w-full h-[340px] block rounded-lg bg-[#04070e]" />
-        <canvas ref={traceRef} className="w-full h-[150px] block rounded-lg bg-[#04070e]" />
+        <canvas ref={loopRef} className="w-full h-[340px] block rounded-lg bg-oa-canvas" />
+        <canvas ref={traceRef} className="w-full h-[150px] block rounded-lg bg-oa-canvas" />
         <p className="text-[10px] text-slate-500 leading-relaxed">
           {fr
             ? 'Modèle de simulateur : ventricule à élastance variable (Suga & Sagawa), valves par la relation de Bernoulli simplifiée, post-charge en Windkessel à 3 éléments (Westerhof). Paramètres illustratifs réglés sur des valeurs adultes de manuel.'
@@ -94,7 +94,7 @@ export function PvLoopLab({ locale }: { locale: LocaleCode }) {
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{fr ? 'Déterminants' : 'Determinants'}</h3>
           {slider(fr ? 'Précharge (retour veineux)' : 'Preload (venous return)', preload, setPreload, 0.5, 1.5, 0.05, (n) => `${n.toFixed(2)}×`)}
           {slider(fr ? 'Post-charge (résistance)' : 'Afterload (resistance)', afterload, setAfterload, 0.5, 1.8, 0.05, (n) => `${n.toFixed(2)}×`)}
@@ -113,7 +113,7 @@ export function PvLoopLab({ locale }: { locale: LocaleCode }) {
           </button>
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 text-[11px]">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 text-[11px]">
           <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1.5">{fr ? 'Résultats du modèle' : 'Model output'}</h3>
           {metric('EDV / ESV', `${result.edv.toFixed(0)} / ${result.esv.toFixed(0)} mL`)}
           {metric(fr ? 'VES total / antérograde' : 'Total / forward SV', `${result.totalSv.toFixed(0)} / ${result.forwardSv.toFixed(0)} mL`, result.forwardSv < result.totalSv * 0.8)}
@@ -126,7 +126,7 @@ export function PvLoopLab({ locale }: { locale: LocaleCode }) {
           {metric(fr ? 'Débit cardiaque' : 'Cardiac output', `${result.cardiacOutputLpm.toFixed(1)} L/min`, result.cardiacOutputLpm < 4)}
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">{fr ? 'Vasopresseurs selon le type de choc' : 'Shock-type vasopressor framework'}</h3>
           {SHOCK_MATRIX.map((row) => (
             <div key={row.type.en} className="p-2 rounded-lg bg-slate-900 border border-slate-800">

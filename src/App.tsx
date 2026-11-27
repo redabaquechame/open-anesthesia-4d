@@ -6,17 +6,17 @@ import {
   BookOpen,
   GraduationCap,
   CheckSquare,
+  ChevronDown,
   Eye,
   EyeOff,
-  Gauge,
-  Globe,
-  Home,
   Layers,
   Pause,
   Play,
   Presentation,
+  Printer,
   QrCode,
   RotateCcw,
+  Settings,
   ShieldAlert,
   X,
 } from 'lucide-react';
@@ -42,11 +42,12 @@ import { WorkstationScene } from './modules/m1-workstation/WorkstationScene';
 import { BedsideMonitorCanvas } from './components/BedsideMonitorCanvas';
 import { ModuleRouter } from './modules/ModuleRouter';
 import { CurriculumDrawer } from './components/CurriculumDrawer';
-import { BETA_NOTICE, ReviewDrawer, ReviewStatusChip } from './components/ReviewPanel';
+import { BETA_NOTICE, ReviewDrawer } from './components/ReviewPanel';
 import { QualitySelect } from './components/QualitySelect';
 import { HomePage } from './components/HomePage';
 import { ModuleGuidePanel } from './components/ModuleGuidePanel';
-import { MODULE_GUIDES } from './standards/moduleGuides';
+import { ClinicalStepper } from './components/ClinicalStepper';
+import { GROUPS, MODULE_GUIDES } from './standards/moduleGuides';
 import { openPrintableDebriefCard, queueOfflineXapiEvent } from './utils/lmsAndDebrief';
 
 type ModuleId = 'HOME' | 'M1_M2' | 'M3' | 'M4' | 'M5' | 'M6' | 'M7' | 'M8' | 'M9' | 'M10' | 'M11';
@@ -141,7 +142,8 @@ export default function App() {
   const [agent, setAgent] = useState<VolatileAgentId>('sevoflurane');
   const [cogMode, setCogMode] = useState<CognitiveMode>('sandbox');
   const [xrayOpacity, setXrayOpacity] = useState<number>(0.75);
-  const [showLabels3d, setShowLabels3d] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
+  // DESIGN.md §1.5: 3D labels start off; one toggle in the viewport turns them on.
+  const [showLabels3d, setShowLabels3d] = useState(false);
   const [slowMo, setSlowMo] = useState<boolean>(false);
   const [paused, setPaused] = useState<boolean>(false);
   const [showEqZones, setShowEqZones] = useState<boolean>(true);
@@ -170,6 +172,8 @@ export default function App() {
   const [cylBar, setCylBar] = useState<number>(80);
 
   const [showQrModal, setShowQrModal] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showModMenu, setShowModMenu] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [shareUrl, setShareUrl] = useState<string>('');
 
@@ -317,188 +321,204 @@ export default function App() {
   const cylReserveLiters = cylSizeL * cylBar;
 
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen flex flex-col bg-[#090e17] text-slate-100">
-      {/* Persistent educational safety banner */}
-      <div className="bg-amber-950/60 border-b border-amber-500/30 px-3 py-1 text-[11px] text-amber-200 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-400" />
-          <span>{t('eduDisclaimer')}</span>
-          <span className="hidden sm:inline text-amber-300/90">• {BETA_NOTICE[locale]}</span>
+    <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen flex flex-col bg-oa-canvas text-slate-100">
+      {/* Persistent educational safety notice (project rule: keep the disclaimer) */}
+      <div className="bg-oa-canvas border-b border-amber-500/20 px-3 h-6 text-[10.5px] text-amber-200/85 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <ShieldAlert className="w-3 h-3 shrink-0 text-amber-400" />
+          <span className="truncate">{t('eduDisclaimer')}</span>
+          <span className="hidden lg:inline text-amber-300/70 truncate">• {BETA_NOTICE[locale]}</span>
         </div>
-        <span className="hidden md:inline font-mono text-[10px] text-amber-300/80">
+        <span className="hidden md:inline font-mono text-[10px] text-slate-500 shrink-0">
           {L('Apache-2.0 • sans compte • hors ligne', 'Apache-2.0 • no login • offline')}
         </span>
       </div>
 
-      {/* Top Global Header & Standards Bar */}
-      <header className="relative md:sticky md:top-0 z-30 bg-[#0d1422]/95 backdrop-blur border-b border-slate-800 px-3 py-2">
-        <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2">
-          <button onClick={() => goTo('HOME')} className="flex items-center gap-2 text-left cursor-pointer" title={L('Accueil', 'Home')}>
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-              <Activity className="w-4 h-4 text-white" />
+      {/* One-row instrument bar */}
+      <header className="relative md:sticky md:top-0 z-30 bg-oa-surface border-b border-oa-hairline h-11 px-2 sm:px-3">
+        <div className="max-w-[1600px] h-full mx-auto flex items-center gap-2">
+          <button onClick={() => goTo('HOME')} className="flex items-center gap-2 text-start cursor-pointer shrink-0" title={L('Accueil', 'Home')}>
+            <div className="w-6 h-6 rounded border border-oa-border-strong flex items-center justify-center">
+              <Activity className="w-3.5 h-3.5 text-sig-ecg" />
             </div>
-            <div>
-              <h1 className="text-sm font-bold tracking-tight text-white leading-none">{t('appTitle')}</h1>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{isM1 ? gpuBadge : L('Gratuit • sans compte • hors ligne', 'Free • no account • offline')}</p>
-            </div>
+            <span className="hidden md:inline text-[13px] font-semibold tracking-tight text-white">Open Anesthésie 4D</span>
           </button>
 
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            {/* Locale Switcher */}
-            <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 gap-1">
-              <Globe className="w-3.5 h-3.5 text-cyan-400" />
-              <select
-                value={locale}
-                onChange={(e) => setLocale(e.target.value as LocaleCode)}
-                className="bg-transparent text-slate-100 text-xs outline-none cursor-pointer"
-                aria-label="Language"
-              >
-                <option value="fr-FR" className="bg-slate-900">FR (Europe / Maroc / Afrique)</option>
-                <option value="fr-CA" className="bg-slate-900">FR (Québec / OQLF)</option>
-                <option value="en-INT" className="bg-slate-900">English (Intl)</option>
-                <option value="ar-MA" className="bg-slate-900">العربية (المغرب / إفريقيا)</option>
-              </select>
-            </div>
+          <div className="w-px h-5 bg-oa-hairline hidden sm:block" />
 
-            <QualitySelect locale={locale} />
-
-            {isM1 && (<>
-            {/* Regional Gas Standard Switcher */}
-            <select
-              value={gasStandard}
-              onChange={(e) => setGasStandard(e.target.value as GasStandardId)}
-              className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-100 outline-none cursor-pointer"
-              aria-label={L('Norme des couleurs des gaz médicaux', 'Medical gas colour standard')}
-              title={L('Norme des couleurs des gaz médicaux', 'Medical gas colour standard')}
-            >
-              <option value="ISO_EU_AF" className="bg-slate-900">{L('ISO 32 (O₂ blanc)', 'ISO 32 (white O₂)')}</option>
-              <option value="CSA_CA_QC" className="bg-slate-900">{L('CSA Z7396.1 Québec (O₂ blanc)', 'CSA Z7396.1 Québec (white O₂)')}</option>
-              <option value="NFPA_US" className="bg-slate-900">{L('NFPA 99 États-Unis (O₂ vert)', 'NFPA 99 US (green O₂)')}</option>
-            </select>
-
-            {/* Educator & Study Tools */}
+          {/* Module switcher, grouped by clinical workflow */}
+          <div className="relative min-w-0">
             <button
-              onClick={() => setSlowMo((s) => !s)}
-              className={`px-2 py-1 rounded-lg border text-xs font-medium flex items-center gap-1 cursor-pointer ${
-                slowMo
-                  ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
-                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
-              }`}
+              onClick={() => { setShowModMenu((s) => !s); setShowSettings(false); }}
+              className="h-8 max-w-[62vw] sm:max-w-none px-2.5 rounded border border-oa-hairline bg-oa-raised hover:bg-oa-hover flex items-center gap-2 text-xs text-slate-100 cursor-pointer"
+              aria-expanded={showModMenu}
+              aria-haspopup="menu"
             >
-              <Gauge className="w-3.5 h-3.5" />
-              {slowMo ? L('Ralenti ×0,25', 'Slow ×0.25') : L('Vitesse ×1', 'Speed ×1')}
+              {activeModule === 'HOME' ? (
+                <span>{L('Modules', 'Modules')}</span>
+              ) : (
+                <>
+                  <span className="font-mono text-[10px] text-slate-400">{activeModule.replace('_', '+')}</span>
+                  <span className="truncate">{fr ? MODULES_META.find((m) => m.id === activeModule)?.titleFr : MODULES_META.find((m) => m.id === activeModule)?.titleEn}</span>
+                </>
+              )}
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
-
-            <button
-              onClick={() => setPaused((p) => !p)}
-              aria-label={paused ? L('Reprendre', 'Resume') : L('Pause', 'Pause')}
-              title={paused ? L('Reprendre', 'Resume') : L('Pause', 'Pause')}
-              className="px-2 py-1 rounded-lg border bg-slate-900 border-slate-700 text-slate-200 hover:border-slate-500 flex items-center gap-1 cursor-pointer"
-            >
-              {paused ? <Play className="w-3.5 h-3.5 text-emerald-400" /> : <Pause className="w-3.5 h-3.5" />}
-            </button>
-
-            <button
-              onClick={() => setProjectorMode((p) => !p)}
-              className={`px-2 py-1 rounded-lg border flex items-center gap-1 cursor-pointer ${
-                projectorMode
-                  ? 'bg-indigo-500/25 border-indigo-400 text-indigo-200'
-                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
-              }`}
-              title={L('Mode projecteur (gros caractères pour la salle)', 'Projector mode (large text for the room)')}
-            >
-              <Presentation className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{L('Projecteur', 'Projector')}</span>
-            </button>
-
-            <button
-              onClick={() => setShowChecklist(true)}
-              className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-emerald-300 hover:border-emerald-500 flex items-center gap-1 cursor-pointer"
-            >
-              <CheckSquare className="w-3.5 h-3.5" />
-              <span>{L('Check-lists', 'Checklists')}</span>
-            </button>
-            </>)}
-
-            <button
-              onClick={() => setShowEvidence(true)}
-              className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-cyan-300 hover:border-cyan-500 flex items-center gap-1 cursor-pointer"
-            >
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>{L('Sources', 'Evidence')}</span>
-            </button>
-
-            <button
-              onClick={() => setShowCurriculum(true)}
-              className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-violet-300 hover:border-violet-500 flex items-center gap-1 cursor-pointer"
-            >
-              <GraduationCap className="w-3.5 h-3.5" />
-              <span>{L('Couverture', 'Coverage')}</span>
-            </button>
-
-            {activeModule !== 'HOME' && (
-            <button
-              onClick={() => {
-                openPrintableDebriefCard(activeModule, locale);
-                queueOfflineXapiEvent(activeModule, 'practiced', `Opened structured debrief card (${locale})`).catch(() => {});
-              }}
-              className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-amber-300 hover:border-amber-500 flex items-center gap-1 cursor-pointer"
-              title={L('Fiche de débriefing imprimable', 'Printable debriefing card')}
-            >
-              <span>{L('Débriefing', 'Debrief')}</span>
-            </button>
+            {showModMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowModMenu(false)} />
+                <div role="menu" className="absolute z-50 mt-1 start-0 w-[min(92vw,560px)] max-h-[75vh] overflow-y-auto bg-oa-surface border border-oa-border-strong rounded shadow-2xl p-2 grid sm:grid-cols-2 gap-x-3 gap-y-2">
+                  {GROUPS.map((g) => {
+                    const items = MODULES_META.filter((m) => MODULE_GUIDES.find((x) => x.id === m.id)?.group === g.id);
+                    if (!items.length) return null;
+                    return (
+                      <div key={g.id}>
+                        <div className="px-2 pt-1 pb-0.5 text-[10px] uppercase tracking-wider text-slate-500">{fr ? g.title.fr : g.title.en}</div>
+                        {items.map((m) => (
+                          <button
+                            key={m.id}
+                            role="menuitem"
+                            onClick={() => { goTo(m.id); setShowModMenu(false); }}
+                            className={`w-full text-start px-2 py-1.5 rounded flex items-center gap-2 text-xs cursor-pointer ${activeModule === m.id ? 'bg-oa-hover text-white' : 'text-slate-300 hover:bg-oa-raised hover:text-white'}`}
+                          >
+                            <span className="font-mono text-[10px] text-slate-500 w-9 shrink-0">{m.short}</span>
+                            <span>{fr ? m.titleFr : m.titleEn}</span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
+          </div>
 
-            {isM1 && (
+          {/* Simulation status (M1 only) */}
+          {isM1 && (
+            <div className="hidden sm:flex items-center gap-1 ms-1">
+              <span className={`px-1.5 h-6 rounded border text-[10px] font-mono flex items-center ${paused ? 'border-amber-500/40 text-amber-300' : 'border-oa-hairline text-sig-ecg'}`}>
+                {paused ? L('PAUSE', 'PAUSED') : 'LIVE 50 Hz'}
+              </span>
+              <button
+                onClick={() => setPaused((p) => !p)}
+                aria-label={paused ? L('Reprendre', 'Resume') : L('Pause', 'Pause')}
+                title={paused ? L('Reprendre', 'Resume') : L('Pause', 'Pause')}
+                className="w-7 h-7 rounded border border-oa-hairline bg-oa-raised hover:bg-oa-hover flex items-center justify-center cursor-pointer"
+              >
+                {paused ? <Play className="w-3.5 h-3.5 text-sig-ecg" /> : <Pause className="w-3.5 h-3.5 text-slate-300" />}
+              </button>
+              <button
+                onClick={() => setSlowMo((s) => !s)}
+                className={`h-7 px-2 rounded border text-[11px] font-mono cursor-pointer ${slowMo ? 'border-slate-400 bg-oa-hover text-white' : 'border-oa-hairline bg-oa-raised text-slate-300 hover:bg-oa-hover'}`}
+                title={L('Vitesse de simulation', 'Simulation speed')}
+              >
+                {slowMo ? '×0,25' : '×1'}
+              </button>
+            </div>
+          )}
+
+          <div className="flex-1" />
+
+          <button
+            onClick={() => setShowEvidence(true)}
+            className="h-8 px-2.5 rounded border border-oa-hairline bg-oa-raised hover:bg-oa-hover text-xs text-slate-200 flex items-center gap-1.5 cursor-pointer"
+            title={L('Sources et équations', 'Evidence and equations')}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{L('Sources', 'Evidence')}</span>
+          </button>
+
+          <select
+            value={locale}
+            onChange={(e) => setLocale(e.target.value as LocaleCode)}
+            className="h-8 w-[4.5rem] sm:w-auto bg-oa-raised border border-oa-hairline rounded px-1.5 text-xs text-slate-100 outline-none cursor-pointer"
+            aria-label="Language"
+            title={L('Langue et région', 'Language and region')}
+          >
+            <option value="fr-FR" className="bg-oa-surface">FR · Europe / Maroc / Afrique</option>
+            <option value="fr-CA" className="bg-oa-surface">FR · Québec</option>
+            <option value="en-INT" className="bg-oa-surface">EN · International</option>
+            <option value="ar-MA" className="bg-oa-surface">AR · المغرب</option>
+          </select>
+
+          {/* Settings and tools popover */}
+          <div className="relative">
             <button
-              onClick={openShareQr}
-              className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium flex items-center gap-1 cursor-pointer"
-              title={L('Partager ce réglage par QR code', 'Share this setup by QR code')}
+              onClick={() => { setShowSettings((s) => !s); setShowModMenu(false); }}
+              className="w-8 h-8 rounded border border-oa-hairline bg-oa-raised hover:bg-oa-hover flex items-center justify-center cursor-pointer"
+              aria-label={L('Réglages et outils', 'Settings and tools')}
+              title={L('Réglages et outils', 'Settings and tools')}
+              aria-expanded={showSettings}
             >
-              <QrCode className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{L('Partager (QR)', 'Share (QR)')}</span>
+              <Settings className="w-4 h-4 text-slate-300" />
             </button>
+            {showSettings && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowSettings(false)} />
+                <div className="absolute z-50 mt-1 end-0 w-72 bg-oa-surface border border-oa-border-strong rounded shadow-2xl p-2 text-xs flex flex-col gap-1.5">
+                  <div className="px-1 text-[10px] uppercase tracking-wider text-slate-500">{L('Affichage', 'Display')}</div>
+                  <div className="flex items-center justify-between gap-2 px-1">
+                    <span className="text-slate-300">{L('Qualité 3D', '3D quality')}</span>
+                    <QualitySelect locale={locale} />
+                  </div>
+                  {isM1 && (
+                    <>
+                      <div className="flex items-center justify-between gap-2 px-1">
+                        <span className="text-slate-300">{L('Couleurs des gaz', 'Gas colours')}</span>
+                        <select
+                          value={gasStandard}
+                          onChange={(e) => setGasStandard(e.target.value as GasStandardId)}
+                          className="bg-oa-raised border border-oa-hairline rounded px-1.5 py-1 text-xs text-slate-100 outline-none cursor-pointer"
+                          aria-label={L('Norme des couleurs des gaz médicaux', 'Medical gas colour standard')}
+                        >
+                          <option value="ISO_EU_AF" className="bg-oa-surface">{L('ISO 32 (O₂ blanc)', 'ISO 32 (white O₂)')}</option>
+                          <option value="CSA_CA_QC" className="bg-oa-surface">{L('CSA Québec (O₂ blanc)', 'CSA Québec (white O₂)')}</option>
+                          <option value="NFPA_US" className="bg-oa-surface">{L('NFPA 99 É.-U. (O₂ vert)', 'NFPA 99 US (green O₂)')}</option>
+                        </select>
+                      </div>
+                      <button onClick={() => setProjectorMode((p) => !p)} className={`text-start px-2 py-1.5 rounded flex items-center gap-2 cursor-pointer ${projectorMode ? 'bg-oa-hover text-white' : 'text-slate-300 hover:bg-oa-raised'}`}>
+                        <Presentation className="w-3.5 h-3.5" />
+                        {L('Mode projecteur (gros caractères)', 'Projector mode (large text)')}{projectorMode ? ' ✓' : ''}
+                      </button>
+                    </>
+                  )}
+                  <div className="h-px bg-oa-hairline my-0.5" />
+                  <div className="px-1 text-[10px] uppercase tracking-wider text-slate-500">{L('Outils', 'Tools')}</div>
+                  {isM1 && (
+                    <button onClick={() => { setShowChecklist(true); setShowSettings(false); }} className="text-start px-2 py-1.5 rounded flex items-center gap-2 text-slate-300 hover:bg-oa-raised cursor-pointer">
+                      <CheckSquare className="w-3.5 h-3.5" />{L('Check-lists de l’appareil (SFAR, ASA)', 'Machine checklists (SFAR, ASA)')}
+                    </button>
+                  )}
+                  <button onClick={() => { setShowCurriculum(true); setShowSettings(false); }} className="text-start px-2 py-1.5 rounded flex items-center gap-2 text-slate-300 hover:bg-oa-raised cursor-pointer">
+                    <GraduationCap className="w-3.5 h-3.5" />{L('Couverture du programme', 'Curriculum coverage')}
+                  </button>
+                  {activeModule !== 'HOME' && (
+                    <button
+                      onClick={() => {
+                        openPrintableDebriefCard(activeModule, locale);
+                        queueOfflineXapiEvent(activeModule, 'practiced', `Opened structured debrief card (${locale})`).catch(() => {});
+                        setShowSettings(false);
+                      }}
+                      className="text-start px-2 py-1.5 rounded flex items-center gap-2 text-slate-300 hover:bg-oa-raised cursor-pointer"
+                    >
+                      <Printer className="w-3.5 h-3.5" />{L('Fiche de débriefing imprimable', 'Printable debriefing card')}
+                    </button>
+                  )}
+                  {isM1 && (
+                    <button onClick={() => { openShareQr(); setShowSettings(false); }} className="text-start px-2 py-1.5 rounded flex items-center gap-2 text-slate-300 hover:bg-oa-raised cursor-pointer">
+                      <QrCode className="w-3.5 h-3.5" />{L('Partager ce réglage (QR code)', 'Share this setup (QR code)')}
+                    </button>
+                  )}
+                  <div className="h-px bg-oa-hairline my-0.5" />
+                  <div className="px-2 text-[10px] text-slate-500 font-mono">{isM1 ? gpuBadge : L('Gratuit • sans compte • hors ligne', 'Free • no account • offline')}</div>
+                </div>
+              </>
             )}
           </div>
         </div>
-
-        {/* Module navigation */}
-        <nav className="max-w-[1600px] mx-auto mt-2 flex gap-1.5 overflow-x-auto pb-0.5">
-          <button
-            onClick={() => goTo('HOME')}
-            className={`shrink-0 px-2.5 py-1 rounded-lg text-xs border transition flex items-center gap-1.5 cursor-pointer ${
-              activeModule === 'HOME'
-                ? 'bg-cyan-500/20 border-cyan-400 text-white font-semibold'
-                : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
-            }`}
-          >
-            <Home className="w-3.5 h-3.5 text-cyan-400" />
-            <span>{L('Accueil', 'Home')}</span>
-          </button>
-          {activeModule !== 'HOME' && (
-            <ReviewStatusChip moduleTab={activeModule} locale={locale} onOpen={() => setShowReview(true)} />
-          )}
-          {MODULES_META.map((m) => {
-            const active = activeModule === m.id;
-            return (
-              <button
-                key={m.id}
-                onClick={() => goTo(m.id)}
-                className={`shrink-0 px-2.5 py-1 rounded-lg text-xs border transition flex items-center gap-1.5 cursor-pointer ${
-                  active
-                    ? 'bg-cyan-500/20 border-cyan-400 text-white font-semibold'
-                    : 'bg-slate-900/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                }`}
-              >
-                <span className="font-mono text-[10px] text-cyan-400">{m.short}</span>
-                <span>{fr ? m.titleFr : m.titleEn}</span>
-              </button>
-            );
-          })}
-        </nav>
       </header>
 
-      {activeModule !== 'HOME' && <ModuleGuidePanel key={activeModule} moduleId={activeModule} locale={locale} />}
+      {activeModule !== 'HOME' && <ModuleGuidePanel key={activeModule} moduleId={activeModule} locale={locale} onOpenReview={() => setShowReview(true)} />}
 
       {/* Main Workspace */}
       {activeModule === 'HOME' ? (
@@ -512,8 +532,8 @@ export default function App() {
         <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
           {/* LEFT / MAIN COLUMN: 4D Three.js Viewport + OR Monitor */}
           <section className="lg:col-span-8 flex flex-col gap-3">
-            <div className="relative bg-[#070b14] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-              <div className="px-3 py-2 bg-[#0b1220]/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <div className="relative bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+              <div className="px-3 py-2 bg-oa-surface2/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs">
                   <Layers className="w-4 h-4 text-cyan-400" />
                   <span className="font-semibold text-slate-100">{t('xraySlider')}</span>
@@ -592,7 +612,7 @@ export default function App() {
               )}
 
               {/* Safety Gas-Code Reminder Footer */}
-              <div className="px-3 py-1.5 bg-[#0b1220] border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+              <div className="px-3 py-1.5 bg-oa-surface2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
                 <span>{REGIONAL_GAS_STANDARDS[gasStandard].safetyBanner[locale]}</span>
                 <span className="font-mono text-[10px] text-cyan-400/90">
                   {L('Glisser pour tourner • pincer ou molette pour zoomer • particules : O₂ bleu | CO₂ rouge | halogéné couleur ISO 5360 | argon violet', 'Drag to orbit • pinch or scroll to zoom • particles: O₂ blue | CO₂ red | agent ISO 5360 colour | argon violet')}
@@ -628,7 +648,7 @@ export default function App() {
           {/* RIGHT COLUMN: Controls, Drives & Fault Injector */}
           <aside className="lg:col-span-4 flex flex-col gap-3">
             {/* 1. Swappable Ventilator Drive */}
-            <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+            <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
                   {L('1. Type de ventilateur (6 architectures)', '1. Ventilator drive (6 architectures)')}
@@ -709,119 +729,78 @@ export default function App() {
             </div>
 
             {/* 2. Fresh Gas, Ventilator & Lung Mechanics */}
-            <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5 text-xs">
+            <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5 text-xs">
               <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{L('2. Débits, APL et mécanique pulmonaire', '2. Gas flow, APL and lung mechanics')}</h2>
 
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>{L('Débit O₂', 'O₂ flow')}</span>
-                    <span className="font-mono text-sky-300">{params.fgfO2Lpm.toFixed(1)} L/m</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.2}
-                    max={10}
-                    step={0.1}
-                    value={params.fgfO2Lpm}
-                    onChange={(e) => setParams((p) => ({ ...p, fgfO2Lpm: parseFloat(e.target.value) }))}
-                    className="w-full"
-                  />
-                </label>
-
-                <label className="block">
-                  <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>{L('Débit air', 'Air flow')}</span>
-                    <span className="font-mono text-slate-300">{params.fgfAirLpm.toFixed(1)} L/m</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={10}
-                    step={0.1}
-                    value={params.fgfAirLpm}
-                    onChange={(e) => setParams((p) => ({ ...p, fgfAirLpm: parseFloat(e.target.value) }))}
-                    className="w-full"
-                  />
-                </label>
-
-                <label className="block">
-                  <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>{L('Réglage évaporateur', 'Vaporizer dial')}</span>
-                    <span className="font-mono text-yellow-300">{params.vaporizerDialPct.toFixed(1)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={8}
-                    step={0.2}
-                    value={params.vaporizerDialPct}
-                    onChange={(e) => setParams((p) => ({ ...p, vaporizerDialPct: parseFloat(e.target.value) }))}
-                    className="w-full"
-                  />
-                </label>
-
-                <label className="block">
-                  <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>{params.ventMode === 'MANUAL_APL_SPONT' ? t('aplValve') : L('PEP réglée', 'PEEP set')}</span>
-                    <span className="font-mono text-amber-300">
-                      {params.ventMode === 'MANUAL_APL_SPONT' ? params.aplCmH2O : params.peepSetCmH2O} cmH2O
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={params.ventMode === 'MANUAL_APL_SPONT' ? 40 : 18}
-                    step={1}
-                    value={params.ventMode === 'MANUAL_APL_SPONT' ? params.aplCmH2O : params.peepSetCmH2O}
-                    onChange={(e) => {
-                      const val = parseFloat(e.target.value);
-                      setParams((p) =>
-                        p.ventMode === 'MANUAL_APL_SPONT' ? { ...p, aplCmH2O: val } : { ...p, peepSetCmH2O: val }
-                      );
-                    }}
-                    className="w-full"
-                  />
-                </label>
-
-                <label className="block">
-                  <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>{L('Résistance des voies aériennes (R)', 'Airway resistance (R)')}</span>
-                    <span className="font-mono text-amber-300">{params.resistanceCmH2OPerLps}</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={3}
-                    max={30}
-                    step={1}
-                    value={params.resistanceCmH2OPerLps}
-                    onChange={(e) => {
-                      const r = parseFloat(e.target.value);
-                      setParams((p) => ({
-                        ...p,
-                        resistanceCmH2OPerLps: r,
-                        bronchospasmHeterogeneity: r > 10 ? Math.min(1, (r - 10) / 16) : 0,
-                      }));
-                    }}
-                    className="w-full"
-                  />
-                </label>
-
-                <label className="block">
-                  <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>{L('Compliance pulmonaire (C)', 'Lung compliance (C)')}</span>
-                    <span className="font-mono text-cyan-300">{params.complianceMlPerCmH2O} mL/cmH2O</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={20}
-                    max={90}
-                    step={2}
-                    value={params.complianceMlPerCmH2O}
-                    onChange={(e) => setParams((p) => ({ ...p, complianceMlPerCmH2O: parseFloat(e.target.value) }))}
-                    className="w-full"
-                  />
-                </label>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+                <ClinicalStepper
+                  label={L('Débit O₂', 'O₂ flow')}
+                  value={params.fgfO2Lpm}
+                  min={0.2}
+                  max={10}
+                  step={0.1}
+                  decimals={1}
+                  unit="L/min"
+                  presets={[0.5, 1, 2, 6]}
+                  onChange={(v) => setParams((p) => ({ ...p, fgfO2Lpm: v }))}
+                />
+                <ClinicalStepper
+                  label={L('Débit air', 'Air flow')}
+                  value={params.fgfAirLpm}
+                  min={0}
+                  max={10}
+                  step={0.1}
+                  decimals={1}
+                  unit="L/min"
+                  presets={[0, 0.5, 1, 2]}
+                  onChange={(v) => setParams((p) => ({ ...p, fgfAirLpm: v }))}
+                />
+                <ClinicalStepper
+                  label={L('Réglage évaporateur', 'Vaporizer dial')}
+                  value={params.vaporizerDialPct}
+                  min={0}
+                  max={8}
+                  step={0.2}
+                  decimals={1}
+                  unit="%"
+                  tone="text-yellow-300"
+                  onChange={(v) => setParams((p) => ({ ...p, vaporizerDialPct: v }))}
+                />
+                <ClinicalStepper
+                  label={params.ventMode === 'MANUAL_APL_SPONT' ? t('aplValve') : L('PEP réglée', 'PEEP set')}
+                  value={params.ventMode === 'MANUAL_APL_SPONT' ? params.aplCmH2O : params.peepSetCmH2O}
+                  min={0}
+                  max={params.ventMode === 'MANUAL_APL_SPONT' ? 40 : 18}
+                  step={1}
+                  unit="cmH₂O"
+                  onChange={(val) =>
+                    setParams((p) => (p.ventMode === 'MANUAL_APL_SPONT' ? { ...p, aplCmH2O: val } : { ...p, peepSetCmH2O: val }))
+                  }
+                />
+                <ClinicalStepper
+                  label={L('Résistance des voies aériennes (R)', 'Airway resistance (R)')}
+                  value={params.resistanceCmH2OPerLps}
+                  min={3}
+                  max={30}
+                  step={1}
+                  unit="cmH₂O/L/s"
+                  onChange={(r) =>
+                    setParams((p) => ({
+                      ...p,
+                      resistanceCmH2OPerLps: r,
+                      bronchospasmHeterogeneity: r > 10 ? Math.min(1, (r - 10) / 16) : 0,
+                    }))
+                  }
+                />
+                <ClinicalStepper
+                  label={L('Compliance pulmonaire (C)', 'Lung compliance (C)')}
+                  value={params.complianceMlPerCmH2O}
+                  min={20}
+                  max={90}
+                  step={2}
+                  unit="mL/cmH₂O"
+                  onChange={(v) => setParams((p) => ({ ...p, complianceMlPerCmH2O: v }))}
+                />
               </div>
 
               {/* Guided Discovery Quick Presets */}
@@ -878,7 +857,7 @@ export default function App() {
             </div>
 
             {/* 3. Fault Injection Lab */}
-            <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
+            <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-rose-400">{L('3. Pannes à déclencher', '3. Fault lab')}</h2>
                 <button
@@ -923,7 +902,7 @@ export default function App() {
       {showChecklist && (
         <div className="fixed inset-0 z-50 bg-black/70 flex justify-end" onClick={() => setShowChecklist(false)}>
           <div
-            className="w-full max-w-lg bg-[#0d1422] border-l border-slate-800 h-full flex flex-col"
+            className="w-full max-w-lg bg-oa-surface border-l border-slate-800 h-full flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -1037,7 +1016,7 @@ export default function App() {
       {showEvidence && (
         <div className="fixed inset-0 z-50 bg-black/70 flex justify-end" onClick={() => setShowEvidence(false)}>
           <div
-            className="w-full max-w-lg bg-[#0d1422] border-l border-slate-800 h-full flex flex-col"
+            className="w-full max-w-lg bg-oa-surface border-l border-slate-800 h-full flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
@@ -1081,7 +1060,7 @@ export default function App() {
       {showQrModal && (
         <div className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4" onClick={() => setShowQrModal(false)}>
           <div
-            className="bg-[#0d1422] border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 text-center"
+            className="bg-oa-surface border border-slate-700 rounded-2xl max-w-md w-full p-5 space-y-4 text-center"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center">

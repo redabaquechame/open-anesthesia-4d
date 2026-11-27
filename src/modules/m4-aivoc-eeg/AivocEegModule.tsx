@@ -354,8 +354,8 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
   return (
     <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
       <section className="lg:col-span-8 flex flex-col gap-3">
-        <div className="bg-[#070b14] border border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
+        <div className="bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden">
+          <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setViewMode('dsa_3d')}
@@ -394,7 +394,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
 
           <div ref={viewportRef} className="w-full h-[330px] sm:h-[370px] touch-none" />
 
-          <div className="px-3 py-2 bg-[#0b1220] border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="px-3 py-2 bg-oa-surface2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-mono text-amber-300">{brainStateText(eegMeta.label)}</span>
             <span className="font-mono text-slate-300">
               {L('BIS traité (lissage 15 s, simulé) :', 'Processed BIS (15 s smoothing, simulated):')} <strong className="text-cyan-300">{eegMeta.bis}</strong> • {L('Rapport de suppression :', 'SR:')} <strong className="text-rose-300">{eegMeta.sr}%</strong>
@@ -403,7 +403,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         </div>
 
         {/* Raw Frontal EEG + Dual-Model Ghost Telemetry */}
-        <div className="bg-[#060a12] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-canvas border border-slate-800 rounded-xl p-3 space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
             <div className="bg-slate-900 rounded-lg p-2 border border-cyan-500/30">
               <div className="text-[10px] text-cyan-400">{L('Principal', 'Primary')} ({primaryModel.toUpperCase()})</div>
@@ -441,14 +441,14 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
 
           <canvas
             ref={rawCanvasRef}
-            className="w-full h-28 block rounded-lg bg-[#04070e]"
+            className="w-full h-28 block rounded-lg bg-oa-canvas"
             aria-label={L('EEG frontal brut, monovoie (µV)', 'Single-channel raw frontal EEG (µV)')}
           />
         </div>
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
               {L('1. Avatar synthétique et comparateur fantôme', '1. Synthetic Avatar & Dual-Model Ghost')}
@@ -518,7 +518,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         </div>
 
         {/* EEG / BIS Pitfalls Interactive Toggles */}
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5" /> {L('2. Pièges de l’EEG brut et du BIS traité', '2. Raw EEG & Processed BIS Pitfalls')}
           </h2>
@@ -537,7 +537,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         </div>
 
         {/* Educational Manual Syringe Pump Exercise (Non-TCI Hospitals) */}
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-1.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-1.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
             {L('3. Exercice au pousse-seringue manuel (avatar synthétique uniquement)', '3. Manual Pump Exercise (Synthetic Avatar Only)')}
           </h2>
