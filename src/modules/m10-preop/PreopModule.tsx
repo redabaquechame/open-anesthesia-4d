@@ -7,6 +7,16 @@ import type { ScoreDef, Txt } from './preopTypes';
 import { CASES, FASTING, SCORES } from './preopScores';
 import { bandForPicks, scoreTotal } from './preopMath';
 
+/** ASA physical status is a classification (I–VI, + « E » for emergency), not a points score:
+ *  show the class, never a number or « +n » next to the options. Other scores show their total. */
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
+const isClassification = (def: { id: string }) => def.id === 'asa';
+function shownTotal(def: Parameters<typeof scoreTotal>[0], picks: Record<string, number> | undefined): string {
+  if (!isClassification(def)) return String(scoreTotal(def, picks));
+  const cls = ROMAN[(picks?.class ?? 0)] ?? '';
+  return picks?.emergency === 1 ? `${cls} E` : cls;
+}
+
 /** Patient-chart mode: a worked clinical case, or free scoring. */
 type Tab = 'cases' | 'scores';
 type Answers = Record<string, Record<string, number>>;
@@ -54,7 +64,6 @@ function ScoreSection({
   L: (f: string, e: string) => string;
   answerKey?: Record<string, number>;
 }) {
-  const total = scoreTotal(def, picks);
   const band = bandForPicks(def, picks);
   const claim = CLAIMS.find((c) => c.id === def.claimId);
   const ev = def.evidenceId ? EVIDENCE_REGISTRY.find((e) => e.id === def.evidenceId) : undefined;
@@ -65,7 +74,7 @@ function ScoreSection({
           <div className="font-semibold text-slate-100 text-sm">{T(def.name)}</div>
           <div className="text-slate-400">{T(def.predicts)}</div>
         </div>
-        <div className="oa-num text-xl text-white shrink-0" dir="ltr">{total}</div>
+        <div className="oa-num text-xl text-white shrink-0" dir="ltr">{shownTotal(def, picks)}</div>
       </div>
       {def.items.map((it) => {
         const cur = picks?.[it.id] ?? 0;
@@ -88,7 +97,7 @@ function ScoreSection({
                   className={`px-1.5 py-0.5 rounded border text-[11px] cursor-pointer ${cur === i ? BTN_ON : BTN_OFF}`}
                 >
                   {T(o.label)}
-                  {o.points !== 0 && <span className="oa-num text-[10px] opacity-75" dir="ltr"> {o.points > 0 ? '+' : ''}{o.points}</span>}
+                  {o.points !== 0 && !isClassification(def) && <span className="oa-num text-[10px] opacity-75" dir="ltr"> {o.points > 0 ? '+' : ''}{o.points}</span>}
                 </button>
               ))}
             </div>
@@ -259,7 +268,7 @@ export function PreopModule({ locale }: { locale: LocaleCode }) {
                 <span className="text-slate-300 truncate">{SHORT_NAME[s.id] ?? T(s.name)}</span>
                 <span className="flex items-center gap-2 shrink-0">
                   {band && <span className={`truncate max-w-[150px] ${TONE_TEXT[band.tone]}`}>{T(band.label)}</span>}
-                  <span className="oa-num text-white" dir="ltr">{scoreTotal(s, answersFor[s.id])}</span>
+                  <span className="oa-num text-white" dir="ltr">{shownTotal(s, answersFor[s.id])}</span>
                 </span>
               </button>
             );
@@ -287,7 +296,7 @@ export function PreopModule({ locale }: { locale: LocaleCode }) {
                   className={`px-2.5 py-1 rounded border text-xs flex items-center gap-1.5 cursor-pointer ${active === s.id ? BTN_ON : BTN_OFF}`}
                 >
                   {SHORT_NAME[s.id] ?? T(s.name)}
-                  <span className="oa-num text-slate-400" dir="ltr">{scoreTotal(s, answersFor[s.id])}</span>
+                  <span className="oa-num text-slate-400" dir="ltr">{shownTotal(s, answersFor[s.id])}</span>
                   {wrong > 0 && <span className="w-1.5 h-1.5 rounded-full bg-rose-400" aria-hidden />}
                 </button>
               );

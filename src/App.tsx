@@ -47,6 +47,8 @@ import { QualitySelect } from './components/QualitySelect';
 import { HomePage } from './components/HomePage';
 import { ModuleGuidePanel } from './components/ModuleGuidePanel';
 import { ClinicalStepper } from './components/ClinicalStepper';
+import { UpdateToast } from './components/UpdateToast';
+import { MobileDock } from './components/MobileDock';
 import { GROUPS, MODULE_GUIDES } from './standards/moduleGuides';
 import { openPrintableDebriefCard, queueOfflineXapiEvent } from './utils/lmsAndDebrief';
 
@@ -322,6 +324,7 @@ export default function App() {
 
   return (
     <div dir={isRtl ? 'rtl' : 'ltr'} className="min-h-screen flex flex-col bg-oa-canvas text-slate-100">
+      <UpdateToast fr={fr} />
       {/* Persistent educational safety notice (project rule: keep the disclaimer) */}
       <div className="bg-oa-canvas border-b border-amber-500/20 px-3 h-6 text-[10.5px] text-amber-200/85 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -529,10 +532,11 @@ export default function App() {
           onOpenEvidence={() => setShowEvidence(true)}
         />
       ) : activeModule === 'M1_M2' ? (
-        <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
-          {/* LEFT / MAIN COLUMN: 4D Three.js Viewport + OR Monitor */}
-          <section className="lg:col-span-8 flex flex-col gap-3">
-            <div className="relative bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+        <main className="flex-1 lg:flex-none max-w-[1600px] w-full mx-auto p-3 pb-16 md:pb-3 grid grid-cols-1 lg:grid-cols-12 lg:grid-rows-[minmax(0,1fr)] gap-3 lg:h-[calc(100dvh_-_106px)] lg:min-h-[640px]">
+          {/* LEFT / MAIN COLUMN (≈ 68 %, DESIGN.md §6): 3D view above, ventilator curves docked below.
+              On desktop both stay on screen together; the 3D view takes the height left over. */}
+          <section id="m1-view" className="lg:col-span-8 flex flex-col gap-3 lg:min-h-0 scroll-mt-2">
+            <div className="relative bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden flex flex-col lg:flex-1 lg:min-h-0">
               <div className="px-3 py-2 bg-oa-surface2/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 text-xs">
                   <Layers className="w-4 h-4 text-cyan-400" />
@@ -575,7 +579,7 @@ export default function App() {
               </div>
 
               {/* Three.js Canvas Mount */}
-              <div ref={viewportRef} className="w-full h-[360px] sm:h-[430px] relative touch-none" />
+              <div ref={viewportRef} className="w-full h-[42dvh] min-h-[260px] sm:h-[430px] lg:h-auto lg:flex-1 lg:min-h-[220px] relative touch-none" />
 
               {/* Blind Crisis Overlay Banner */}
               {cogMode === 'blind_crisis' && (
@@ -621,7 +625,7 @@ export default function App() {
             </div>
 
             {/* Bedside Monitor */}
-            <div className="space-y-1.5">
+            <div id="m1-curves" className="space-y-1.5 shrink-0 scroll-mt-2">
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-semibold text-slate-300">
                   {L('Moniteur synchronisé : pression, débit et capnogramme (équation du mouvement, 50 Hz)', 'Synchronised monitor: pressure, flow and capnogram (equation of motion, 50 Hz)')}
@@ -646,7 +650,7 @@ export default function App() {
           </section>
 
           {/* RIGHT COLUMN: Controls, Drives & Fault Injector */}
-          <aside className="lg:col-span-4 flex flex-col gap-3">
+          <aside id="m1-settings" className="lg:col-span-4 flex flex-col gap-3 lg:min-h-0 lg:overflow-y-auto lg:pe-1 scroll-mt-2">
             {/* 1. Swappable Ventilator Drive */}
             <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -857,7 +861,7 @@ export default function App() {
             </div>
 
             {/* 3. Fault Injection Lab */}
-            <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
+            <div id="m1-faults" className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2 scroll-mt-2">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-rose-400">{L('3. Pannes à déclencher', '3. Fault lab')}</h2>
                 <button
@@ -893,6 +897,14 @@ export default function App() {
               </div>
             </div>
           </aside>
+          <MobileDock
+            items={[
+              { id: 'm1-view', label: L('Vue 3D', '3D view') },
+              { id: 'm1-curves', label: L('Courbes', 'Curves') },
+              { id: 'm1-settings', label: L('Réglages', 'Settings') },
+              { id: 'm1-faults', label: L('Pannes', 'Faults') },
+            ]}
+          />
         </main>
       ) : (
         <ModuleRouter activeModule={activeModule} locale={locale} onNavigate={(m) => goTo(m)} />

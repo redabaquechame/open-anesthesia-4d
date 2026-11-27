@@ -37,6 +37,7 @@ export class OrAudioEngine {
   private silenced = 0;
   private priority: AlarmPriority = 'none';
   private disposed = false;
+  private alarmBuses: GainNode[] = [];
 
   /** Call from a click handler (autoplay policy). */
   async unlock(): Promise<boolean> {
@@ -62,9 +63,27 @@ export class OrAudioEngine {
     return this.muted;
   }
 
-  /** Audio pause for alarms only; the pulse tone keeps playing (claim m9-audio-alarms). */
+  /** Audio pause for alarms only; the pulse tone keeps playing (claim m9-audio-alarms).
+   *  Notes already scheduled for the current burst are cut at once (Gemini audit, Part A). */
   silence(sec = 120) {
     this.silenced = sec;
+    this.cutAlarms();
+  }
+
+  /** Fade out every scheduled alarm note within ~20 ms; the pulse tone is on another bus. */
+  private cutAlarms() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    for (const g of this.alarmBuses) {
+      try {
+        g.gain.cancelScheduledValues(now);
+        g.gain.setValueAtTime(g.gain.value, now);
+        g.gain.linearRampToValueAtTime(0, now + 0.02);
+      } catch {
+        /* node already stopped */
+      }
+    }
+    this.alarmBuses = [];
   }
 
   silencedRemaining() {
@@ -81,6 +100,8 @@ export class OrAudioEngine {
   update(priority: AlarmPriority, dt: number) {
     dt = Math.max(0, Math.min(0.25, dt));
     if (rank(priority) > rank(this.priority)) this.cooldown = 0;
+    // Alarm cleared: stop the burst in progress instead of letting it ring on.
+    if (priority === 'none' && this.priority !== 'none') this.cutAlarms();
     this.priority = priority;
     this.silenced = Math.max(0, this.silenced - dt);
     if (priority === 'none' || this.silenced > 0) {
@@ -92,9 +113,20 @@ export class OrAudioEngine {
     const b = BURSTS[priority];
     this.cooldown = b.every;
     if (!this.ready()) return;
-    const t0 = this.ctx!.currentTime + 0.01;
+    const ctx = this.ctx!;
+    const t0 = ctx.currentTime + 0.01;
+    // One gain node per burst, so silence() can cut it without touching the pulse tone.
+    const bus = ctx.createGain();
+    bus.gain.value = 1;
+    bus.connect(this.master!);
+    this.alarmBuses.push(bus);
+    const total = (b.repeatAfter !== undefined ? 2 * b.notes.length * (b.pulse + b.gap) + b.repeatAfter : b.notes.length * (b.pulse + b.gap)) + 0.1;
+    window.setTimeout(() => {
+      this.alarmBuses = this.alarmBuses.filter((g) => g !== bus);
+      try { bus.disconnect(); } catch { /* already gone */ }
+    }, total * 1000 + 50);
     const pass = (off: number) =>
-      b.notes.forEach((hz, i) => this.tone(hz, t0 + off + i * (b.pulse + b.gap), b.pulse, b.gain, [[1, 1], [2, 0.45], [3, 0.22]]));
+      b.notes.forEach((hz, i) => this.tone(hz, t0 + off + i * (b.pulse + b.gap), b.pulse, b.gain, [[1, 1], [2, 0.45], [3, 0.22]], bus));
     pass(0);
     if (b.repeatAfter !== undefined) pass(b.notes.length * (b.pulse + b.gap) + b.repeatAfter);
   }
@@ -115,14 +147,14 @@ export class OrAudioEngine {
     return !this.disposed && !this.muted && !!this.ctx && !!this.master && this.ctx.state === 'running';
   }
 
-  private tone(hz: number, t: number, dur: number, peak: number, partials: [number, number][]) {
+  private tone(hz: number, t: number, dur: number, peak: number, partials: [number, number][], out?: GainNode) {
     const ctx = this.ctx!;
     const env = ctx.createGain();
     env.gain.setValueAtTime(0.0001, t);
     env.gain.linearRampToValueAtTime(peak, t + 0.008);
     env.gain.setValueAtTime(peak * 0.9, t + Math.max(0.02, dur - 0.025));
     env.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    env.connect(this.master!);
+    env.connect(out ?? this.master!);
     for (const [mult, w] of partials) {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
