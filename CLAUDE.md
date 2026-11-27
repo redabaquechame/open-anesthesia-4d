@@ -31,9 +31,13 @@ Pages by `.github/workflows/deploy.yml` on every push to `main`.
 - Every clinical number shown in the UI has an entry in `src/standards/claimRegistry.ts` (status `sourced` /
   `from-memory` / `illustrative`). Change a status to `sourced` only after opening the source; then run
   `npm run review:docs` to regenerate `docs/clinical-review/`.
-- Still unverified (keep the flags): Sulbaek Andersen 2012 GWP set, tissue partitions / liquid data
-  (`VOLATILE_AGENT_DATA_UNVERIFIED`), Eleveld covariate table (reference values are checked), Schnider / Minto /
-  Marsh / Al-Sallami equations, PTC 6-min spacing, DLT lumen / bronchial-limb sizes (M8), 2 Hz filter illustration,
-  illustrative drug prices. AR6 GWP values were checked against EU Reg. 2024/573 Annex II/VI. M8 roll shift now uses Yoon 2005 (6.3 mm).
+- Still unverified (keep the flags; re-checked 2026-11-27): muscle/fat partitions and all enflurane tissue values
+  (`VOLATILE_AGENT_DATA_UNVERIFIED`), Eleveld gamma low/high (paper equation vs Table 3), Schnider and Minto covariate
+  equations and James LBM (abstracts only; secondary sources agree), Marsh ke0 0.26 (Diprifusor), CSA gas colours and
+  vacuum/AGSS pipe colours, current ISO 80601-2-13 limits, PTC/TOF details beyond GCRP 2023, 2 Hz filter illustration,
+  illustrative drug prices. DLT per-lumen IDs and bronchial-limb OD are `illustrative` (manufacturers publish one
+  limiting ID). Checked: AR6 and Sulbaek Andersen 2012 GWP, MAC / blood:gas / SVP / density (US labels), brain:blood
+  (Yasuda 1989), Eleveld (full text; Q2/Q3 maturation now included), Marsh PK, Al-Sallami, SFAR checkout values,
+  ASA 2008 (≥ 50 psig), PTC spacing ≥ 2 min. M8 roll shift uses Yoon 2005 (6.3 mm).
 - After changing any kernel, run `npm run sanity` (scripts/sanity/run.ts): EtCO2 35–45, disconnect → Vt 0 + alarms,
   ascending bellows collapse / descending do not, argon build-up, Yasuda 1991 FA/FI, Eleveld reference values, TCI.

@@ -21,7 +21,36 @@ import {
 const DSA_COLS = 44; // time columns
 const DSA_ROWS = 30; // 1..30 Hz
 
+// French display text for the kernel's brain-state labels (keys must match aivocEegKernel output exactly;
+// unknown labels fall back to the kernel's English text).
+const BRAIN_STATE_FR: Record<string, string> = {
+  AWAKE: 'ÉVEILLÉ',
+  'BURST SUPPRESSION (Delirium Risk — Reduce Dose)': 'BURST SUPPRESSION (risque de delirium — réduire la dose)',
+  'AWAKE & PARALYZED! (False-Low BIS Artifact from EMG Loss)': 'ÉVEILLÉ ET CURARISÉ ! (BIS faussement bas par perte de l’EMG)',
+  'AWAKE (Beta / EMG Dominant)': 'ÉVEILLÉ (bêta / EMG prédominants)',
+  'ALPHA DROPOUT (Untreated Nociception — Check Analgesia)': 'DISPARITION DE L’ALPHA (nociception non traitée — vérifier l’analgésie)',
+  'SURGICAL GABAERGIC PLANE (Dual Slow-Delta + Frontal Alpha)': 'PLAN CHIRURGICAL GABAERGIQUE (ondes lentes-delta + alpha frontal)',
+};
+
+// French avatar descriptor by id; numbers are read from the avatar itself, never duplicated here.
+const AVATAR_TAG_FR: Record<string, { who: string; tag: string }> = {
+  'std-adult': { who: 'homme', tag: 'référence' },
+  bariatric: { who: 'femme', tag: 'bariatrique' },
+  elderly: { who: 'homme', tag: 'sujet âgé fragile' },
+  pediatric: { who: 'enfant', tag: 'Eleveld pédiatrique' },
+};
+
 export function AivocEegModule({ locale }: { locale: LocaleCode }) {
+  const fr = locale !== 'en-INT';
+  const L = (f: string, e: string) => (fr ? f : e);
+  const frRef = useRef(fr);
+  frRef.current = fr;
+  const brainStateText = (label: string) => (fr ? BRAIN_STATE_FR[label] ?? label : label);
+  const avatarText = (av: (typeof SYNTHETIC_AVATARS)[number], idx: number) => {
+    const t = AVATAR_TAG_FR[av.id];
+    if (!fr || !t) return av.label;
+    return `Avatar virtuel n° ${idx + 1} — ${av.ageYears} ans, ${av.weightKg} kg, ${av.heightCm} cm, ${t.who} (${t.tag})`;
+  };
   const [avatarIdx, setAvatarIdx] = useState(0);
   const [primaryModel, setPrimaryModel] = useState<PropofolModelId>('eleveld');
   const [ghostModel, setGhostModel] = useState<PropofolModelId>('schnider');
@@ -290,7 +319,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
             sr: eeg.suppressionRatioPct,
             label: eeg.trueBrainStateLabel,
           });
-          drawRawEeg(rawCanvasRef.current, rawBufRef.current);
+          drawRawEeg(rawCanvasRef.current, rawBufRef.current, frRef.current);
         }
 
         controls?.update();
@@ -334,7 +363,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
                   viewMode === 'dsa_3d' ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'
                 }`}
               >
-                <Brain className="w-3.5 h-3.5" /> 3D→2D DSA Spectrogram
+                <Brain className="w-3.5 h-3.5" /> {L('Spectrogramme DSA 3D→2D', '3D→2D DSA Spectrogram')}
               </button>
               <button
                 onClick={() => setViewMode('compartments_synapse')}
@@ -342,19 +371,20 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
                   viewMode === 'compartments_synapse' ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'
                 }`}
               >
-                <Layers className="w-3.5 h-3.5" /> 3D Compartments + GABA_A Synapse
+                <Layers className="w-3.5 h-3.5" /> {L('Compartiments 3D + synapse GABA_A', '3D Compartments + GABA_A Synapse')}
               </button>
             </div>
 
             {viewMode === 'dsa_3d' && (
               <div className="flex items-center gap-2 text-[11px]">
-                <span className="text-slate-300">3D Mountain ↔ 2D DSA</span>
+                <span className="text-slate-300">{L('Relief 3D ↔ DSA 2D', '3D Mountain ↔ 2D DSA')}</span>
                 <input
                   type="range"
                   min={0}
                   max={90}
                   value={tiltDeg}
                   onChange={(e) => setTiltDeg(Number(e.target.value))}
+                  aria-label={L('Inclinaison : relief 3D ↔ DSA 2D', 'Tilt: 3D mountain ↔ 2D DSA')}
                   className="w-28"
                 />
                 <span className="font-mono text-cyan-300">{tiltDeg}°</span>
@@ -365,9 +395,9 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
           <div ref={viewportRef} className="w-full h-[330px] sm:h-[370px] touch-none" />
 
           <div className="px-3 py-2 bg-[#0b1220] border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="font-mono text-amber-300">{eegMeta.label}</span>
+            <span className="font-mono text-amber-300">{brainStateText(eegMeta.label)}</span>
             <span className="font-mono text-slate-300">
-              Processed BIS (15 s smoothing, simulated): <strong className="text-cyan-300">{eegMeta.bis}</strong> • SR: <strong className="text-rose-300">{eegMeta.sr}%</strong>
+              {L('BIS traité (lissage 15 s, simulé) :', 'Processed BIS (15 s smoothing, simulated):')} <strong className="text-cyan-300">{eegMeta.bis}</strong> • {L('Rapport de suppression :', 'SR:')} <strong className="text-rose-300">{eegMeta.sr}%</strong>
             </span>
           </div>
         </div>
@@ -376,7 +406,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         <div className="bg-[#060a12] border border-slate-800 rounded-xl p-3 space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
             <div className="bg-slate-900 rounded-lg p-2 border border-cyan-500/30">
-              <div className="text-[10px] text-cyan-400">Primary ({primaryModel.toUpperCase()})</div>
+              <div className="text-[10px] text-cyan-400">{L('Principal', 'Primary')} ({primaryModel.toUpperCase()})</div>
               <div className="font-bold text-white">
                 Ce {primState ? primState.ce.toFixed(2) : '0.00'} µg/mL
               </div>
@@ -385,31 +415,35 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
               </div>
             </div>
             <div className="bg-slate-900 rounded-lg p-2 border border-amber-500/30">
-              <div className="text-[10px] text-amber-400">Ghost ({ghostModel.toUpperCase()})</div>
+              <div className="text-[10px] text-amber-400">{L('Fantôme', 'Ghost')} ({ghostModel.toUpperCase()})</div>
               <div className="font-bold text-amber-200">
                 Ce {ghostState ? ghostState.ce.toFixed(2) : '0.00'} µg/mL
               </div>
               <div className="text-[10px] text-slate-400">
-                Rate {(ghostState ? ghostState.infusionRateMgMin * 6 : 0).toFixed(0)} mL/h • LBM {ghostPk.lbmJames.toFixed(0)} kg
+                {L('Débit', 'Rate')} {(ghostState ? ghostState.infusionRateMgMin * 6 : 0).toFixed(0)} mL/h • {L('Masse maigre', 'LBM')} {ghostPk.lbmJames.toFixed(0)} kg
               </div>
             </div>
             <div className="bg-slate-900 rounded-lg p-2 border border-purple-500/30">
-              <div className="text-[10px] text-purple-400">Remifentanil (Minto)</div>
+              <div className="text-[10px] text-purple-400">{L('Rémifentanil (Minto)', 'Remifentanil (Minto)')}</div>
               <div className="font-bold text-purple-200">
                 Ce {remiState ? remiState.ce.toFixed(2) : '0.00'} ng/mL
               </div>
               <div className="text-[10px] text-slate-400">ke0 {remiPk.ke0.toFixed(2)} min⁻¹</div>
             </div>
             <div className="bg-slate-900 rounded-lg p-2 border border-emerald-500/30">
-              <div className="text-[10px] text-emerald-400">Model Ce50 ({primaryModel})</div>
+              <div className="text-[10px] text-emerald-400">{L('Ce50 du modèle', 'Model Ce50')} ({primaryModel})</div>
               <div className="font-bold text-emerald-200">
                 Ce50 = {primaryPk.ce50.toFixed(2)} µg/mL
               </div>
-              <div className="text-[10px] text-slate-400">At Ce50 the model BIS is 93 / 2 ≈ 47</div>
+              <div className="text-[10px] text-slate-400">{L('À la Ce50, le BIS du modèle vaut 93 / 2 ≈ 47', 'At Ce50 the model BIS is 93 / 2 ≈ 47')}</div>
             </div>
           </div>
 
-          <canvas ref={rawCanvasRef} className="w-full h-28 block rounded-lg bg-[#04070e]" />
+          <canvas
+            ref={rawCanvasRef}
+            className="w-full h-28 block rounded-lg bg-[#04070e]"
+            aria-label={L('EEG frontal brut, monovoie (µV)', 'Single-channel raw frontal EEG (µV)')}
+          />
         </div>
       </section>
 
@@ -417,10 +451,10 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-              1. Synthetic Avatar & Dual-Model Ghost
+              {L('1. Avatar synthétique et comparateur fantôme', '1. Synthetic Avatar & Dual-Model Ghost')}
             </h2>
             <button onClick={resetAll} className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer">
-              <RotateCcw className="w-3 h-3" /> Reset
+              <RotateCcw className="w-3 h-3" /> {L('Réinitialiser', 'Reset')}
             </button>
           </div>
 
@@ -433,13 +467,13 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs"
           >
             {SYNTHETIC_AVATARS.map((av, idx) => (
-              <option key={av.id} value={idx}>{av.label}</option>
+              <option key={av.id} value={idx}>{avatarText(av, idx)}</option>
             ))}
           </select>
 
           <div className="grid grid-cols-2 gap-2">
             <label>
-              <span className="text-[10px] text-cyan-300">Primary Model</span>
+              <span className="text-[10px] text-cyan-300">{L('Modèle pharmacocinétique principal', 'Primary Model')}</span>
               <select
                 value={primaryModel}
                 onChange={(e) => setPrimaryModel(e.target.value as PropofolModelId)}
@@ -451,7 +485,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
               </select>
             </label>
             <label>
-              <span className="text-[10px] text-amber-300">Ghost Comparator</span>
+              <span className="text-[10px] text-amber-300">{L('Comparateur fantôme', 'Ghost Comparator')}</span>
               <select
                 value={ghostModel}
                 onChange={(e) => setGhostModel(e.target.value as PropofolModelId)}
@@ -466,7 +500,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
 
           <label className="block">
             <div className="flex justify-between text-[11px]">
-              <span>Propofol Target Ce</span>
+              <span>{L('Propofol — Ce cible (AIVOC)', 'Propofol Target Ce')}</span>
               <span className="font-mono text-cyan-300">{targetCe.toFixed(1)} µg/mL</span>
             </div>
             <input type="range" min={0} max={7.5} step={0.1} value={targetCe}
@@ -475,7 +509,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
 
           <label className="block">
             <div className="flex justify-between text-[11px]">
-              <span>Remifentanil Target Ce (Minto)</span>
+              <span>{L('Rémifentanil — Ce cible (Minto)', 'Remifentanil Target Ce (Minto)')}</span>
               <span className="font-mono text-purple-300">{remiCeTarget.toFixed(1)} ng/mL</span>
             </div>
             <input type="range" min={0} max={8} step={0.2} value={remiCeTarget}
@@ -486,18 +520,18 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         {/* EEG / BIS Pitfalls Interactive Toggles */}
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5" /> 2. Raw EEG & Processed BIS Pitfalls
+            <Zap className="w-3.5 h-3.5" /> {L('2. Pièges de l’EEG brut et du BIS traité', '2. Raw EEG & Processed BIS Pitfalls')}
           </h2>
           <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer">
-            <span>2 Hz high-pass display filter (hides slow waves — illustration)</span>
+            <span>{L('Filtre d’affichage passe-haut 2 Hz (masque les ondes lentes — illustration)', '2 Hz high-pass display filter (hides slow waves — illustration)')}</span>
             <input type="checkbox" checked={bisFilterOn} onChange={(e) => setBisFilterOn(e.target.checked)} />
           </label>
           <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer">
-            <span>NMB alone, patient awake (BIS fell to 44–47 in volunteers)</span>
+            <span>{L('Curarisation seule, patient éveillé (BIS descendu à 44–47 chez des volontaires)', 'NMB alone, patient awake (BIS fell to 44–47 in volunteers)')}</span>
             <input type="checkbox" checked={nmbTrap} onChange={(e) => { setNmbTrap(e.target.checked); if (e.target.checked) setTargetCe(0); }} />
           </label>
           <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer">
-            <span>Untreated Nociception (Alpha Dropout)</span>
+            <span>{L('Nociception non traitée (disparition de l’alpha)', 'Untreated Nociception (Alpha Dropout)')}</span>
             <input type="checkbox" checked={painDropout} onChange={(e) => setPainDropout(e.target.checked)} />
           </label>
         </div>
@@ -505,20 +539,26 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         {/* Educational Manual Syringe Pump Exercise (Non-TCI Hospitals) */}
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-1.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-            3. Manual Pump Exercise (Synthetic Avatar Only)
+            {L('3. Exercice au pousse-seringue manuel (avatar synthétique uniquement)', '3. Manual Pump Exercise (Synthetic Avatar Only)')}
           </h2>
           <p className="text-[10px] text-slate-400">
-            {locale.startsWith('fr')
-              ? 'Exercice pédagogique pousse-seringue (SAP 10 mg/mL) hors clinique réelle pour hôpitaux sans base AIVOC :'
-              : 'Educational syringe-pump step-down exercise (10 mg/mL, fictional avatar only) for non-TCI sites:'}
+            {L(
+              'Exercice pédagogique de paliers décroissants au pousse-seringue (10 mg/mL, avatar fictif uniquement) pour les sites sans AIVOC :',
+              'Educational syringe-pump step-down exercise (10 mg/mL, fictional avatar only) for non-TCI sites:'
+            )}
           </p>
           <div className="font-mono text-[11px] bg-slate-950 p-2 rounded-lg border border-slate-800 space-y-1 text-emerald-300">
-            <div>Induction Bolus: ~{manualBolusMg} mg ({(manualBolusMg / 10).toFixed(1)} mL)</div>
-            <div>0–10 min Rate: ~{manualRate10MlH} mL/h → 10–30 min: ~{manualRate30MlH} mL/h</div>
+            <div>{L('Bolus d’induction :', 'Induction Bolus:')} ~{manualBolusMg} mg ({(manualBolusMg / 10).toFixed(1)} mL)</div>
+            <div>{L('Débit 0–10 min :', '0–10 min Rate:')} ~{manualRate10MlH} mL/h → 10–30 min{L(' :', ':')} ~{manualRate30MlH} mL/h</div>
             <div className="text-amber-300/90 text-[10px]">
               CL1: {ghostModel} {(ghostPk.k10 * ghostPk.v1).toFixed(2)} L/min vs {primaryModel} {(primaryPk.k10 * primaryPk.v1).toFixed(2)} L/min
             </div>
-            <div className="text-slate-500 text-[10px]">Simulator heuristic from model clearance — not a dosing regimen.</div>
+            <div className="text-slate-500 text-[10px]">
+              {L(
+                'Heuristique du simulateur dérivée de la clairance du modèle — pas un schéma posologique.',
+                'Simulator heuristic from model clearance — not a dosing regimen.'
+              )}
+            </div>
           </div>
         </div>
       </aside>
@@ -526,7 +566,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
   );
 }
 
-function drawRawEeg(canvas: HTMLCanvasElement | null, buf: number[]) {
+function drawRawEeg(canvas: HTMLCanvasElement | null, buf: number[], fr: boolean) {
   if (!canvas || buf.length < 2) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -561,7 +601,7 @@ function drawRawEeg(canvas: HTMLCanvasElement | null, buf: number[]) {
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '600 10px ui-monospace, monospace';
-  ctx.fillText('Single-Channel Raw Frontal EEG (µV)', 8, 13);
+  ctx.fillText(fr ? 'EEG frontal brut, monovoie (µV)' : 'Single-Channel Raw Frontal EEG (µV)', 8, 13);
   ctx.restore();
 }
 

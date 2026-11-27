@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { BadgeCheck, BookMarked, Flag, Shapes, X } from 'lucide-react';
+import { CLAIM_FR } from '../standards/claimFr';
 import { claimsForModule, statusCounts, type ClaimStatus, type ClinicalClaim } from '../standards/claimRegistry';
 import type { LocaleCode } from '../standards/clinicalStandards';
 import { reportMistake } from '../utils/reportIssue';
@@ -95,7 +96,7 @@ export function ReviewDrawer({ moduleTab, locale, onClose }: { moduleTab: string
             return (
               <div key={c.id} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
                 <div className="flex items-start justify-between gap-2">
-                  <span className="text-slate-100 leading-relaxed">{c.claim}</span>
+                  <span className="text-slate-100 leading-relaxed">{(locale !== 'en-INT' && CLAIM_FR[c.id]?.claim) || c.claim}</span>
                   <span className={`shrink-0 flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${meta.cls}`}>
                     <meta.Icon className="w-3 h-3" />
                     {meta.label[L]}
@@ -103,7 +104,7 @@ export function ReviewDrawer({ moduleTab, locale, onClose }: { moduleTab: string
                 </div>
                 {c.value && <div className="font-mono text-[11px] text-cyan-300">{c.value}</div>}
                 {c.source && <div className="text-[10px] text-emerald-300/90">{c.source}</div>}
-                {c.note && <div className="text-[10px] text-amber-200/80">{c.note}</div>}
+                {c.note && <div className="text-[10px] text-amber-200/80">{(locale !== 'en-INT' && CLAIM_FR[c.id]?.note) || c.note}</div>}
                 <div className="flex justify-between items-center pt-0.5">
                   <span className="font-mono text-[9px] text-slate-500">{c.id}</span>
                   <button onClick={() => report(c)} className="flex items-center gap-1 text-[10px] text-rose-300 hover:text-rose-200 cursor-pointer">

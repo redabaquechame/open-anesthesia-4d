@@ -65,7 +65,7 @@ function probeFrame(slideMm: number, tiltDeg: number, compression: number): Prob
 }
 
 export function SonoLab({ locale }: { locale: LocaleCode }) {
-  const fr = locale.startsWith('fr');
+  const fr = locale !== 'en-INT';
   const [c, setC] = useState<Controls>({
     slideMm: 0,
     tiltDeg: 0,

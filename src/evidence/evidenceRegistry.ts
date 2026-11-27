@@ -153,10 +153,10 @@ export const EVIDENCE_REGISTRY: EvidenceEntry[] = [
   },
   {
     id: 'asra-last-2020',
-    moduleIds: ['M6'],
+    moduleIds: ['M6', 'M9'],
     title: 'ASRA Local Anesthetic Systemic Toxicity checklist (2020, v1.1)',
     keyFinding:
-      '20% lipid emulsion. Over 70 kg: bolus ~100 mL over 2–3 min, infuse ~250 mL over 15–20 min. Under 70 kg: bolus ~1.5 mL/kg over 2–3 min, infuse ~0.25 mL/kg/min. If unstable: repeat bolus, double infusion. Continue > 15 min once stable; maximum 12 mL/kg. Epinephrine: start < 1 mcg/kg. Avoid local anaesthetics, beta-blockers, calcium-channel blockers, vasopressin.',
+      '20% lipid emulsion. Over 70 kg: bolus ~100 mL over 2–3 min, infuse ~250 mL over 15–20 min. Under 70 kg: bolus ~1.5 mL/kg over 2–3 min, infuse ~0.25 mL/kg/min. If unstable: repeat bolus, double infusion. Continue ≥ 15 min once stable; maximum 12 mL/kg. Seizures: ensure an adequate airway, benzodiazepine preferred. Epinephrine: start with ≤ 1 mcg/kg. Avoid local anaesthetics, beta-blockers, calcium-channel blockers, vasopressin.',
     clinicalTakeaway: 'LAST resuscitation is different from standard ACLS: give lipid early and use small epinephrine doses. ASRA states the checklist is under review (update expected early 2027).',
     sourceCitation: 'Neal JM, Neal EJ, Weinberg GL. Reg Anesth Pain Med. 2021;46(1):81-82. PMID 33148630 (checklist PDF © 2020 ASRA, v1.1)',
     sourceUrl: 'https://www.asra.com/guidelines-articles/guidelines/guideline-item/guidelines/2020/11/01/checklist-for-treatment-of-local-anesthetic-systemic-toxicity',
@@ -273,5 +273,174 @@ export const EVIDENCE_REGISTRY: EvidenceEntry[] = [
     clinicalTakeaway: 'Frontal alpha plus slow waves is the propofol signature to look for on the density spectral array.',
     sourceCitation: 'Purdon PL et al. Proc Natl Acad Sci U S A. 2013;110(12):E1142-51. PMID 23487781',
     sourceUrl: 'https://doi.org/10.1073/pnas.1221180110',
+  },
+  // ── M10 pre-operative assessment (opened 2026-11-27; full text or abstract as stated)
+  {
+    id: 'lee-rcri-1999',
+    moduleIds: ['M10'],
+    title: 'Revised Cardiac Risk Index (Lee 1999)',
+    keyFinding:
+      'Six independent predictors of major cardiac complications after elective non-cardiac surgery in 4,315 patients aged 50 or more. Validation-cohort rates: 0 factors 0.4%, 1 factor 0.9%, 2 factors 6.6%, 3 or more 11.0%.',
+    clinicalTakeaway: 'Count the six factors; three or more puts the patient in class IV. Validated in elective surgery only.',
+    sourceCitation: 'Lee TH et al. Circulation. 1999;100(10):1043-9. PMID 10477528 (full text)',
+    sourceUrl: 'https://doi.org/10.1161/01.cir.100.10.1043',
+  },
+  {
+    id: 'esc-noncardiac-2022',
+    moduleIds: ['M10'],
+    title: '2022 ESC guidelines on cardiovascular assessment for non-cardiac surgery',
+    keyFinding:
+      'The Task Force recommends no single risk score. Self-reported inability to climb two flights of stairs adds value to RCRI. Biomarkers: high-sensitivity troponin (class I) and/or BNP/NT-proBNP (class IIa) in selected patients.',
+    clinicalTakeaway: 'Combine a risk score, functional capacity and, in at-risk patients, ECG and biomarkers.',
+    sourceCitation: 'Halvorsen S et al. Eur Heart J. 2022;43(39):3826-3924. PMID 36017553',
+    sourceUrl: 'https://doi.org/10.1093/eurheartj/ehac270',
+  },
+  {
+    id: 'stopbang',
+    moduleIds: ['M10'],
+    title: 'STOP-Bang questionnaire for obstructive sleep apnoea',
+    keyFinding:
+      'Eight yes/no items. A score of 3 or more is 93% sensitive for moderate-to-severe OSA (AHI > 15) and 100% for severe OSA, but only about 31% specific. The probability of severe OSA rises from 4% at 0–2 to 38% at 7–8.',
+    clinicalTakeaway: 'A low score is reassuring; a high score calls for OSA precautions (opioid-sparing, monitoring).',
+    sourceCitation: 'Chung F et al. Chest. 2016;149(3):631-8. PMID 26378880 (abstract); stopbang.ca (official site)',
+    sourceUrl: 'https://www.stopbang.ca/osa/screening.php',
+  },
+  {
+    id: 'apfel-1999',
+    moduleIds: ['M10'],
+    title: 'Simplified risk score for postoperative nausea and vomiting (Apfel 1999)',
+    keyFinding: 'Four predictors (female, PONV or motion-sickness history, non-smoker, postoperative opioids). 0–4 factors give 10, 21, 39, 61 and 79% incidence within 24 h.',
+    clinicalTakeaway: 'From two factors, consider prophylaxis.',
+    sourceCitation: 'Apfel CC et al. Anesthesiology. 1999;91(3):693-700. PMID 10485781 (abstract)',
+    sourceUrl: 'https://doi.org/10.1097/00000542-199909000-00022',
+  },
+  {
+    id: 'ariscat-canet-2010',
+    moduleIds: ['M10'],
+    title: 'ARISCAT: predicting postoperative pulmonary complications (Canet 2010)',
+    keyFinding:
+      'Seven predictors in 2,464 patients from 59 hospitals: low SpO2, recent respiratory infection, age, anaemia, upper abdominal or intrathoracic surgery, surgery of 2 h or more, emergency. Pulmonary complications occurred in 5% and raised 30-day mortality from 0.5% to 19.5%.',
+    clinicalTakeaway: 'High-risk patients (≥ 45 points) need a lung-protective plan. Point values in the app still need checking against the paper.',
+    sourceCitation: 'Canet J et al. Anesthesiology. 2010;113(6):1338-50. PMID 21045639 (abstract)',
+    sourceUrl: 'https://doi.org/10.1097/ALN.0b013e3181fc6e0a',
+  },
+  {
+    id: 'esa-fasting-2011',
+    moduleIds: ['M10'],
+    title: 'Peri-operative fasting in adults and children (ESA 2011) + ASA 2023 update',
+    keyFinding:
+      'ESA 2011: clear fluids up to 2 h, solids 6 h; do not cancel for chewing gum, a sweet or smoking. ASA 2023: healthy adults may drink carbohydrate-containing clear liquids (up to 400 mL) until 2 h before surgery.',
+    clinicalTakeaway: 'Encourage clear fluids up to 2 h before surgery; long fasts are not safer.',
+    sourceCitation: 'Smith I et al. Eur J Anaesthesiol. 2011;28(8):556-69. PMID 21712716; Joshi GP et al. Anesthesiology. 2023;138(2):132-51. PMID 36629465',
+    sourceUrl: 'https://doi.org/10.1097/EJA.0b013e3283495ba1',
+  },
+  {
+    id: 'esaic-paed-fasting-2022',
+    moduleIds: ['M10'],
+    title: 'ESAIC guideline: pre-operative fasting in children (2022)',
+    keyFinding: 'Clear fluids until 1 h before induction, breast milk until 3 h, formula or non-human milk until 4 h.',
+    clinicalTakeaway: 'Shorter fasts in children reduce thirst, discomfort and hypotension at induction.',
+    sourceCitation: 'Frykholm P et al. Eur J Anaesthesiol. 2022;39(1):4-25. PMID 34857683 (abstract)',
+    sourceUrl: 'https://doi.org/10.1097/EJA.0000000000001599',
+  },
+  {
+    id: 'glp1-multisociety-2024',
+    moduleIds: ['M10'],
+    title: 'GLP-1 receptor agonists before surgery: multisociety guidance (2024)',
+    keyFinding:
+      'Shared decision. Continue when there are no high-risk features; when held, stop on the day (daily drugs) or one week before (weekly). Liquid diet for 24 h when concerned; gastric ultrasound can help.',
+    clinicalTakeaway: 'Ask about GLP-1 agonists at every pre-operative visit and plan around delayed gastric emptying.',
+    sourceCitation: 'Kindel TL et al. (AGA, ASMBS, ASA, ISPCOP, SAGES). Surg Endosc 2024. PMC11666732 (full text)',
+    sourceUrl: 'https://doi.org/10.1007/s00464-024-11263-2',
+  },
+  {
+    id: 'aoa-qrh-mh-2021',
+    moduleIds: ['M9'],
+    title: 'Malignant hyperthermia crisis — Association of Anaesthetists QRH card 3-8 (v.2, 2021)',
+    keyFinding:
+      'Recognise: unexplained rising EtCO2, tachycardia, rising O2 use (temperature is late). Remove triggers (vaporiser off, 100% O2 high flow, 2–3 × ventilation, charcoal filters), TIVA, dantrolene 2–3 mg/kg then 1 mg/kg every 5 min until EtCO2 < 6 kPa and T < 38.5 °C, active cooling, treat acidosis and hyperkalaemia.',
+    clinicalTakeaway: 'Dantrolene early is the treatment. EMHG 2024 uses 2–2.5 mg/kg repeated every 10 min; follow your local MH card.',
+    sourceCitation: 'Association of Anaesthetists Quick Reference Handbook, card 3-8 v.2 (2021), CC BY-NC-SA 4.0. Full guideline: Hopkins PM et al. Anaesthesia 2021;76(5):655-664, PMID 33399225 (abstract only). EMHG v2024 recommendation, emhg.org (4 Nov 2024).',
+    sourceUrl: 'https://anaesthetists.org/Portals/0/PDFs/QRH/QRH_complete_June_2023.pdf',
+  },
+  {
+    id: 'garvey-anaphylaxis-2019',
+    moduleIds: ['M9'],
+    title: 'Suspected immediate perioperative allergic reactions: international consensus (2019)',
+    keyFinding:
+      'Grades I–IV (modified Ring & Messmer). Adult IV adrenaline: grade II 20 µg → 50 µg; grade III 50 µg → 200 µg every 2 min; grade IV 1 mg per ALS. Fluids: grade III 1 L, up to 30 mL/kg. CPR if SBP < 50 mmHg. Steroids and antihistamines only after adrenaline and fluids. Tryptase at 1 h and 2–4 h, baseline ≥ 24 h.',
+    clinicalTakeaway: 'Titrated IV adrenaline and fluid are first-line; skin signs are often absent in severe reactions.',
+    sourceCitation: 'Garvey LH, Dewachter P, Hepner DL, et al. Br J Anaesth. 2019;123(1):e50-e64. PMID 31130272. Steps also from QRH card 3-1 v.5 (2022).',
+    sourceUrl: 'https://doi.org/10.1016/j.bja.2019.04.044',
+  },
+  {
+    id: 'das-2025',
+    moduleIds: ['M9', 'M8'],
+    title: 'Difficult Airway Society 2025 guidelines: unanticipated difficult tracheal intubation in adults',
+    keyFinding:
+      'Plans A (≤ 3 + 1 attempts) → B (second-generation SAD, ≤ 3 attempts) → C (final facemask attempt) → declare CICO → D (scalpel–bougie–tube front-of-neck access, vertical incision by default when the membrane is not clearly palpable). Declare failure at each step; continue oxygen throughout.',
+    clinicalTakeaway: 'Limit attempts, declare each failure out loud, and move to front-of-neck access without delay once CICO is declared.',
+    sourceCitation: 'Ahmad I, El-Boghdadly K, Iliff H, et al. Br J Anaesth. 2026;136(1):283-307. PMID 41203471 (CC BY-NC-ND 4.0; algorithm figures not reproduced). Previous version: Frerk C et al. BJA 2015;115:827-48.',
+    sourceUrl: 'https://doi.org/10.1016/j.bja.2025.10.006',
+  },
+  {
+    id: 'rcuk-als-2025',
+    moduleIds: ['M9'],
+    title: 'Adult advanced life support 2025 (Resuscitation Council UK, adapting ERC 2025)',
+    keyFinding:
+      'Shockable rhythm: single shocks with 2-min CPR cycles; adrenaline 1 mg after the 3rd shock, then every 3–5 min; amiodarone 300 mg after 3 shocks and 150 mg after 5 (or lidocaine 100 mg + 50 mg). Compressions 100–120/min, 5–6 cm. Treat the 4 Hs and 4 Ts. No routine calcium or bicarbonate.',
+    clinicalTakeaway: 'High-quality CPR and early defibrillation come first; drugs come after the third shock.',
+    sourceCitation: 'Resuscitation Council UK. Adult advanced life support guidelines 2025. Adapts Soar J et al. ERC Guidelines 2025 Adult ALS. Resuscitation 2025;215 Suppl 1:110769, PMID 41117572 (abstract only).',
+    sourceUrl: 'https://www.resus.org.uk/professional-library/2025-resuscitation-guidelines/',
+  },
+  {
+    id: 'esaic-bleeding-2023',
+    moduleIds: ['M9'],
+    title: 'Management of severe peri-operative bleeding: ESAIC guidelines, second update 2022',
+    keyFinding:
+      'Massive bleeding in elective surgery: plasma:RBC ≥ 1:1 (2C), then goal-directed therapy as soon as possible (1C). Keep calcium > 0.9 mmol/L and normothermia; Hb 7–9 g/dL during active bleeding (1B); PCC rather than FFP (1B); balanced crystalloids (2C). TXA 1 g IV within 3 h for postpartum haemorrhage (1B).',
+    clinicalTakeaway: 'Control the source, give balanced blood products early, and switch to targeted treatment guided by tests.',
+    sourceCitation: 'Kietaibl S, Ahmed A, Afshari A, et al. Eur J Anaesthesiol. 2023;40(4):226-304. PMID 36855941.',
+    sourceUrl: 'https://doi.org/10.1097/EJA.0000000000001803',
+  },
+  {
+    id: 'sogc-pph-2022',
+    moduleIds: ['M9'],
+    title: 'Guideline No. 431: Postpartum Hemorrhage and Hemorrhagic Shock',
+    keyFinding:
+      'Stage PPH by quantitative blood loss, not vital signs. Oxytocin first line (≤ 3 IU IV bolus or 10 IU IM, then infusion); second-line uterotonic if no tone within 4 min; TXA 1 g IV, may repeat once after 30 min; bimanual compression, bladder emptying, Bakri balloon, then embolisation or surgery. Hb 70–90 g/L while bleeding; 1:1:1 or 2:1:1 protocol; fibrinogen if < 2 g/L.',
+    clinicalTakeaway: 'Measure the loss, call early, restore uterine tone, give TXA, and transfuse before the lethal triad sets in.',
+    sourceCitation: 'Robinson D, Basso M, Chan C, Duckitt K, Lett R. J Obstet Gynaecol Can. 2022;44(12):1293-1310.e1. PMID 36567097.',
+    sourceUrl: 'https://pubmed.ncbi.nlm.nih.gov/36567097/',
+  },
+  {
+    id: 'sfar-machine-checkout',
+    moduleIds: ['M1'],
+    title: 'SFAR — the anaesthesia machine and its pre-use check',
+    keyFinding:
+      'French recommendations on the anaesthesia machine and the user checkout: O2 flush of at least 30 L/min; reserve cylinder content = engraved capacity × bar, replace at 150 L or less; O2 analyser 21 ± 2% in air and > 90% in O2, low alarm tested at 40% with O2 2 + N2O 4 L/min; fresh-gas supply leak ≤ 50 mL/min at 30 cmH2O (citing ISO 5358).',
+    clinicalTakeaway: 'Check the machine before every list with the written procedure; the text dates from 1994, so newer machines may self-test parts of it.',
+    sourceCitation: 'Société Française d’Anesthésie et de Réanimation. Recommandations concernant l’appareil d’anesthésie et sa vérification avant utilisation (1994; web page updated 2019).',
+    sourceUrl: 'https://sfar.org/lappareil-danesthesie-et-sa-verification-avant-utilisation/',
+  },
+  {
+    id: 'asa-pac-2008',
+    moduleIds: ['M1'],
+    title: 'ASA 2008 Recommendations for Pre-Anesthesia Checkout Procedures',
+    keyFinding:
+      'Fifteen items to check each day (or after service, a move or a vaporiser change), eight of them again before every case; each item names who may do it (provider, technician or machine self-test).',
+    clinicalTakeaway: 'Adapt the list to your machine model; the backup ventilation device and suction are checked before every case.',
+    sourceCitation: 'Feldman JM, Olympio MA, Martin D, Striker A. New guidelines available for pre-anesthesia checkout. APSF Newsletter, Spring 2008.',
+    sourceUrl: 'https://www.apsf.org/article/new-guidelines-available-for-pre-anesthesia-checkout/',
+  },
+  {
+    id: 'who-mcpc-2017',
+    moduleIds: ['M9'],
+    title: 'Managing complications in pregnancy and childbirth (WHO, 2nd ed.)',
+    keyFinding:
+      'Convulsions in pregnancy are managed as eclampsia until proven otherwise. Magnesium sulfate is the drug of choice: 4 g IV loading (IM or IV regimen), 2 g IV for recurrence after 15 min, maintenance for 24 h; withhold if RR < 16/min, absent patellar reflexes or urine < 30 mL/h; calcium gluconate 1 g IV as antidote. Treat BP ≥ 160/110 (hydralazine, labetalol, nifedipine) without going below normal. Birth within 12 h of the onset of eclamptic convulsions.',
+    clinicalTakeaway: 'Magnesium first, then blood pressure, then birth; check breathing, reflexes and urine before every dose.',
+    sourceCitation: 'World Health Organization. Managing complications in pregnancy and childbirth: a guide for midwives and doctors. 2nd ed. Geneva: WHO; 2017. ISBN 978-92-4-156549-3. CC BY-NC-SA 3.0 IGO.',
+    sourceUrl: 'https://www.who.int/publications/i/item/9789241565493',
   },
 ];

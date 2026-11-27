@@ -430,9 +430,9 @@ export async function createSpineScene(container: HTMLElement, fluoroContainer: 
       }
     }
     const lumbar = inp.region === 'lumbar';
-    // Lumbar midline: middle of the depression. Lumbar paramedian: 1 cm lateral, ~1 cm caudal.
-    // Thoracic: next to the caudal tip of the upper spinous process.
-    const baseY = inp.approach === 'midline' ? (lumbar ? gapY : U[1] - 0.003) : lumbar ? gapY - 0.008 : U[1];
+    // Midline: lumbar, middle of the depression; thoracic, just below the caudal tip of the upper spinous process.
+    // Paramedian (both regions): ~1 cm lateral and ~1 cm caudal (claim m7-paramedian; PMC9346204, PMC10797981).
+    const baseY = inp.approach === 'midline' ? (lumbar ? gapY : U[1] - 0.003) : lumbar ? gapY - 0.008 : U[1] - 0.01;
     return { def, softParams, boneOwners, baseY };
   };
 

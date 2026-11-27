@@ -14,13 +14,16 @@ Generated 2026-11-27. One checklist per module; each takes about an hour.
 
 | Checklist | Claims | Sourced | To verify | Illustrative |
 |---|---|---|---|---|
-| [M1 + M2 — Anaesthesia workstation, ventilation & capnography](M1-M2.md) | 19 | 7 | 10 | 2 |
-| [M3 — Volatile agents, low flow & climate](M3.md) | 14 | 3 | 7 | 4 |
-| [M4 — Propofol / remifentanil TCI, EEG & BIS](M4.md) | 12 | 2 | 6 | 4 |
-| [M5 — Neuromuscular monitoring & reversal](M5.md) | 7 | 4 | 1 | 2 |
-| [M6 — Ultrasound-guided block, LAST & cardiac loops](M6.md) | 10 | 4 | 2 | 4 |
-| [M7 — Thoracic & lumbar epidural](M7.md) | 8 | 2 | 3 | 3 |
-| [M8 — Bronchoscopy & double-lumen tube](M8.md) | 15 | 8 | 1 | 6 |
+| [M1 + M2 — Anaesthesia workstation, ventilation & capnography](M1-M2.md) | 20 | 15 | 1 | 4 |
+| [M3 — Volatile agents, low flow & climate](M3.md) | 16 | 10 | 1 | 5 |
+| [M4 — Propofol / remifentanil TCI, EEG & BIS](M4.md) | 14 | 6 | 4 | 4 |
+| [M5 — Neuromuscular monitoring & reversal](M5.md) | 7 | 5 | 0 | 2 |
+| [M6 — Ultrasound-guided block, LAST & cardiac loops](M6.md) | 10 | 6 | 0 | 4 |
+| [M7 — Thoracic & lumbar epidural](M7.md) | 8 | 5 | 0 | 3 |
+| [M8 — Bronchoscopy & double-lumen tube](M8.md) | 16 | 9 | 0 | 7 |
+| [M9 — Crisis management](M9.md) | 22 | 20 | 0 | 2 |
+| [M10 — Pre-operative assessment](M10.md) | 10 | 9 | 0 | 1 |
+| [M11 — Official curriculum & library](M11.md) | 68 | 68 | 0 | 0 |
 
 ## How corrections flow back
 

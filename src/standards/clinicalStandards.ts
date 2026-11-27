@@ -80,7 +80,8 @@ export const REGIONAL_GAS_STANDARDS: Record<GasStandardId, RegionalGasStandard> 
  *   Annex II section 2) and N2O 273 (Annex VI). The regulation states these are AR6-based. Checked on
  *   EUR-Lex 2026-11-26; the IPCC table itself (AR6 WG1 Table 7.SM.7) refused automated access.
  * - SULBAEK_ANDERSEN_2012: Sulbaek Andersen et al., J Phys Chem A 2012 (isoflurane 510,
- *   desflurane 2540, sevoflurane 130), as listed by NASA ESPO. VERIFY against the paper itself.
+ *   desflurane 2540, sevoflurane 130): checked 2026-11-27 in the authors' abstract (PMID 22146013);
+ *   the full paper (ACS) is paywalled.
  *   That paper does not cover N2O, so the AR4 N2O value (298) is used alongside it.
  * Halothane has no GWP here (null) rather than an invented number; enflurane has only the AR6 value.
  */
@@ -88,7 +89,7 @@ export type GwpStandardId = 'IPCC_AR6' | 'SULBAEK_ANDERSEN_2012';
 
 export const GWP_STANDARDS: Record<GwpStandardId, { label: string; unverified: boolean }> = {
   IPCC_AR6: { label: 'IPCC AR6 (as listed in EU Reg. 2024/573)', unverified: false },
-  SULBAEK_ANDERSEN_2012: { label: 'Sulbaek Andersen 2012 + AR4 N2O', unverified: true },
+  SULBAEK_ANDERSEN_2012: { label: 'Sulbaek Andersen 2012 + AR4 N2O', unverified: false },
 };
 
 export const N2O_CLIMATE: { gwp100: Record<GwpStandardId, number> } = {
@@ -100,54 +101,55 @@ export interface VolatileAgentSpec {
   name: string;
   /** ISO 5360 agent-specific vaporizer / filler colour */
   iso5360ColorHex: string;
-  /** MAC in O2, adult ~40 years, vol % (textbook values) */
+  /** MAC in O2, adult ~40–45 years, vol % — US labels (checked 2026-11-27, claim m3-mac) */
   macPct: number;
+  /** Blood:gas at 37 °C — US labels (claim m3-blood-gas) */
   bloodGasPartition: number;
-  /** Tissue:blood partition coefficients (textbook tables). VERIFY against the primary table. */
+  /** Brain:blood — Yasuda 1989 (enflurane: VERIFY). Muscle and fat: textbook values, VERIFY (claim m3-tissue-partitions). */
   brainBloodPartition: number;
   muscleBloodPartition: number;
   fatBloodPartition: number;
   /** Saturated vapour pressure at 20 °C, mmHg */
   svpMmHgAt20C: number;
-  /** mL of vapour produced by 1 mL of liquid at 20 °C. VERIFY. */
+  /** mL of vapour per mL of liquid at 20 °C — Simulator model: density / MW × 24.06 L/mol (claim m3-liquid-data). */
   vaporMlPerLiquidMl: number;
-  /** Liquid density, g/mL at 20 °C. VERIFY. */
+  /** Liquid density, g/mL — US labels (isoflurane and enflurane at 25 °C). */
   liquidDensityGPerMl: number;
   /** null = no value in that source */
   gwp100: Record<GwpStandardId, number | null>;
 }
 
-// Tissue partitions, densities and vapour yields: textbook values entered from memory, not yet
-// checked against a primary table — treat as unverified (see CLAUDE.md).
+// Checked 2026-11-27: MAC, blood:gas, SVP and density against US labels; brain:blood against Yasuda 1989
+// (sevo, des, iso, halothane). Still unverified: muscle and fat partitions, all enflurane tissue values.
 export const VOLATILE_AGENT_DATA_UNVERIFIED = true;
 
 export const VOLATILE_AGENTS: Record<VolatileAgentId, VolatileAgentSpec> = {
   sevoflurane: {
-    id: 'sevoflurane', name: 'Sevoflurane', iso5360ColorHex: '#facc15', macPct: 2.0, bloodGasPartition: 0.65,
+    id: 'sevoflurane', name: 'Sevoflurane', iso5360ColorHex: '#facc15', macPct: 2.1, bloodGasPartition: 0.65,
     brainBloodPartition: 1.7, muscleBloodPartition: 3.1, fatBloodPartition: 48,
-    svpMmHgAt20C: 157, vaporMlPerLiquidMl: 182, liquidDensityGPerMl: 1.52,
+    svpMmHgAt20C: 157, vaporMlPerLiquidMl: 183, liquidDensityGPerMl: 1.52,
     gwp100: { IPCC_AR6: 195, SULBAEK_ANDERSEN_2012: 130 },
   },
   desflurane: {
-    id: 'desflurane', name: 'Desflurane', iso5360ColorHex: '#2563eb', macPct: 6.0, bloodGasPartition: 0.45,
-    brainBloodPartition: 1.3, muscleBloodPartition: 2.0, fatBloodPartition: 27,
-    svpMmHgAt20C: 669, vaporMlPerLiquidMl: 207, liquidDensityGPerMl: 1.465,
+    id: 'desflurane', name: 'Desflurane', iso5360ColorHex: '#2563eb', macPct: 6.0, bloodGasPartition: 0.424,
+    brainBloodPartition: 1.29, muscleBloodPartition: 2.0, fatBloodPartition: 27,
+    svpMmHgAt20C: 669, vaporMlPerLiquidMl: 210, liquidDensityGPerMl: 1.465,
     gwp100: { IPCC_AR6: 2590, SULBAEK_ANDERSEN_2012: 2540 },
   },
   isoflurane: {
-    id: 'isoflurane', name: 'Isoflurane', iso5360ColorHex: '#9333ea', macPct: 1.15, bloodGasPartition: 1.4,
-    brainBloodPartition: 2.6, muscleBloodPartition: 4.0, fatBloodPartition: 45,
+    id: 'isoflurane', name: 'Isoflurane', iso5360ColorHex: '#9333ea', macPct: 1.15, bloodGasPartition: 1.43,
+    brainBloodPartition: 1.57, muscleBloodPartition: 4.0, fatBloodPartition: 45,
     svpMmHgAt20C: 238, vaporMlPerLiquidMl: 195, liquidDensityGPerMl: 1.5,
     gwp100: { IPCC_AR6: 539, SULBAEK_ANDERSEN_2012: 510 },
   },
   halothane: {
-    id: 'halothane', name: 'Halothane', iso5360ColorHex: '#dc2626', macPct: 0.75, bloodGasPartition: 2.4,
-    brainBloodPartition: 2.9, muscleBloodPartition: 3.5, fatBloodPartition: 60,
-    svpMmHgAt20C: 243, vaporMlPerLiquidMl: 227, liquidDensityGPerMl: 1.86,
+    id: 'halothane', name: 'Halothane', iso5360ColorHex: '#dc2626', macPct: 0.76, bloodGasPartition: 2.5,
+    brainBloodPartition: 1.94, muscleBloodPartition: 3.5, fatBloodPartition: 60,
+    svpMmHgAt20C: 243, vaporMlPerLiquidMl: 228, liquidDensityGPerMl: 1.875,
     gwp100: { IPCC_AR6: null, SULBAEK_ANDERSEN_2012: null },
   },
   enflurane: {
-    id: 'enflurane', name: 'Enflurane', iso5360ColorHex: '#f97316', macPct: 1.7, bloodGasPartition: 1.9,
+    id: 'enflurane', name: 'Enflurane', iso5360ColorHex: '#f97316', macPct: 1.68, bloodGasPartition: 1.91,
     brainBloodPartition: 1.4, muscleBloodPartition: 1.7, fatBloodPartition: 36,
     svpMmHgAt20C: 175, vaporMlPerLiquidMl: 198, liquidDensityGPerMl: 1.52,
     gwp100: { IPCC_AR6: 654, SULBAEK_ANDERSEN_2012: null },
@@ -156,10 +158,10 @@ export const VOLATILE_AGENTS: Record<VolatileAgentId, VolatileAgentSpec> = {
 
 export const CLINICAL_GLOSSARY: Record<string, Record<LocaleCode, string>> = {
   appTitle: {
-    'fr-FR': 'Open Anesthésie 4D — Laboratoire de Réalité Transparente',
-    'fr-CA': 'Open Anesthésie 4D — Laboratoire de réalité transparente',
-    'en-INT': 'Open Anesthesia 4D — Transparent Reality Lab',
-    'ar-MA': 'التخدير المفتوح 4D — مختبر الواقع الشفاف',
+    'fr-FR': 'Open Anesthésie 4D — simulateur d’enseignement',
+    'fr-CA': 'Open Anesthésie 4D — simulateur d’enseignement',
+    'en-INT': 'Open Anesthesia 4D — teaching simulator',
+    'ar-MA': 'التخدير المفتوح 4D — محاكي تعليمي',
   },
   eduDisclaimer: {
     'fr-FR': 'Outil pédagogique uniquement — pas un dispositif médical. Ne pas utiliser pour la prise en charge de patients.',

@@ -125,7 +125,7 @@ const esc = (t: string) =>
 export function openPrintableDebriefCard(moduleId: string, locale: LocaleCode): void {
   const tag = moduleId === 'M1_M2' ? ['M1', 'M2'] : [moduleId];
   const refs = EVIDENCE_REGISTRY.filter((e) => e.moduleIds.some((m) => tag.includes(m)));
-  const isFr = locale.startsWith('fr');
+  const isFr = locale !== 'en-INT';
 
   const html = `<!doctype html><html lang="${isFr ? 'fr' : 'en'}"><head><meta charset="utf-8"/>
   <title>Debriefing Card — Open Anesthesia 4D (${moduleId})</title>

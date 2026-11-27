@@ -43,7 +43,39 @@ const LIQUID_COST_PER_ML: Partial<Record<VolatileAgentId, { EUR: number; MAD: nu
   halothane: { EUR: 0.09, MAD: 1.0, CAD: 0.14, FCFA: 60 },
 };
 
+// Display-only French names / labels (the standards data keeps its English names).
+const AGENT_NAME_FR: Partial<Record<VolatileAgentId, string>> = { sevoflurane: 'Sévoflurane' };
+const GWP_LABEL_FR: Partial<Record<GwpStandardId, string>> = {
+  IPCC_AR6: 'GIEC AR6 (selon le règl. UE 2024/573)',
+  SULBAEK_ANDERSEN_2012: 'Sulbaek Andersen 2012 + N₂O AR4',
+};
+const WARNING_FR: Record<string, string> = {
+  VAPORIZER_MISFILL_HEATED_DESFLURANE_VAPORIZER_NOT_MODELLED:
+    'Erreur de remplissage : évaporateur chauffé à desflurane non modélisé',
+  HYPOXIC_LOW_FLOW_FIO2: 'FiO₂ hypoxique en bas débit',
+  CONCENTRATOR_ARGON_BUILDUP_FGF_UNDER_1L: 'Concentrateur d’O₂ : accumulation d’argon (DGF < 1 L/min)',
+  EU_2024_573_DESFLURANE_RESTRICTED_FROM_JAN_2026: 'Règl. UE 2024/573 : desflurane restreint à partir de janv. 2026',
+  SLOW_WASHOUT_TISSUE_RESERVOIR: 'Élimination lente : relargage par les réserves tissulaires',
+};
+
+/** Kernel warnings are English codes; in French, show a translation (the code stays in the tooltip). */
+function warningText(w: string, fr: boolean): string {
+  if (!fr) return w;
+  if (WARNING_FR[w]) return WARNING_FR[w];
+  const m = /^VAPORIZER_MISFILL: (.+) in (.+) vaporizer delivers ~([\d.]+)% = ([\d.]+) MAC \(dial implies ([\d.]+) MAC\)$/.exec(w);
+  if (m) {
+    return `Erreur de remplissage de l’évaporateur : ${m[1]} dans un évaporateur à ${m[2]} → ~${m[3]} % = ${m[4]} CAM (graduation : ${m[5]} CAM)`;
+  }
+  return w;
+}
+
 export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
+  const fr = locale !== 'en-INT';
+  const L = (f: string, e: string) => (fr ? f : e);
+  const frRef = useRef(fr);
+  frRef.current = fr;
+  const agentName = (a: VolatileAgentId) => (fr ? AGENT_NAME_FR[a] ?? VOLATILE_AGENTS[a].name : VOLATILE_AGENTS[a].name);
+
   const [params, setParams] = useState<VolatileParams>(DEFAULT_VOLATILE);
   const [currency, setCurrency] = useState<'MAD' | 'EUR' | 'CAD' | 'FCFA'>('MAD');
   const [timeScale, setTimeScale] = useState<number>(12); // 12x speed => 1 min simulated every 5 s
@@ -230,7 +262,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             muscle: st.compartments.muscle,
           });
           if (hist.length > 200) hist.shift();
-          drawKineticsChart(chartRef.current, hist, spec.macPct, spec.iso5360ColorHex);
+          drawKineticsChart(chartRef.current, hist, spec.macPct, spec.iso5360ColorHex, frRef.current);
         }
 
         controls?.update();
@@ -265,9 +297,10 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
         <div className="bg-[#080d16] border border-slate-800 rounded-xl overflow-hidden">
           <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
             <span className="font-bold text-cyan-300">
-              {locale.startsWith('fr')
-                ? 'Captation et distribution multi-compartiments (modèle du simulateur, échelle W^0,75)'
-                : 'Multi-compartment uptake & distribution (simulator model, W^0.75 scaling)'}
+              {L(
+                'Captation et distribution multi-compartiments (modèle du simulateur, échelle W^0,75)',
+                'Multi-compartment uptake & distribution (simulator model, W^0.75 scaling)'
+              )}
             </span>
             <div className="flex items-center gap-2 font-mono text-[11px]">
               <FastForward className="w-3.5 h-3.5 text-amber-400" />
@@ -275,6 +308,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
                 <button
                   key={s}
                   onClick={() => setTimeScale(s)}
+                  title={L(`Vitesse de simulation ×${s}`, `Simulation speed ×${s}`)}
                   className={`px-2 py-0.5 rounded border cursor-pointer ${
                     timeScale === s ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
                   }`}
@@ -286,7 +320,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
                 onClick={() => resetSim()}
                 className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1 cursor-pointer"
               >
-                <RotateCcw className="w-3 h-3" /> Reset
+                <RotateCcw className="w-3 h-3" /> {L('Réinitialiser', 'Reset')}
               </button>
             </div>
           </div>
@@ -298,8 +332,8 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             <div className="px-3 py-1.5 bg-rose-950/80 border-t border-rose-500/40 flex flex-wrap gap-1.5 items-center text-[11px] text-rose-100">
               <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
               {state.warnings.map((w) => (
-                <span key={w} className="font-mono px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-400/30">
-                  {w}
+                <span key={w} title={w} className="font-mono px-1.5 py-0.5 rounded bg-rose-500/20 border border-rose-400/30">
+                  {warningText(w, fr)}
                 </span>
               ))}
             </div>
@@ -316,16 +350,16 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
               </div>
             </div>
             <div className="bg-slate-900 rounded-lg p-2 border border-slate-800">
-              <div className="text-[10px] text-slate-400">Brain MAC / Muscle</div>
+              <div className="text-[10px] text-slate-400">{L('CAM cérébrale / muscle', 'Brain MAC / Muscle')}</div>
               <div className="font-bold text-cyan-300">
-                {state ? `${state.macBrain.toFixed(2)} MAC` : '--'}
+                {state ? `${state.macBrain.toFixed(2)} ${L('CAM', 'MAC')}` : '--'}
                 <span className="text-[10px] text-rose-300 ml-1">
                   (M:{state ? state.compartments.muscle.toFixed(2) : 0}%)
                 </span>
               </div>
             </div>
             <div className="bg-slate-900 rounded-lg p-2 border border-slate-800">
-              <div className="text-[10px] text-slate-400">FiO2 / Argon</div>
+              <div className="text-[10px] text-slate-400">{L('FiO₂ / argon', 'FiO2 / Argon')}</div>
               <div className="font-bold text-sky-300">
                 {state ? `${Math.round(state.circuitFiO2Pct)}%` : '--'}
                 <span className="text-purple-300 text-[10px] ml-1">Ar:{state ? state.argonPct.toFixed(1) : 0}%</span>
@@ -333,21 +367,28 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             </div>
             <div className="bg-slate-900 rounded-lg p-2 border border-emerald-500/30">
               <div className="text-[10px] text-emerald-400 flex items-center gap-1">
-                <Leaf className="w-3 h-3" /> Climate CO2e
+                <Leaf className="w-3 h-3" /> {L('Empreinte CO₂e', 'Climate CO2e')}
               </div>
               <div className="font-bold text-emerald-300">
                 {state ? `${state.co2eKgCumulative.toFixed(2)} kg` : '--'}
                 <span className="text-[10px] text-slate-400 ml-1">({state ? state.co2eKgPerHour.toFixed(1) : 0}/h)</span>
               </div>
               {state && !state.agentGwpAvailable && (
-                <div className="text-[9px] text-amber-300">No {VOLATILE_AGENTS[params.agent].name} GWP in this source — N2O only</div>
+                <div className="text-[9px] text-amber-300">
+                  {L(
+                    `Pas de PRG pour le ${agentName(params.agent).toLowerCase()} dans cette source — N₂O seul`,
+                    `No ${VOLATILE_AGENTS[params.agent].name} GWP in this source — N2O only`
+                  )}
+                </div>
               )}
-              <div className="text-[9px] text-slate-500">GWP values unverified</div>
+              {GWP_STANDARDS[params.gwpStandard].unverified && (
+                <div className="text-[9px] text-slate-500">{L('Valeurs de PRG non vérifiées', 'GWP values unverified')}</div>
+              )}
             </div>
             <div className="bg-slate-900 rounded-lg p-2 border border-slate-800">
-              <div className="text-[10px] text-slate-400">Illustrative cost ({currency})</div>
+              <div className="text-[10px] text-slate-400">{L('Coût illustratif', 'Illustrative cost')} ({currency})</div>
               <div className="font-bold text-amber-300">
-                {estCost === null ? 'n/a' : `${estCost.toFixed(1)} ${currency}`}
+                {estCost === null ? L('n.d.', 'n/a') : `${estCost.toFixed(1)} ${currency}`}
                 <span className="text-[10px] text-slate-400 ml-1">({state ? state.liquidMlConsumed.toFixed(1) : 0} mL)</span>
               </div>
             </div>
@@ -360,12 +401,12 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-            1. Volatile Agent, Climate & Cost Controls
+            {L('1. Halogéné, climat et coût', '1. Volatile Agent, Climate & Cost Controls')}
           </h2>
 
           <div className="grid grid-cols-2 gap-2">
             <label>
-              <span className="text-[10px] text-slate-400">Agent (ISO 5360)</span>
+              <span className="text-[10px] text-slate-400">{L('Halogéné (ISO 5360)', 'Agent (ISO 5360)')}</span>
               <select
                 value={params.agent}
                 onChange={(e) => {
@@ -380,26 +421,26 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
                 className="w-full mt-0.5 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5"
               >
                 {(Object.keys(VOLATILE_AGENTS) as VolatileAgentId[]).map((a) => (
-                  <option key={a} value={a}>{VOLATILE_AGENTS[a].name}</option>
+                  <option key={a} value={a}>{agentName(a)}</option>
                 ))}
               </select>
             </label>
             <label>
-              <span className="text-[10px] text-slate-400">GWP100 Standard</span>
+              <span className="text-[10px] text-slate-400">{L('Référentiel PRG100', 'GWP100 Standard')}</span>
               <select
                 value={params.gwpStandard}
                 onChange={(e) => setParams((p) => ({ ...p, gwpStandard: e.target.value as GwpStandardId }))}
                 className="w-full mt-0.5 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5"
               >
                 {(Object.keys(GWP_STANDARDS) as GwpStandardId[]).map((g) => (
-                  <option key={g} value={g}>{GWP_STANDARDS[g].label}</option>
+                  <option key={g} value={g}>{fr ? GWP_LABEL_FR[g] ?? GWP_STANDARDS[g].label : GWP_STANDARDS[g].label}</option>
                 ))}
               </select>
             </label>
           </div>
 
           <div className="flex items-center justify-between bg-slate-900 rounded-lg px-2.5 py-1.5 border border-slate-800">
-            <span className="text-[11px] text-slate-300">Currency Display</span>
+            <span className="text-[11px] text-slate-300">{L('Devise affichée', 'Currency Display')}</span>
             <div className="flex gap-1">
               {(['MAD', 'EUR', 'CAD', 'FCFA'] as const).map((c) => (
                 <button
@@ -418,7 +459,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
           <div className="space-y-2">
             <label className="block">
               <div className="flex justify-between text-[11px]">
-                <span>Fresh Gas Flow (FGF)</span>
+                <span>{L('Débit de gaz frais (DGF)', 'Fresh Gas Flow (FGF)')}</span>
                 <span className="font-mono text-cyan-300">{params.fgfLpm.toFixed(2)} L/min</span>
               </div>
               <input type="range" min={0.25} max={8} step={0.05} value={params.fgfLpm}
@@ -426,7 +467,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             </label>
             <label className="block">
               <div className="flex justify-between text-[11px]">
-                <span>Vaporizer Dial (FD)</span>
+                <span>{L('Graduation de l’évaporateur (FD)', 'Vaporizer Dial (FD)')}</span>
                 <span className="font-mono text-yellow-300">{params.vaporizerDialPct.toFixed(1)}%</span>
               </div>
               <input type="range" min={0} max={params.agent === 'desflurane' ? 18 : 8} step={0.2} value={params.vaporizerDialPct}
@@ -434,7 +475,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             </label>
             <label className="block">
               <div className="flex justify-between text-[11px]">
-                <span>N2O Co-Gas (Second Gas Effect)</span>
+                <span>{L('N₂O associé (effet second gaz)', 'N2O Co-Gas (Second Gas Effect)')}</span>
                 <span className="font-mono text-blue-300">{params.n2oPct}%</span>
               </div>
               <input type="range" min={0} max={70} step={5} value={params.n2oPct}
@@ -442,7 +483,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             </label>
             <label className="block">
               <div className="flex justify-between text-[11px]">
-                <span>Right-to-Left Cardiac Shunt</span>
+                <span>{L('Shunt droit-gauche', 'Right-to-Left Cardiac Shunt')}</span>
                 <span className="font-mono text-rose-300">{Math.round(params.rightToLeftShuntFrac * 100)}%</span>
               </div>
               <input type="range" min={0} max={0.45} step={0.05} value={params.rightToLeftShuntFrac}
@@ -450,15 +491,17 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             </label>
             <label className="block">
               <div className="flex justify-between text-[11px]">
-                <span>Cardiac Output / Ventilation</span>
+                <span>{L('Débit cardiaque / ventilation', 'Cardiac Output / Ventilation')}</span>
                 <span className="font-mono text-slate-300">
-                  CO {params.cardiacOutputScale.toFixed(1)}x • VA {params.ventilationScale.toFixed(1)}x
+                  {L('DC', 'CO')} {params.cardiacOutputScale.toFixed(1)}x • VA {params.ventilationScale.toFixed(1)}x
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <input type="range" min={0.5} max={1.8} step={0.1} value={params.cardiacOutputScale}
+                  aria-label={L('Débit cardiaque', 'Cardiac output')}
                   onChange={(e) => setParams((p) => ({ ...p, cardiacOutputScale: parseFloat(e.target.value) }))} />
                 <input type="range" min={0.3} max={1.8} step={0.1} value={params.ventilationScale}
+                  aria-label={L('Ventilation alvéolaire', 'Alveolar ventilation')}
                   onChange={(e) => setParams((p) => ({ ...p, ventilationScale: parseFloat(e.target.value) }))} />
               </div>
             </label>
@@ -468,43 +511,84 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
         {/* High-Yield Clinical & Africa Transition Scenarios */}
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
-            2. Teaching Presets
+            {L('2. Scénarios pédagogiques', '2. Teaching Presets')}
           </h2>
           <div className="grid grid-cols-1 gap-1.5">
             <button
               onClick={() => resetSim({ ...DEFAULT_VOLATILE, agent: 'sevoflurane', fgfLpm: 0.6, vaporizerDialPct: 2.6 })}
               className="text-left px-2.5 py-2 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-400 cursor-pointer"
             >
-              <div className="font-semibold text-emerald-200">Eco Low-Flow Sevoflurane (0.6 L/min, No N2O)</div>
-              <div className="text-[10px] text-slate-400">Watch CO2e and liquid use fall compared with high flow</div>
+              <div className="font-semibold text-emerald-200">
+                {L('Sévoflurane en bas débit écoresponsable (0,6 L/min, sans N₂O)', 'Eco Low-Flow Sevoflurane (0.6 L/min, No N2O)')}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {L(
+                  'Observez la baisse du CO₂e et de la consommation de liquide par rapport au haut débit',
+                  'Watch CO2e and liquid use fall compared with high flow'
+                )}
+              </div>
             </button>
             <button
               onClick={() => resetSim({ ...DEFAULT_VOLATILE, agent: 'desflurane', fgfLpm: 2.0, vaporizerDialPct: 6.5 })}
               className="text-left px-2.5 py-2 rounded-lg bg-rose-950/40 border border-rose-500/30 hover:border-rose-400 cursor-pointer"
             >
-              <div className="font-semibold text-rose-200">Desflurane Climate Impact (EU-restricted from Jan 2026)</div>
-              <div className="text-[10px] text-slate-400">EU 2024/573: only when strictly required on medical grounds. AR6 GWP100 ≈ 2,590 → ≈ 910 kg CO2e per 240 mL bottle (unverified)</div>
+              <div className="font-semibold text-rose-200">
+                {L(
+                  'Impact climatique du desflurane (restreint dans l’UE à partir de janv. 2026)',
+                  'Desflurane Climate Impact (EU-restricted from Jan 2026)'
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {L(
+                  'Règl. UE 2024/573 : uniquement si strictement nécessaire pour raisons médicales. PRG100 AR6 ≈ 2 590 → ≈ 910 kg CO₂e par flacon de 240 mL (non vérifié)',
+                  'EU 2024/573: only when strictly required on medical grounds. AR6 GWP100 ≈ 2,590 → ≈ 910 kg CO2e per 240 mL bottle (unverified)'
+                )}
+              </div>
             </button>
             <button
               onClick={() => resetSim({ ...DEFAULT_VOLATILE, agent: 'sevoflurane', weightKg: 15, fgfLpm: 4.5, vaporizerDialPct: 6.0, o2ConcentratorMode: true })}
               className="text-left px-2.5 py-2 rounded-lg bg-amber-950/40 border border-amber-500/30 hover:border-amber-400 cursor-pointer"
             >
-              <div className="font-semibold text-amber-200">Paediatric Sevoflurane Induction on an O2 Concentrator</div>
-              <div className="text-[10px] text-slate-400">15 kg child, 4.5 L/min wash-in; then lower FGF and watch argon build up</div>
+              <div className="font-semibold text-amber-200">
+                {L('Induction pédiatrique au sévoflurane sur concentrateur d’O₂', 'Paediatric Sevoflurane Induction on an O2 Concentrator')}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {L(
+                  'Enfant de 15 kg, wash-in à 4,5 L/min ; puis baissez le DGF et observez l’accumulation d’argon',
+                  '15 kg child, 4.5 L/min wash-in; then lower FGF and watch argon build up'
+                )}
+              </div>
             </button>
             <button
               onClick={() => resetSim({ ...DEFAULT_VOLATILE, agent: 'halothane', misfillVaporizerAs: 'isoflurane', fgfLpm: 2.0, vaporizerDialPct: 2.0 })}
               className="text-left px-2.5 py-2 rounded-lg bg-purple-950/40 border border-purple-500/30 hover:border-purple-400 cursor-pointer"
             >
-              <div className="font-semibold text-purple-200">Vaporizer Misfill Hazard (Halothane in Isoflurane)</div>
-              <div className="text-[10px] text-slate-400">Similar SVP (243 vs 238 mmHg) gives a similar % but halothane is more potent (MAC 0.75 vs 1.15)</div>
+              <div className="font-semibold text-purple-200">
+                {L(
+                  'Erreur de remplissage de l’évaporateur (halothane dans un évaporateur à isoflurane)',
+                  'Vaporizer Misfill Hazard (Halothane in Isoflurane)'
+                )}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {L(
+                  'PVS voisines (243 vs 238 mmHg) : % délivré voisin, mais l’halothane est plus puissant (CAM 0,76 vs 1,15)',
+                  'Similar SVP (243 vs 238 mmHg) gives a similar % but halothane is more potent (MAC 0.76 vs 1.15)'
+                )}
+              </div>
             </button>
             <button
               onClick={() => setParams((p) => ({ ...p, vaporizerDialPct: 0, fgfLpm: 1.5, ventilationScale: 0.35 }))}
               className="text-left px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 hover:border-cyan-400 cursor-pointer"
             >
-              <div className="font-semibold text-cyan-200">Emergence With Hypoventilation (Slow Washout)</div>
-              <div className="text-[10px] text-slate-400">Vaporizer off, VA 0.35x after 15+ min: tissue stores return agent and slow brain washout</div>
+              <div className="font-semibold text-cyan-200">
+                {L('Réveil avec hypoventilation (élimination lente)', 'Emergence With Hypoventilation (Slow Washout)')}
+              </div>
+              <div className="text-[10px] text-slate-400">
+                {L(
+                  'Évaporateur fermé, VA 0,35x après 15 min ou plus : les réserves tissulaires relarguent l’agent et ralentissent l’élimination cérébrale',
+                  'Vaporizer off, VA 0.35x after 15+ min: tissue stores return agent and slow brain washout'
+                )}
+              </div>
             </button>
           </div>
         </div>
@@ -517,7 +601,8 @@ function drawKineticsChart(
   canvas: HTMLCanvasElement | null,
   hist: { t: number; fd: number; fi: number; fa: number; brain: number; muscle: number }[],
   macPct: number,
-  agentHex: string
+  agentHex: string,
+  fr: boolean
 ) {
   if (!canvas || hist.length < 2) return;
   const ctx = canvas.getContext('2d');
@@ -574,11 +659,11 @@ function drawKineticsChart(
   ctx.fillStyle = '#38bdf8';
   ctx.fillText('FA', 56, 13);
   ctx.fillStyle = '#34d399';
-  ctx.fillText('Brain (VRG)', 80, 13);
+  ctx.fillText(fr ? 'Cerveau (GRV)' : 'Brain (VRG)', 80, 13);
   ctx.fillStyle = '#fb7185';
-  ctx.fillText('Muscle', 162, 13);
+  ctx.fillText('Muscle', fr ? 172 : 162, 13);
   ctx.fillStyle = '#64748b';
-  ctx.fillText('1 MAC', w - 42, yOf(macPct) - 4);
+  ctx.fillText(fr ? '1 CAM' : '1 MAC', w - 42, yOf(macPct) - 4);
   ctx.restore();
 }
 

@@ -100,18 +100,18 @@ export interface SimulationSnapshot {
 }
 
 // ---- Model constants -------------------------------------------------------
-const ANATOMIC_DEAD_SPACE_ML = 150;
+const ANATOMIC_DEAD_SPACE_ML = 150; // StatPearls, PMID 29494107 (claim m1-dead-space)
 const SYSTEM_GAS_VOLUME_L = 7; // circle + absorber + FRC mixing volume
 const CO2_STORE_L = 20; // lumped body CO2 store: apnoea rise ≈ 8–9 mmHg/min
 const CONCENTRATOR_O2_FRACTION = 0.95;
 const CONCENTRATOR_ARGON_FRACTION = 0.045; // ~4.5–5% argon in zeolite concentrator O2
 const AIR_ARGON_FRACTION = 0.0093;
-const O2_FLUSH_LPM = 45;
+const O2_FLUSH_LPM = 45; // SFAR ≥ 30 L/min; Dräger Atlan 25–75 L/min (claim m1-flush-flow)
 const CONCENTRATOR_MAX_FLUSH_LPM = 10;
 const VCV_PRESSURE_LIMIT = 40;
 const SPONT_PMUS_PEAK = 7;
-const LOW_FIO2_ALARM_PCT = 25;
-const HIGH_FICO2_ALARM_MMHG = 3;
+const LOW_FIO2_ALARM_PCT = 25; // Simulator model: teaching setting (real machines: user-set, from 18%)
+const HIGH_FICO2_ALARM_MMHG = 3; // Simulator model: teaching setting (Dräger Julian fixed limit 5 mmHg)
 const SUBSTEPS = 4;
 
 const clamp = (x: number, lo: number, hi: number) => (x < lo ? lo : x > hi ? hi : x);

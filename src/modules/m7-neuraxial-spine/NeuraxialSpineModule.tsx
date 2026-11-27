@@ -9,7 +9,7 @@ import type { FluoroProjection } from './fluoroView';
 const MAX_DEPTH_MM = 90;
 
 export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
-  const fr = locale.startsWith('fr');
+  const fr = locale !== 'en-INT';
   const L = (f: string, e: string) => (fr ? f : e);
 
   const [region, setRegion] = useState<SpineRegion>('lumbar');
