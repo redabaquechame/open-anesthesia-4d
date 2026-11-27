@@ -14,7 +14,7 @@ Generated 2026-11-27. One checklist per module; each takes about an hour.
 
 | Checklist | Claims | Sourced | To verify | Illustrative |
 |---|---|---|---|---|
-| [M1 + M2 — Anaesthesia workstation, ventilation & capnography](M1-M2.md) | 20 | 15 | 1 | 4 |
+| [M1 + M2 — Anaesthesia workstation, ventilation & capnography](M1-M2.md) | 22 | 15 | 1 | 6 |
 | [M3 — Volatile agents, low flow & climate](M3.md) | 16 | 10 | 1 | 5 |
 | [M4 — Propofol / remifentanil TCI, EEG & BIS](M4.md) | 14 | 6 | 4 | 4 |
 | [M5 — Neuromuscular monitoring & reversal](M5.md) | 7 | 5 | 0 | 2 |

@@ -66,6 +66,12 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
   'm1-mapleson': {
     claim: 'Efficacité des systèmes de Mapleson : en ventilation spontanée A > D/E/F > C > B ; en ventilation contrôlée D/E/F > B > C > A.',
   },
+  'm1-flow-tints': {
+    claim: 'Rubans de gaz 3D dans le circuit : bleu pour l’oxygène, rouge pour le CO₂, teinte de l’agent après l’évaporateur, CO₂ retiré après l’absorbeur sauf si la chaux est épuisée. La vitesse des pulsations suit le débit ; une valve bloquée montre un reflux.',
+  },
+  'm1-soda-lime-indicator': {
+    claim: 'L’indicateur de la chaux vire au violet à mesure qu’elle s’épuise, à partir de l’entrée des gaz. Changer l’absorbant selon le CO₂ inspiré, pas sur la seule couleur.',
+  },
 
   // ── M2 ─────────────────────────────────────────────────────────────
   'm2-capno-shapes': {

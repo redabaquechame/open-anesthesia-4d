@@ -3,6 +3,8 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { createStage, type Stage } from '../../engine/createStage';
 import { loadAnatomy } from '../../engine/loadAnatomy';
 import { createLabel, type AnatomyLabel } from '../../engine/labels';
+import { applyFresnelRim, type FresnelRimHandle } from '../../engine/fresnelXray';
+import { GasFlowTubeController, SodaLimeCanisterController, type GasMix } from './circuitFlowShaders';
 import {
   REGIONAL_GAS_STANDARDS,
   VOLATILE_AGENTS,
@@ -223,9 +225,11 @@ export class WorkstationScene {
   private vapDial!: THREE.Group;
   private bobbins: { mesh: THREE.Mesh; gas: GasKey; y0: number; h: number }[] = [];
   private needles: { pivot: THREE.Object3D; gas: GasKey; a: number }[] = [];
-  private granules: THREE.InstancedMesh | null = null;
-  private granuleDepth: Float32Array = new Float32Array(0);
-  private lastExhaustion = -1;
+  // HIGH/MID: shader absorbent and gas-flow ribbons (Sprint 2A). LOW: flat colour and particles.
+  private useFlowShaders = false;
+  private sodaLime: SodaLimeCanisterController | null = null;
+  private flowTubes: { seg: 'fgf' | 'insp' | 'exp' | 'return'; ctrl: GasFlowTubeController }[] = [];
+  private shellRims: FresnelRimHandle[] = [];
 
   // Lungs and airway
   private leftLungFast!: THREE.Mesh;
@@ -304,11 +308,13 @@ export class WorkstationScene {
     }
     stage.scene.fog = new THREE.Fog('#070b14', 16, 34);
 
+    this.useFlowShaders = stage.tier !== 'LOW';
     this.setupLighting(stage);
     this.buildWorkstationAndCircuit(stage);
     this.buildLungs(stage);
     this.buildScreen();
-    this.buildInstancedParticles(stage.budget.maxGasParticles);
+    if (this.useFlowShaders) this.buildFlowRibbons();
+    else this.buildInstancedParticles(stage.budget.maxGasParticles);
     this.buildLabels();
     this.setGasStandard(initialGasStandard);
     this.setVolatileAgent(initialAgent);
@@ -338,19 +344,14 @@ export class WorkstationScene {
 
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(16, 64),
-      new THREE.MeshStandardMaterial({ color: 0x0c1320, roughness: 0.9, metalness: 0 })
+      new THREE.MeshStandardMaterial({ color: 0x080d16, roughness: 0.95, metalness: 0 })
     );
     floor.rotation.x = -Math.PI / 2;
     floor.position.y = -2.62;
     floor.receiveShadow = true;
     floor.userData.noCast = true;
     this.root.add(floor);
-    const grid = new THREE.GridHelper(20, 40, 0x1b2538, 0x131b2b);
-    grid.position.y = -2.612;
-    const gm = grid.material as THREE.Material;
-    gm.transparent = true;
-    gm.opacity = 0.45;
-    this.root.add(grid);
+    // No grid: a plain dark floor that only catches the machine's shadow (studio look, Sprint 2A).
   }
 
   private buildWorkstationAndCircuit(stage: Stage): void {
@@ -373,6 +374,8 @@ export class WorkstationScene {
       depthWrite: false,
     });
     this.shellMaterials.push(shellMat);
+    // Fresnel rim: the outline stays readable while the X-ray slider clears the panels.
+    this.shellRims.push(applyFresnelRim(shellMat, { power: 3.2, rimAlpha: 0.4, strength: 0 }));
     const chassisGeo = new RoundedBoxGeometry(5.2, 4.1, 2.35, 4, 0.14);
     const chassis = new THREE.Mesh(chassisGeo, shellMat);
     chassis.position.set(-1.35, -0.25, 0);
@@ -657,30 +660,12 @@ export class WorkstationScene {
     const latch = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.38, 0.06), darkPlastic);
     latch.position.copy(ABSORBER).add(new THREE.Vector3(0.5, 0, 0));
     this.sodaLimeMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, roughness: 0.9 });
-    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.12, 32), this.sodaLimeMat);
+    // HIGH/MID: procedural granules with an indicator front moving down from the inlet at the top
+    // (claim m1-soda-lime-indicator, illustrative). LOW: one flat colour.
+    if (stage.tier !== 'LOW') this.sodaLime = new SodaLimeCanisterController(SODA_FRESH, SODA_EXHAUSTED);
+    const core = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.12, 40), this.sodaLime?.material ?? this.sodaLimeMat);
     core.position.copy(ABSORBER);
     this.root.add(can, capTop, capBot, latch, core);
-    const nGran = stage.tier === 'HIGH' ? 900 : stage.tier === 'MID' ? 450 : 0;
-    if (nGran > 0) {
-      core.scale.setScalar(0.92);
-      const gm = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.042, 0), new THREE.MeshStandardMaterial({ roughness: 0.85 }), nGran);
-      this.granuleDepth = new Float32Array(nGran);
-      for (let i = 0; i < nGran; i++) {
-        const r = 0.43 * Math.sqrt(Math.random());
-        const a = Math.random() * Math.PI * 2;
-        const y = (Math.random() - 0.5) * 1.12;
-        this.dummyObj.position.set(ABSORBER.x + Math.cos(a) * r, ABSORBER.y + y, ABSORBER.z + Math.sin(a) * r);
-        this.dummyObj.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3);
-        this.dummyObj.scale.setScalar(0.7 + Math.random() * 0.6);
-        this.dummyObj.updateMatrix();
-        gm.setMatrixAt(i, this.dummyObj.matrix);
-        // Exhaled gas enters at the top, so the indicator front moves downward.
-        this.granuleDepth[i] = (0.56 - y) / 1.12 + (Math.random() - 0.5) * 0.08;
-        gm.setColorAt(i, SODA_FRESH);
-      }
-      this.granules = gm;
-      this.root.add(gm);
-    }
 
     // ── 7. Unidirectional valves: clear domes over discs ──────────────────
     const domeGeo = new THREE.SphereGeometry(0.28, 32, 16, 0, Math.PI * 2, 0, Math.PI * 0.55);
@@ -781,14 +766,18 @@ export class WorkstationScene {
       ]),
     };
     // Corrugated patient limbs; internal manifold ducts are smooth and thinner.
-    const limbMat = new THREE.MeshPhysicalMaterial({ color: 0xd6ecff, roughness: 0.22, clearcoat: 1, transparent: true, opacity: 0.36, depthWrite: false });
+    // Thinner wall when gas ribbons are drawn inside (HIGH/MID), so the gas stays visible.
+    const limbMat = new THREE.MeshPhysicalMaterial({ color: 0xd6ecff, roughness: 0.22, clearcoat: 1, transparent: true, opacity: this.useFlowShaders ? 0.16 : 0.36, depthWrite: false });
     const ductMat = new THREE.MeshPhysicalMaterial({ color: 0xcbd5e1, roughness: 0.3, transparent: true, opacity: 0.18, depthWrite: false });
-    this.root.add(
+    const walls = [
       new THREE.Mesh(corrugatedTube(this.splines.insp, 0.11, 0.07, 0.09), limbMat),
       new THREE.Mesh(corrugatedTube(this.splines.exp, 0.11, 0.07, 0.09), limbMat),
       new THREE.Mesh(new THREE.TubeGeometry(this.splines.fgf, 80, 0.06, 10, false), ductMat),
-      new THREE.Mesh(new THREE.TubeGeometry(this.splines.return, 80, 0.08, 10, false), ductMat)
-    );
+      new THREE.Mesh(new THREE.TubeGeometry(this.splines.return, 80, 0.08, 10, false), ductMat),
+    ];
+    // Walls draw first; the gas ribbons (renderOrder 3) draw over them so the tint is not washed out by the white wall.
+    for (const w of walls) w.renderOrder = 2;
+    this.root.add(...walls);
 
     // Y-piece, angle connector and tracheal tube
     const yMat = new THREE.MeshPhysicalMaterial({ color: 0xe0f2fe, roughness: 0.15, transparent: true, opacity: 0.7, clearcoat: 1 });
@@ -919,6 +908,67 @@ export class WorkstationScene {
     this.screen = { canvas, g, tex, x: 12, prev: null, acc: 0, numAcc: 1, peak: 0, peakShown: 0, wasInsp: false };
   }
 
+  /** One gas ribbon inside each circuit path (HIGH/MID). Radii sit just inside the tube walls. */
+  private buildFlowRibbons(): void {
+    const spec: { seg: 'fgf' | 'insp' | 'exp' | 'return'; r: number; repeat: number }[] = [
+      { seg: 'fgf', r: 0.045, repeat: 14 },
+      { seg: 'insp', r: 0.085, repeat: 6 },
+      { seg: 'exp', r: 0.085, repeat: 6 },
+      { seg: 'return', r: 0.06, repeat: 12 },
+    ];
+    for (const { seg, r, repeat } of spec) {
+      const ctrl = new GasFlowTubeController(0.085, repeat);
+      const mesh = new THREE.Mesh(new THREE.TubeGeometry(this.splines[seg], 120, r, 12, false), ctrl.material);
+      mesh.renderOrder = 3;
+      mesh.userData.noCast = true;
+      this.root.add(mesh);
+      this.flowTubes.push({ seg, ctrl });
+    }
+  }
+
+  /**
+   * Feeds each ribbon from the snapshot. Directions mirror the particle view: inspiratory limb moves
+   * on inspiration, expiratory limb on expiration; a stuck valve pushes gas backwards in its limb.
+   * The share of reversed flow (0.5 × patient flow) and the return-path speed are display choices
+   * (Simulator model), not measured values.
+   */
+  private updateFlowRibbons(s: SimulationSnapshot, p: MachineAndPatientParams, dt: number): void {
+    const fgf = p.fgfO2Lpm + p.fgfAirLpm + p.fgfN2OLpm + (p.faults.o2FlushActive ? 45 : 0);
+    const patientLpm = Math.abs(s.flowLps) * 60;
+    const fio2 = s.circuitFiO2Pct / 100;
+    const agent = s.circuitAgentPct / 100;
+    const argon = s.circuitArgonPct / 100;
+    const mmHgToFrac = 1 / 760;
+    const fresh: GasMix = {
+      o2: fgf > 0 ? (p.fgfO2Lpm + 0.21 * p.fgfAirLpm + (p.faults.o2FlushActive ? 45 : 0)) / fgf : 0,
+      co2: 0,
+      agent: 0,
+      argon: 0,
+    };
+    const freshWithAgent: GasMix = { ...fresh, agent: p.faults.o2FlushActive ? 0 : Math.max(0, p.vaporizerDialPct) / 100 };
+    const inspired: GasMix = { o2: fio2, co2: s.fico2MmHg * mmHgToFrac, agent, argon };
+    const exhaled: GasMix = { o2: fio2 * 0.85, co2: s.etco2MmHg * mmHgToFrac, agent, argon };
+    // Past the absorber CO₂ is removed unless the absorbent is spent.
+    const scrubbed: GasMix = s.sodaLimeExhaustionNorm > 0.6 ? exhaled : { ...exhaled, co2: s.fico2MmHg * mmHgToFrac };
+    const leak = p.faults.circuitDisconnect ? 0.4 : 1;
+
+    for (const { seg, ctrl } of this.flowTubes) {
+      if (seg === 'fgf') {
+        ctrl.update({ flowLpm: fgf, upstream: fresh, downstream: freshWithAgent, split: 0.4 }, dt);
+      } else if (seg === 'insp') {
+        const back = !s.isInspiration && p.faults.stuckInspiratoryValve;
+        const flow = s.isInspiration ? patientLpm : back ? -0.5 * patientLpm : 0;
+        ctrl.update({ flowLpm: flow, upstream: back ? exhaled : inspired, integrity: leak }, dt);
+      } else if (seg === 'exp') {
+        const back = s.isInspiration && p.faults.stuckExpiratoryValve;
+        const flow = !s.isInspiration ? patientLpm : back ? -0.5 * patientLpm : 0;
+        ctrl.update({ flowLpm: flow, upstream: exhaled, integrity: leak }, dt);
+      } else {
+        ctrl.update({ flowLpm: 2 + Math.min(fgf, 10) * 0.6, upstream: exhaled, downstream: scrubbed, split: 0.45 }, dt);
+      }
+    }
+  }
+
   private buildInstancedParticles(count: number): void {
     const geo = new THREE.SphereGeometry(0.036, 8, 6);
     const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
@@ -1000,6 +1050,7 @@ export class WorkstationScene {
     this.activeAgent = agentId;
     const hex = VOLATILE_AGENTS[agentId].iso5360ColorHex;
     this.agentColor.set(hex);
+    for (const { ctrl } of this.flowTubes) ctrl.setAgentColor(hex);
     if (!this.vaporizerCollarMat) return;
     this.vaporizerCollarMat.color.set(hex);
     this.vaporizerLiquidMat.color.set(hex);
@@ -1021,8 +1072,10 @@ export class WorkstationScene {
       m.depthWrite = shellAlpha > 0.85;
       m.needsUpdate = true;
     });
+    // The rim grows with the X-ray level, so 0 % stays the plain opaque machine.
+    for (const r of this.shellRims) r.setStrength(this.xrayOpacity);
     if (this.shellWireframe) {
-      (this.shellWireframe.material as THREE.LineBasicMaterial).opacity = THREE.MathUtils.lerp(0.06, 0.4, this.xrayOpacity);
+      (this.shellWireframe.material as THREE.LineBasicMaterial).opacity = THREE.MathUtils.lerp(0.04, 0.16, this.xrayOpacity);
     }
   }
 
@@ -1049,7 +1102,8 @@ export class WorkstationScene {
     const p = this.latestParams;
     if (!s || !p) return;
     this.updateMechanicalVisuals(s, p, dt);
-    this.updateGasParticles(s, p, dt);
+    if (this.useFlowShaders) this.updateFlowRibbons(s, p, dt);
+    else this.updateGasParticles(s, p, dt);
     this.updateScreen(s, p, dt);
   }
 
@@ -1079,15 +1133,7 @@ export class WorkstationScene {
     // Absorbent indicator: white → violet, front moving down from the inlet.
     const ex = s.sodaLimeExhaustionNorm;
     this.sodaLimeMat.color.lerpColors(SODA_FRESH, SODA_EXHAUSTED, ex);
-    if (this.granules && Math.abs(ex - this.lastExhaustion) > 0.005) {
-      this.lastExhaustion = ex;
-      for (let i = 0; i < this.granuleDepth.length; i++) {
-        const k = THREE.MathUtils.clamp((ex * 1.1 - this.granuleDepth[i]) / 0.08 + 0.5, 0, 1);
-        this.tmpColor.lerpColors(SODA_FRESH, SODA_EXHAUSTED, k);
-        this.granules.setColorAt(i, this.tmpColor);
-      }
-      if (this.granules.instanceColor) this.granules.instanceColor.needsUpdate = true;
-    }
+    this.sodaLime?.update(ex, dt);
 
     // Flowmeter floats (display scale only) and pipeline gauges.
     const flows: Record<GasKey, number> = { o2: p.fgfO2Lpm, air: p.fgfAirLpm, n2o: p.fgfN2OLpm };
@@ -1275,6 +1321,10 @@ export class WorkstationScene {
     this.disposed = true;
     this.unsubFrame?.();
     this.screen?.tex.dispose();
+    for (const { ctrl } of this.flowTubes) ctrl.dispose();
+    this.flowTubes = [];
+    this.sodaLime?.dispose();
+    this.sodaLime = null;
     this.stage?.dispose();
     this.stage = null;
   }

@@ -106,7 +106,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
       { fr: 'Mode « ECOS à l’aveugle » : une panne cachée, capot opaque ; faites le diagnostic avant de révéler.', en: '“Blind OSCE” mode: a hidden fault, opaque casing; make the diagnosis before revealing.' },
     ],
     watch: [
-      { fr: 'Couleur des particules : O₂ bleu, CO₂ rouge, halogéné à la couleur ISO 5360, argon violet.', en: 'Particle colours: O₂ blue, CO₂ red, agent in its ISO 5360 colour, argon violet.' },
+      { fr: 'Couleur des gaz (rubans ou particules) : O₂ bleu, CO₂ rouge, halogéné à la couleur ISO 5360, argon violet.', en: 'Gas colours (ribbons or particles): O₂ blue, CO₂ red, agent in its ISO 5360 colour, argon violet.' },
       { fr: 'Les couleurs des gaz changent selon le pays : lisez toujours l’étiquette.', en: 'Gas colours differ by country: always read the label.' },
     ],
     teach: { fr: 'Mode projecteur et ECOS à l’aveugle pour un enseignement au tableau ; le QR partage le réglage exact avec la salle.', en: 'Projector mode and blind OSCE for chalk talks; the QR code shares the exact setup with the room.' },

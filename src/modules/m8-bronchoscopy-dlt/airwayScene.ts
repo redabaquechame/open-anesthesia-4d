@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { createStage, type Stage } from '../../engine/createStage';
 import { anatomyUrl, loadAnatomy } from '../../engine/loadAnatomy';
 import { createLabel, type AnatomyLabel } from '../../engine/labels';
+import { applyFresnelRim } from '../../engine/fresnelXray';
 import { BronchoscopeView, type CuffShape, type ScopeCapsule, type TubeSegment } from './bronchoscopeView';
 import { pathFrom, pointAt, type AirwayMap, type Lobe, type Path, type V3 } from './airwayGeometry';
 import * as D from './dltModel';
@@ -116,6 +117,9 @@ export async function createAirwayScene(container: HTMLElement, scopeContainer: 
     muscle: stage.materials.clone('muscle'),
   };
   for (const m of Object.values(ctxMats)) Object.assign(m, { transparent: true, opacity: 0.14, depthWrite: false });
+  // Fresnel rim (Sprint 2A), applied after the lobe clones: the airway wall outline stays readable.
+  applyFresnelRim(airwayMat, { power: 2.4, rimAlpha: 0.62, rimColor: 0xffe1dc });
+  for (const m of Object.values(ctxMats)) applyFresnelRim(m, { power: 2.8, rimAlpha: 0.3 });
   anatomy.updateMatrixWorld(true);
   const meshes: THREE.Mesh[] = [];
   anatomy.traverse((o) => {
