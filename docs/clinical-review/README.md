@@ -18,7 +18,7 @@ Generated 2026-11-27. One checklist per module; each takes about an hour.
 | [M3 — Volatile agents, low flow & climate](M3.md) | 16 | 10 | 1 | 5 |
 | [M4 — Propofol / remifentanil TCI, EEG & BIS](M4.md) | 14 | 6 | 4 | 4 |
 | [M5 — Neuromuscular monitoring & reversal](M5.md) | 7 | 5 | 0 | 2 |
-| [M6 — Ultrasound-guided block, LAST & cardiac loops](M6.md) | 10 | 6 | 0 | 4 |
+| [M6 — Ultrasound-guided block, LAST & cardiac loops](M6.md) | 13 | 7 | 0 | 6 |
 | [M7 — Thoracic & lumbar epidural](M7.md) | 8 | 5 | 0 | 3 |
 | [M8 — Bronchoscopy & double-lumen tube](M8.md) | 16 | 9 | 0 | 7 |
 | [M9 — Crisis management](M9.md) | 27 | 22 | 0 | 5 |

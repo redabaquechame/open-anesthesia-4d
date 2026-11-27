@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { AlertOctagon, Eye, EyeOff, RotateCcw, ScanLine } from 'lucide-react';
+import { AlertOctagon, CheckCircle2, Eye, EyeOff, RotateCcw, ScanLine } from 'lucide-react';
 import { createStage, type Stage } from '../../engine/createStage';
 import { createLabel, type AnatomyLabel } from '../../engine/labels';
 import { loadAnatomy, ANATOMY_CREDIT } from '../../engine/loadAnatomy';
 import type { MaterialKey } from '../../engine/materials';
 import type { LocaleCode } from '../../standards/clinicalStandards';
-import { UltrasoundSimulator, pointInMesh, type AnalyticTissue, type MeshTissue, type ProbeFrame, type Tissue } from './ultrasoundSim';
+import { UltrasoundSimulator, pointInMesh, type AnalyticTissue, type DopplerSettings, type MeshTissue, type ProbeFrame, type Tissue } from './ultrasoundSim';
 
 /**
  * Supraclavicular brachial plexus lab.
@@ -25,6 +25,7 @@ interface Controls {
   needleAdvanceMm: number;
   laMl: number;
   labels: boolean;
+  doppler: boolean;
 }
 
 const WIDTH_M = 0.038; // 38 mm linear footprint
@@ -35,7 +36,10 @@ const FREQ_MHZ = 12;
 // (model frame: metres, Y up, origin = first-rib centroid). See scripts/anatomy/build-anatomy.ts.
 const ARTERY_AT_RIB = new THREE.Vector3(-0.0095, 0.0012, 0.0108);
 const ARTERY_TANGENT = new THREE.Vector3(0.97, 0.2, -0.16).normalize();
-const ARTERY_DEPTH_M = 0.018; // illustrative skin-to-artery depth
+const ARTERY_DEPTH_M = 0.018; // illustrative skin-to-artery depth (claim m6-sono-anatomy)
+// Colour Doppler (claims m6-doppler-angle, m6-doppler-flow). Display units: 1 = top of the colour scale.
+const DOPPLER_BOX = { c0: 0.16, c1: 0.84, r0: 0.18, r1: 0.86 };
+const DOPPLER_WALL_FILTER = 0.04;
 
 const MESH_SPEC: Record<string, { mat: MaterialKey; tissue?: Tissue; priority?: number; label?: [string, string] }> = {
   clavicle: { mat: 'bone', tissue: 'bone', priority: 6, label: ['Clavicle', 'Clavicule'] },
@@ -75,8 +79,11 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
     needleAdvanceMm: 12,
     laMl: 0,
     labels: true,
+    doppler: false,
   });
   const [alert, setAlert] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [dop, setDop] = useState<{ peak: number; vessel: boolean }>({ peak: 0, vessel: false });
   const [needleVis, setNeedleVis] = useState(1);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const ctrlRef = useRef(c);
@@ -238,7 +245,8 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
       usTex.colorSpace = THREE.SRGBColorSpace;
       const beam = new THREE.Mesh(
         new THREE.PlaneGeometry(WIDTH_M, DEPTH_M),
-        new THREE.MeshBasicMaterial({ map: usTex, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false })
+        // toneMapped: false: the image is already display-ready; ACES would shift its grey levels and colours.
+        new THREE.MeshBasicMaterial({ map: usTex, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false, toneMapped: false })
       );
       s.scene.add(beam);
 
@@ -268,12 +276,25 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
       // Tissue lists for the simulator
       const meshTissues: MeshTissue[] = [];
       const labelNames: (string | null)[] = [];
+      const meshKeys: string[] = [];
       for (const [key, mesh] of Object.entries(meshes)) {
         const spec = MESH_SPEC[key];
         if (!spec?.tissue) continue;
         meshTissues.push({ mesh, tissue: spec.tissue, priority: spec.priority ?? 5 });
         labelNames.push(spec.label ? L(...spec.label) : null);
+        meshKeys.push(key);
       }
+
+      // Flow directions (schematic, claim m6-doppler-flow): the subclavian artery carries blood
+      // laterally, away from the carotid / brachiocephalic side, toward the arm; the subclavian vein
+      // returns it medially. Both are taken parallel to the artery axis at the rib.
+      const medialRef = meshes.commonCarotid ?? meshes.brachiocephalicArtery;
+      const lateralSign = medialRef ? Math.sign(ARTERY_TANGENT.dot(ARTERY_AT_RIB.clone().sub(centerOf(medialRef)))) || 1 : 1;
+      const lateralDir = ARTERY_TANGENT.clone().multiplyScalar(lateralSign);
+      const arteryIdx = meshKeys.indexOf('subclavianArtery');
+      const veinIdx = meshKeys.indexOf('subclavianVein');
+      const arteryFlow = new THREE.Vector3();
+      const veinFlow = new THREE.Vector3();
       let laCenter = new THREE.Vector3();
       let laRadii = new THREE.Vector3(1e-6, 1e-6, 1e-6);
       const analytic: AnalyticTissue[] = [
@@ -299,7 +320,9 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
       const usCanvas = usRef.current;
       let usAccum = 0;
       let lastAlert: string | null = null;
+      let lastInfo: string | null = null;
       let lastVis = -1;
+      let lastDop = '';
       setStatus('ready');
 
       s.onFrame(({ dt, time }) => {
@@ -365,16 +388,53 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
           lastAlert = msg;
           setAlert(msg);
         }
+        // Positive feedback: a teaching principle only, never proof of a safe or successful block.
+        let note: string | null = null;
+        if (!msg) {
+          const near = nerveSegs.some((n) => distToPolyline(tip, [n.a, n.mid, n.b]) < n.r + 0.002);
+          if (near && u.laMl > 0)
+            note = fr
+              ? 'Pointe périneurale, l’anesthésique s’étale autour des troncs : c’est l’image recherchée. Principe : aspirer, injecter par petits volumes, sans résistance, en surveillant le patient.'
+              : 'Perineural tip, local anaesthetic spreading around the trunks: this is the image you look for. Principle: aspirate, inject small volumes without resistance, watch the patient.';
+          else if (near)
+            note = fr
+              ? 'Pointe au contact du plexus (périneurale). Principe : garder toute l’aiguille visible, aspirer, puis injecter un petit volume pour voir la diffusion.'
+              : 'Tip next to the plexus (perineural). Principle: keep the whole needle in view, aspirate, then inject a small volume to see the spread.';
+        }
+        if (note !== lastInfo) {
+          lastInfo = note;
+          setInfo(note);
+        }
+
+        // Flow for the Doppler: arterial velocity peaks on the same beat as the pulsation above.
+        const systole = Math.pow(Math.max(0, Math.sin(time * 7.2)), 2);
+        arteryFlow.copy(lateralDir).multiplyScalar(0.35 + 1.65 * systole);
+        veinFlow.copy(lateralDir).multiplyScalar(-0.5 * (1 + 0.35 * Math.sin(time * 1.6)));
+        const doppler: DopplerSettings | null = u.doppler
+          ? {
+              box: DOPPLER_BOX,
+              wallFilter: DOPPLER_WALL_FILTER,
+              flow: (k) => (k === arteryIdx ? arteryFlow : k === veinIdx ? veinFlow : null),
+            }
+          : null;
 
         // Ultrasound at ~30 Hz
         usAccum += dt;
         if (usAccum < 1 / 30) return;
         usAccum = 0;
-        const out = sim.render(frame, meshTissues, analytic, { hub, tip, visible: true }, { widthM: WIDTH_M, depthM: DEPTH_M, freqMHz: FREQ_MHZ, gainDb: u.gainDb, time }, (k) => labelNames[k] ?? null);
+        const out = sim.render(frame, meshTissues, analytic, { hub, tip, visible: true }, { widthM: WIDTH_M, depthM: DEPTH_M, freqMHz: FREQ_MHZ, gainDb: u.gainDb, time }, (k) => labelNames[k] ?? null, doppler);
         const tctx = usTexCanvas.getContext('2d');
         tctx?.putImageData(out.image, 0, 0);
         usTex.needsUpdate = true;
-        drawDisplay(usCanvas, usTexCanvas, out.centroids, out.cols, out.rows, u.labels, fr);
+        drawDisplay(usCanvas, usTexCanvas, out.centroids, out.cols, out.rows, u.labels, fr, u.doppler);
+        if (u.doppler) {
+          const vessel = out.dopplerVesselPixels > 20;
+          const key = `${vessel}:${out.dopplerPeak > DOPPLER_WALL_FILTER}`;
+          if (key !== lastDop) {
+            lastDop = key;
+            setDop({ peak: out.dopplerPeak, vessel });
+          }
+        }
         const vis = Math.round(out.needleVisibility * 100) / 100;
         if (vis !== lastVis) {
           lastVis = vis;
@@ -436,6 +496,14 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
               {alert}
             </div>
           )}
+          {!alert && info && (
+            <div className="px-3 py-1.5 bg-emerald-950/80 border-t border-emerald-600 text-[11px] text-emerald-200 flex items-start gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                {info} <span className="text-emerald-400/80">{fr ? '(repère pédagogique, pas une garantie)' : '(teaching cue, not a guarantee)'}</span>
+              </span>
+            </div>
+          )}
           <div className="px-3 py-1 text-[9px] text-slate-500 border-t border-slate-800">{ANATOMY_CREDIT}. {fr ? 'Plexus et dôme pleural : schématiques.' : 'Plexus and pleural dome: schematic.'}</div>
         </div>
 
@@ -462,9 +530,34 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
         <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{fr ? 'Sonde' : 'Probe'}</h3>
           {slider('slideMm', fr ? 'Glissement le long de l’artère' : 'Slide along the artery', -14, 14, 1, ' mm')}
-          {slider('tiltDeg', fr ? 'Bascule (sort l’aiguille du plan)' : 'Tilt (takes the needle out of plane)', -10, 10, 1, '°', 'text-amber-300')}
+          {slider('tiltDeg', fr ? 'Bascule (sort l’aiguille du plan)' : 'Tilt (takes the needle out of plane)', -15, 15, 1, '°', 'text-amber-300')}
           {slider('compression', fr ? 'Compression (test veineux)' : 'Compression (vein test)', 0, 1, 0.05, '')}
           {slider('gainDb', fr ? 'Gain' : 'Gain', -12, 12, 1, ' dB')}
+          <label className="flex items-center justify-between text-[11px] cursor-pointer">
+            <span>{fr ? 'Doppler couleur' : 'Colour Doppler'}</span>
+            <input type="checkbox" checked={c.doppler} onChange={(e) => set('doppler', e.target.checked)} className="accent-cyan-500" />
+          </label>
+          {c.doppler && (
+            <div className="text-[10px] leading-relaxed text-slate-400 space-y-1">
+              <div>
+                {fr ? 'Angle faisceau / axe de l’artère' : 'Beam / artery-axis angle'} :{' '}
+                <span className="font-mono text-amber-300">{90 - Math.abs(c.tiltDeg)}°</span>
+              </div>
+              <p>
+                {!dop.vessel
+                  ? fr
+                    ? 'Aucun vaisseau dans la boîte couleur.'
+                    : 'No vessel inside the colour box.'
+                  : dop.peak <= DOPPLER_WALL_FILTER
+                    ? fr
+                      ? 'Pas de couleur : à 90°, cos θ = 0, la vitesse mesurée le long du faisceau est nulle. Basculez la sonde.'
+                      : 'No colour: at 90°, cos θ = 0, so the velocity along the beam is zero. Tilt the probe.'
+                    : fr
+                      ? 'Le Doppler ne mesure que v·cos θ. Rouge = vers la sonde, bleu = s’éloigne (convention réglable sur l’appareil) ; la couleur s’inverse quand on bascule de l’autre côté.'
+                      : 'Doppler measures only v·cos θ. Red = toward the probe, blue = away (a convention the machine can invert); the colour flips when you tilt the other way.'}
+              </p>
+            </div>
+          )}
         </div>
         <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{fr ? 'Aiguille (dans le plan, postéro-latérale)' : 'Needle (in-plane, from posterolateral)'}</h3>
@@ -489,7 +582,8 @@ function drawDisplay(
   cols: number,
   rows: number,
   labels: boolean,
-  fr: boolean
+  fr: boolean,
+  doppler = false
 ) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -528,6 +622,31 @@ function drawDisplay(
     if (major && mm > 0) ctx.fillText(`${mm / 10}`, ox + iw + 12, y + 3);
   }
   ctx.fillText('cm', ox + iw + 12, oy + 10);
+  if (doppler) {
+    // Colour box and scale (no velocity numbers: the scale is illustrative).
+    ctx.save();
+    ctx.strokeStyle = 'rgba(226,232,240,0.7)';
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(ox + DOPPLER_BOX.c0 * iw, oy + DOPPLER_BOX.r0 * ih, (DOPPLER_BOX.c1 - DOPPLER_BOX.c0) * iw, (DOPPLER_BOX.r1 - DOPPLER_BOX.r0) * ih);
+    ctx.restore();
+    const bx = ox + 5;
+    const by = oy + 6;
+    const bh = 54;
+    const g = ctx.createLinearGradient(0, by, 0, by + bh);
+    g.addColorStop(0, '#ffdc00');
+    g.addColorStop(0.45, '#6e0000');
+    g.addColorStop(0.5, '#000000');
+    g.addColorStop(0.55, '#000078');
+    g.addColorStop(1, '#00c8ff');
+    ctx.fillStyle = g;
+    ctx.fillRect(bx, by, 6, bh);
+    ctx.strokeStyle = '#475569';
+    ctx.strokeRect(bx, by, 6, bh);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = '9px Inter, system-ui, sans-serif';
+    ctx.fillText(fr ? 'vers la sonde' : 'toward probe', bx + 10, by + 8);
+    ctx.fillText(fr ? 's’éloigne' : 'away', bx + 10, by + bh);
+  }
   // Orientation marker
   ctx.fillStyle = '#22d3ee';
   ctx.beginPath();
