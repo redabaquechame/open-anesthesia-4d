@@ -1,372 +1,362 @@
 import { useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { AlertTriangle, Crosshair } from 'lucide-react';
-import { createTieredRenderer, disposeSceneResources } from '../../engine/createTieredRenderer';
+import { AlertTriangle, Crosshair, RotateCcw, Scissors, Tag } from 'lucide-react';
 import type { LocaleCode } from '../../standards/clinicalStandards';
+import { ANATOMY_CREDIT } from '../../engine/loadAnatomy';
+import { createSpineScene, REGIONS, spaceName, type Approach, type SpineOutputs, type SpineRegion, type SpineScene, type SpineView } from './spineScene';
+import { TISSUE_INFO, type SpineTissue } from './spineGeometry';
+import type { FluoroProjection } from './fluoroView';
 
-type SpineRegion = 'thoracic' | 'lumbar';
-type ApproachType = 'midline' | 'paramedian';
-type CarmView = 'AP' | 'OBLIQUE_SCOTTY' | 'LATERAL';
+const MAX_DEPTH_MM = 90;
 
 export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
-  const [region, setRegion] = useState<SpineRegion>('thoracic');
-  const [approach, setApproach] = useState<ApproachType>('paramedian');
-  const [flexion, setFlexion] = useState(0.5); // 0 neutral -> 1 "angry cat" flexed
-  const [scoliosisDeg, setScoliosisDeg] = useState(0);
-  const [needleDepthMm, setNeedleDepthMm] = useState(28); // 0..85 mm
-  const [cephaladDeg, setCephaladDeg] = useState(42);
-  const [carmView, setCarmView] = useState<CarmView>('LATERAL');
+  const fr = locale.startsWith('fr');
+  const L = (f: string, e: string) => (fr ? f : e);
+
+  const [region, setRegion] = useState<SpineRegion>('lumbar');
+  const [space, setSpace] = useState(REGIONS.lumbar.defaultSpace);
+  const [approach, setApproach] = useState<Approach>('midline');
+  const [flexion, setFlexion] = useState(0.6);
+  const [softTissueMm, setSoftTissueMm] = useState(15);
+  const [entryOffsetMm, setEntryOffsetMm] = useState(0);
+  const [cephaladDeg, setCephaladDeg] = useState(REGIONS.lumbar.defaults.midline.ceph);
+  const [medialDeg, setMedialDeg] = useState(REGIONS.lumbar.defaults.paramedian.med);
+  const [depthMm, setDepthMm] = useState(15);
+  const [cut, setCut] = useState(true);
+  const [boneOpacity, setBoneOpacity] = useState(1);
+  const [labels, setLabels] = useState(true);
+  const [fluoro, setFluoro] = useState<FluoroProjection>('LAT');
+  const [out, setOut] = useState<SpineOutputs | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [lorFlash, setLorFlash] = useState(false);
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const fluoroRef = useRef<HTMLCanvasElement | null>(null);
-  const stRef = useRef({ region, approach, flexion, scoliosisDeg, needleDepthMm, cephaladDeg, carmView });
-  stRef.current = { region, approach, flexion, scoliosisDeg, needleDepthMm, cephaladDeg, carmView };
+  const fluoroRef = useRef<HTMLDivElement | null>(null);
+  const fluoroLabelsRef = useRef<HTMLDivElement | null>(null);
+  const sceneRef = useRef<SpineScene | null>(null);
+  const prevTissue = useRef<SpineTissue | null>(null);
 
-  // Compute real-time tissue layer & Loss-of-Resistance (LOR) physics
-  const flavumStartMm = region === 'thoracic' ? 46 - flexion * 4 : 44 - flexion * 3;
-  const epiduralStartMm = flavumStartMm + 6;
-  const duraMm = epiduralStartMm + 5.5;
-  const hitBoneMidlineThoracic =
-    region === 'thoracic' &&
-    approach === 'midline' &&
-    cephaladDeg < 46 &&
-    needleDepthMm >= 34 &&
-    flexion < 0.75;
-
-  let tissueLayer = 'Subcutaneous Tissue / Muscle';
-  let lorPressure = 18;
-  let statusColor = 'text-slate-300';
-
-  if (hitBoneMidlineThoracic) {
-    tissueLayer = 'BONE CONTACT — Shingled Thoracic Spinous Process! Switch to Paramedian or Increase Cephalad Angle';
-    lorPressure = 100;
-    statusColor = 'text-amber-300';
-  } else if (needleDepthMm < flavumStartMm) {
-    tissueLayer = approach === 'midline' ? 'Interspinous Ligament (Moderate Resistance)' : 'Paraspinal Muscle (Low Resistance)';
-    lorPressure = approach === 'midline' ? 42 : 24;
-  } else if (needleDepthMm < epiduralStartMm) {
-    tissueLayer = 'LIGAMENTUM FLAVUM — High Syringe Resistance (Engage LOR Technique)';
-    lorPressure = 92;
-    statusColor = 'text-cyan-300';
-  } else if (needleDepthMm < duraMm) {
-    tissueLayer = 'EPIDURAL SPACE — Sudden Loss of Resistance (LOR)! Stop & Thread Catheter';
-    lorPressure = 6;
-    statusColor = 'text-emerald-300';
-  } else {
-    tissueLayer = 'DURAL PUNCTURE ("WET TAP") — CSF Flashback in Subarachnoid Space!';
-    lorPressure = 4;
-    statusColor = 'text-rose-400';
-  }
+  const wantSuggest = useRef(true);
+  const [suggested, setSuggested] = useState<boolean | null>(null);
+  const resetNeedle = (r: SpineRegion, a: Approach) => {
+    setCephaladDeg(REGIONS[r].defaults[a].ceph);
+    setMedialDeg(REGIONS[r].defaults.paramedian.med);
+    setEntryOffsetMm(0);
+    setDepthMm(15);
+    wantSuggest.current = true;
+  };
 
   useEffect(() => {
-    if (!viewportRef.current) return;
     const container = viewportRef.current;
-    const canvas = document.createElement('canvas');
-    canvas.className = 'block w-full h-full outline-none';
-    container.appendChild(canvas);
-
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#070b14');
-    const camera = new THREE.PerspectiveCamera(42, 16 / 10, 0.1, 60);
-    camera.position.set(4.5, 0.8, 3.8);
-
-    let disposed = false;
-    let rafId: number | null = null;
-    let controls: OrbitControls | null = null;
-    let handleDispose: (() => void) | null = null;
-    let ro: ResizeObserver | null = null;
-
-    const spineGroup = new THREE.Group();
-    const boneMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.5, transparent: true, opacity: 0.72 });
-    const vertebrae: { root: THREE.Group; spinous: THREE.Mesh }[] = [];
-
-    for (let i = 0; i < 5; i++) {
-      const vg = new THREE.Group();
-      vg.position.y = (2 - i) * 1.1;
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.72, 16), boneMat);
-      body.position.set(0, 0, -0.75);
-      const lamina = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.45, 0.3), boneMat);
-      lamina.position.set(0, 0, 0.35);
-      const spinous = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.34, 1.15), boneMat);
-      spinous.position.set(0, -0.1, 0.92);
-      vg.add(body, lamina, spinous);
-      spineGroup.add(vg);
-      vertebrae.push({ root: vg, spinous });
-    }
-
-    // Translucent Ligamentum Flavum (amber), Epidural Space (emerald), Spinal Cord/Dura (sky)
-    const flavum = new THREE.Mesh(
-      new THREE.BoxGeometry(0.85, 5.2, 0.14),
-      new THREE.MeshStandardMaterial({ color: 0xf59e0b, transparent: true, opacity: 0.42 })
-    );
-    flavum.position.set(0, 0, 0.25);
-
-    const duraCord = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.32, 0.32, 5.4, 16),
-      new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 })
-    );
-    duraCord.position.set(0, 0, -0.12);
-
-    const tuohyNeedle = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.032, 0.032, 3.2, 10),
-      new THREE.MeshStandardMaterial({ color: 0xf43f5e, emissive: 0xe11d48, emissiveIntensity: 0.45 })
-    );
-
-    scene.add(spineGroup, flavum, duraCord, tuohyNeedle);
-
-    createTieredRenderer(canvas).then((handle) => {
-      if (disposed) {
-        handle.dispose();
-        return;
-      }
-      handleDispose = handle.dispose;
-      controls = new OrbitControls(camera, canvas);
-      controls.enableDamping = true;
-
-      scene.add(new THREE.HemisphereLight(0xf1f5f9, 0x0f172a, 1.0));
-      const key = new THREE.DirectionalLight(0xffffff, 1.2);
-      key.position.set(5, 6, 5);
-      scene.add(key);
-
-      const resize = () => {
-        const w = Math.max(1, container.clientWidth);
-        const h = Math.max(1, container.clientHeight);
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        handle.renderer.setSize(w, h, false);
-      };
-      resize();
-      ro = new ResizeObserver(resize);
-      ro.observe(container);
-
-      const loop = () => {
-        if (disposed) return;
-        rafId = requestAnimationFrame(loop);
-        const s = stRef.current;
-
-        // Morph spinous shingle angle (Thoracic ~58° downward vs Lumbar ~12°) + Flexion + Scoliosis
-        const baseShingle = s.region === 'thoracic' ? 0.92 : 0.18;
-        vertebrae.forEach((v, idx) => {
-          const offset = idx - 2;
-          v.root.position.y = -offset * (1.02 + s.flexion * 0.22);
-          v.root.rotation.x = offset * s.flexion * 0.08;
-          v.root.rotation.z = THREE.MathUtils.degToRad(s.scoliosisDeg * offset * 0.35);
-          v.spinous.rotation.x = baseShingle - s.flexion * 0.16;
-        });
-
-        // Position Tuohy needle along Midline vs Paramedian ("walk off lamina") path
-        const entryX = s.approach === 'paramedian' ? 0.36 : 0;
-        const depthWorld = (s.needleDepthMm / 85) * 2.45;
-        const rad = THREE.MathUtils.degToRad(s.cephaladDeg);
-        const startZ = 2.15;
-        const startY = -0.85;
-        const tipZ = startZ - Math.cos(rad) * depthWorld;
-        const tipY = startY + Math.sin(rad) * depthWorld;
-        const tipX = s.approach === 'paramedian' ? entryX * (1 - depthWorld / 2.6) : 0;
-
-        tuohyNeedle.position.set((entryX + tipX) / 2, (startY + tipY) / 2, (startZ + tipZ) / 2);
-        tuohyNeedle.lookAt(tipX, tipY, tipZ);
-        tuohyNeedle.rotateX(Math.PI / 2);
-        // Geometry is 3.2 units long: scale it to the actual entry→tip distance
-        const segLen = Math.hypot(entryX - tipX, startY - tipY, startZ - tipZ);
-        tuohyNeedle.scale.set(1, Math.max(segLen, 0.01) / 3.2, 1);
-
-        drawVirtualCarm(fluoroRef.current, s);
-        controls?.update();
-        handle.renderer.render(scene, camera);
-      };
-      loop();
-    });
-
+    const fluoroBox = fluoroRef.current;
+    if (!container || !fluoroBox) return;
+    let cancelled = false;
+    let sc: SpineScene | null = null;
+    createSpineScene(container, fluoroBox)
+      .then((s) => {
+        if (cancelled) {
+          s.dispose();
+          return;
+        }
+        sc = s;
+        sceneRef.current = s;
+        s.setFluoroLabels(fluoroLabelsRef.current);
+        setStatus('ready');
+      })
+      .catch(() => !cancelled && setStatus('error'));
     return () => {
-      disposed = true;
-      ro?.disconnect();
-      if (rafId !== null) cancelAnimationFrame(rafId);
-      controls?.dispose();
-      disposeSceneResources(scene);
-      handleDispose?.();
-      canvas.remove();
+      cancelled = true;
+      sceneRef.current = null;
+      sc?.dispose();
     };
   }, []);
 
+  useEffect(() => {
+    const s = sceneRef.current;
+    if (!s || status !== 'ready') return;
+    const inputs = { region, space, approach, flexion, softTissueMm, entryOffsetMm, cephaladDeg, medialDeg, depthMm, cut, boneOpacity, labels, fluoro, fr };
+    if (wantSuggest.current) {
+      // Start on a typical successful trajectory for this anatomy (found by tracing the real bones).
+      wantSuggest.current = false;
+      const sug = s.suggestStart({ ...inputs, cephaladDeg: REGIONS[region].defaults[approach].ceph });
+      setSuggested(!!sug);
+      if (sug && (sug.entryOffsetMm !== entryOffsetMm || sug.cephaladDeg !== cephaladDeg)) {
+        setEntryOffsetMm(sug.entryOffsetMm);
+        setCephaladDeg(sug.cephaladDeg);
+        return;
+      }
+    }
+    const o = s.update(inputs);
+    setOut(o);
+    const t = o.result.tissue;
+    if (prevTissue.current === 'flavum' && t === 'epidural') {
+      setLorFlash(true);
+      if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.(40);
+      window.setTimeout(() => setLorFlash(false), 1400);
+    }
+    prevTissue.current = t;
+  }, [status, region, space, approach, flexion, softTissueMm, entryOffsetMm, cephaladDeg, medialDeg, depthMm, cut, boneOpacity, labels, fluoro, fr]);
+
+  const res = out?.result;
+  const tissue: SpineTissue = res?.tissue ?? 'outside';
+  const info = TISSUE_INFO[tissue];
+  const def = REGIONS[region];
+  const atBone = tissue === 'bone';
+  const statusText = (() => {
+    if (!res) return '';
+    if (atBone) {
+      const what = out?.boneStructure === 'spinous' ? L('apophyse épineuse', 'spinous process') : out?.boneStructure === 'lamina' ? L('lame', 'lamina') : L('massif articulaire / pédicule', 'facet / pedicle');
+      return `${L('Contact osseux', 'Bone contact')} — ${what} ${out?.boneName ?? ''} ${L('à', 'at')} ${(res.boneAt! * 1000).toFixed(0)} mm. ${L('Retirer et réorienter', 'Withdraw and redirect')}.`;
+    }
+    const base = fr ? info.fr : info.en;
+    if (tissue === 'flavum') return `${base} — ${L('résistance franche : avancer millimètre par millimètre', 'firm resistance: advance millimetre by millimetre')}`;
+    if (tissue === 'epidural') return `${base} — ${L('perte de résistance : arrêter, ne plus avancer', 'loss of resistance: stop, do not advance')}`;
+    if (tissue === 'csf') return `${base} — ${L('l’aiguille a traversé la dure-mère', 'the needle has crossed the dura')}`;
+    if (tissue === 'cord') return `${base} — ${L('ARRÊT : l’aiguille est dans la moelle', 'STOP: the needle is in the cord')}`;
+    if (tissue === 'lateral') return `${base} — ${L('trop latéral : réorienter vers la ligne médiane', 'too lateral: redirect toward the midline')}`;
+    return base;
+  })();
+  const statusColor =
+    tissue === 'epidural' ? 'text-emerald-300' : tissue === 'cord' || tissue === 'csf' ? 'text-rose-400' : tissue === 'flavum' ? 'text-amber-300' : atBone ? 'text-orange-300' : 'text-slate-300';
+
+  // Depth ruler extent.
+  const rulerMax = MAX_DEPTH_MM;
+  const pct = (m: number) => `${Math.max(0, Math.min(100, ((m * 1000) / rulerMax) * 100))}%`;
+
+  const btn = (on: boolean, extra = '') =>
+    `px-2 py-1 rounded-lg border text-[11px] font-semibold cursor-pointer ${on ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'} ${extra}`;
+
+  const slider = (label: string, value: number, unit: string, min: number, max: number, step: number, set: (v: number) => void, color = 'text-slate-200') => (
+    <label className="block">
+      <div className="flex justify-between text-[11px]">
+        <span>{label}</span>
+        <span className={`font-mono ${color}`}>
+          {value}
+          {unit}
+        </span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => set(Number(e.target.value))} className="w-full accent-cyan-500" />
+    </label>
+  );
+
   return (
     <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
-      <section className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="bg-[#070b14] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 text-xs font-bold text-cyan-300">
-            {locale.startsWith('fr')
-              ? 'Rachis 4D Transparent (Épineuses Thoraciques vs Lombaires)'
-              : '4D Translucent Spine (Shingled Thoracic vs Lumbar Laminae)'}
+      <section className="lg:col-span-8 flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+          {/* 3D */}
+          <div className="md:col-span-3 bg-[#060a12] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+            <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
+              <span className="font-bold text-cyan-300 mr-auto">
+                {L('Rachis réel — ', 'Real spine — ')}
+                {region === 'lumbar' ? 'L2–L5' : 'T4–T9'}
+              </span>
+              {(['side', 'back', 'needle'] as SpineView[]).map((v) => (
+                <button key={v} onClick={() => sceneRef.current?.setView(v)} className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-[10px] text-slate-300 cursor-pointer hover:border-cyan-500">
+                  {v === 'side' ? L('Profil', 'Side') : v === 'back' ? L('Dos', 'Back') : L('Axe aiguille', 'Needle axis')}
+                </button>
+              ))}
+              <button onClick={() => setCut(!cut)} title={L('Coupe sagittale', 'Sagittal cut')} className={`px-1.5 py-0.5 rounded border text-[10px] flex items-center gap-1 cursor-pointer ${cut ? 'bg-cyan-700 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'}`}>
+                <Scissors className="w-3 h-3" /> {L('Coupe', 'Cut')}
+              </button>
+              <button onClick={() => setLabels(!labels)} title={L('Étiquettes', 'Labels')} className={`px-1.5 py-0.5 rounded border text-[10px] flex items-center gap-1 cursor-pointer ${labels ? 'bg-cyan-700 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'}`}>
+                <Tag className="w-3 h-3" />
+              </button>
+            </div>
+            <div ref={viewportRef} className="relative w-full h-[380px] touch-none">
+              {status !== 'ready' && (
+                <div className="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                  {status === 'loading' ? L('Chargement de l’anatomie…', 'Loading anatomy…') : L('Impossible de charger le modèle 3D.', 'Could not load the 3D model.')}
+                </div>
+              )}
+            </div>
+            <div className={`px-3 py-2 bg-slate-950 border-t border-slate-800 text-xs font-semibold min-h-[2.5rem] ${statusColor}`}>{statusText}</div>
           </div>
-          <div ref={viewportRef} className="w-full h-[360px] touch-none" />
-          <div className={`px-3 py-2 bg-slate-950 border-t border-slate-800 text-xs font-semibold ${statusColor}`}>
-            {tissueLayer}
+
+          {/* C-arm */}
+          <div className="md:col-span-2 bg-[#05070c] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+            <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex justify-between items-center text-xs">
+              <span className="font-bold text-slate-100 flex items-center gap-1">
+                <Crosshair className="w-3.5 h-3.5 text-amber-400" /> {L('Amplificateur de brillance', 'C-arm fluoroscopy')}
+              </span>
+              <div className="flex gap-1">
+                {(['AP', 'LAT', 'OBL'] as FluoroProjection[]).map((v) => (
+                  <button key={v} onClick={() => setFluoro(v)} className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer ${fluoro === v ? 'bg-cyan-600 text-white' : 'bg-slate-900 text-slate-400'}`}>
+                    {v === 'AP' ? 'F' : v === 'LAT' ? 'P' : 'OBL'}
+                    <span className="sr-only">{v}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div ref={fluoroRef} className="relative w-full h-[380px] bg-black">
+              <div ref={fluoroLabelsRef} className="absolute inset-0 pointer-events-none" />
+              <div className="absolute bottom-2 right-3 text-[10px] font-mono text-yellow-300/90">
+                {fluoro === 'AP' ? L('Face', 'AP') : fluoro === 'LAT' ? L('Profil', 'Lateral') : L('Oblique 35°', 'Oblique 35°')}
+              </div>
+            </div>
+            <div className="px-3 py-2 bg-[#0b1220] border-t border-slate-800 flex items-center gap-2 text-xs">
+              <span className="font-mono text-[10px] text-slate-300 shrink-0">{L('Seringue PDR', 'LOR syringe')}</span>
+              <div className="flex-1 h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+                <div
+                  className={`h-full transition-all duration-200 ${info.resistance > 80 ? 'bg-amber-400' : info.resistance < 12 ? 'bg-emerald-400' : 'bg-cyan-500'}`}
+                  style={{ width: `${info.resistance}%` }}
+                />
+              </div>
+              <span className="font-mono text-[10px] w-8 text-right">{info.resistance}</span>
+            </div>
           </div>
         </div>
 
-        <div className="bg-[#05070c] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex justify-between items-center text-xs">
-            <span className="font-bold text-slate-100 flex items-center gap-1">
-              <Crosshair className="w-3.5 h-3.5 text-amber-400" /> Virtual C-Arm Fluoroscopy
-            </span>
-            <div className="flex gap-1">
-              {(['AP', 'OBLIQUE_SCOTTY', 'LATERAL'] as CarmView[]).map((cv) => (
-                <button
-                  key={cv}
-                  onClick={() => setCarmView(cv)}
-                  className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer ${
-                    carmView === cv ? 'bg-cyan-600 text-white' : 'bg-slate-900 text-slate-400'
-                  }`}
-                >
-                  {cv === 'OBLIQUE_SCOTTY' ? 'Oblique' : cv}
-                </button>
-              ))}
-            </div>
+        {/* Depth ruler */}
+        <div className={`bg-[#0d1422] border rounded-xl p-3 transition-colors ${lorFlash ? 'border-emerald-400' : 'border-slate-800'}`}>
+          <div className="flex justify-between items-baseline text-[11px] mb-1.5">
+            <span className="font-bold uppercase tracking-wider text-cyan-400">{L('Couches traversées sur cette trajectoire', 'Layers along this trajectory')}</span>
+            {lorFlash && <span className="font-bold text-emerald-300 animate-pulse">{L('PERTE DE RÉSISTANCE', 'LOSS OF RESISTANCE')}</span>}
           </div>
-          <canvas ref={fluoroRef} className="w-full h-[360px] block" />
-          {/* Live LOR Syringe Resistance Gauge */}
-          <div className="px-3 py-2 bg-[#0b1220] border-t border-slate-800 flex items-center gap-3 text-xs">
-            <span className="font-mono text-[11px] text-slate-300 shrink-0">LOR Syringe Resistance:</span>
-            <div className="flex-1 h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
+          <div className="relative h-6 rounded-md overflow-hidden bg-slate-900 border border-slate-700">
+            {res?.path.map((seg, i) => (
               <div
-                className={`h-full transition-all ${lorPressure > 80 ? 'bg-amber-400' : lorPressure < 12 ? 'bg-emerald-400' : 'bg-cyan-500'}`}
-                style={{ width: `${lorPressure}%` }}
+                key={i}
+                title={`${fr ? TISSUE_INFO[seg.tissue].fr : TISSUE_INFO[seg.tissue].en}: ${(seg.from * 1000).toFixed(0)}–${(seg.to * 1000).toFixed(0)} mm`}
+                className="absolute top-0 bottom-0"
+                style={{ left: pct(seg.from), width: `calc(${pct(seg.to)} - ${pct(seg.from)})`, background: TISSUE_INFO[seg.tissue].color, opacity: seg.to <= (res?.reached ?? 0) + 1e-4 ? 1 : 0.35 }}
               />
-            </div>
-            <span className="font-mono text-[11px] w-10 text-right">{lorPressure}%</span>
+            ))}
+            {res && <div className="absolute top-[-2px] bottom-[-2px] w-[3px] bg-white shadow" style={{ left: pct(res.reached) }} />}
+          </div>
+          <div className="relative h-3 text-[9px] font-mono text-slate-500">
+            {Array.from({ length: rulerMax / 10 + 1 }, (_, k) => (
+              <span key={k} className="absolute -translate-x-1/2" style={{ left: `${((k * 10) / rulerMax) * 100}%` }}>
+                {k * 10}
+              </span>
+            ))}
+          </div>
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+            <Metric label={L('Profondeur atteinte', 'Depth reached')} value={res ? `${(res.reached * 1000).toFixed(0)} mm` : '—'} />
+            <Metric label={L('Ligament jaune à', 'Flavum at')} value={res?.flavumAt != null ? `${(res.flavumAt * 1000).toFixed(0)} mm` : L('non atteint', 'not reached')} />
+            <Metric label={L('Espace péridural à', 'Epidural space at')} value={res?.epiduralAt != null ? `${(res.epiduralAt * 1000).toFixed(0)} mm` : L('non atteint', 'not reached')} accent="text-emerald-300" />
+            <Metric label={L('Os sur la trajectoire', 'Bone on this path')} value={res?.boneAt != null ? `${(res.boneAt * 1000).toFixed(0)} mm` : L('aucun', 'none')} accent="text-orange-300" />
+          </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-400">
+            {(['skin', 'fat', 'ligament', 'muscle', 'flavum', 'epidural', 'csf', ...(region === 'thoracic' ? (['cord'] as const) : [])] as SpineTissue[]).map((t) => (
+              <span key={t} className="flex items-center gap-1">
+                <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ background: TISSUE_INFO[t].color }} />
+                {fr ? TISSUE_INFO[t].fr : TISSUE_INFO[t].en}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-            1. Level, Approach & Posture Morphing
-          </h2>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{L('1. Niveau, abord, patient', '1. Level, approach, patient')}</h2>
           <div className="grid grid-cols-2 gap-1.5">
-            {(['thoracic', 'lumbar'] as SpineRegion[]).map((r) => (
-              <button key={r} onClick={() => setRegion(r)} className={`py-1.5 rounded-lg border font-semibold cursor-pointer ${region === r ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'}`}>
-                {r === 'thoracic' ? 'Mid-Thoracic (T4–T8)' : 'Lumbar (L2–L5)'}
+            {(['lumbar', 'thoracic'] as SpineRegion[]).map((r) => (
+              <button
+                key={r}
+                className={btn(region === r)}
+                onClick={() => {
+                  setRegion(r);
+                  setSpace(REGIONS[r].defaultSpace);
+                  const a: Approach = r === 'thoracic' ? 'paramedian' : 'midline';
+                  setApproach(a);
+                  resetNeedle(r, a);
+                }}
+              >
+                {r === 'lumbar' ? L('Lombaire (L2–L5)', 'Lumbar (L2–L5)') : L('Thoracique (T4–T9)', 'Thoracic (T4–T9)')}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {def.verts.slice(0, -1).map((_, i) => (
+              <button key={i} className={btn(space === i, 'font-mono')} onClick={() => { setSpace(i); resetNeedle(region, approach); }}>
+                {spaceName(region, i)}
               </button>
             ))}
           </div>
           <div className="grid grid-cols-2 gap-1.5">
-            {(['midline', 'paramedian'] as ApproachType[]).map((a) => (
-              <button key={a} onClick={() => setApproach(a)} className={`py-1.5 rounded-lg border font-semibold cursor-pointer ${approach === a ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'}`}>
-                {a === 'midline' ? 'Midline' : 'Paramedian (Lamina)'}
+            {(['midline', 'paramedian'] as Approach[]).map((a) => (
+              <button key={a} className={btn(approach === a)} onClick={() => { setApproach(a); resetNeedle(region, a); }}>
+                {a === 'midline' ? L('Médian', 'Midline') : L('Paramédian (1 cm)', 'Paramedian (1 cm)')}
               </button>
             ))}
           </div>
-
-          <label className="block">
-            <div className="flex justify-between"><span>Patient Flexion ("Angry Cat")</span><span className="font-mono">{Math.round(flexion * 100)}%</span></div>
-            <input type="range" min={0} max={1} step={0.05} value={flexion} onChange={(e) => setFlexion(parseFloat(e.target.value))} className="w-full" />
-          </label>
-          <label className="block">
-            <div className="flex justify-between"><span>Scoliosis Curvature</span><span className="font-mono">{scoliosisDeg}°</span></div>
-            <input type="range" min={-20} max={20} step={2} value={scoliosisDeg} onChange={(e) => setScoliosisDeg(Number(e.target.value))} className="w-full" />
-          </label>
-          <label className="block">
-            <div className="flex justify-between"><span>Tuohy Needle Depth</span><span className="font-mono text-rose-300">{needleDepthMm} mm</span></div>
-            <input type="range" min={5} max={75} step={1} value={needleDepthMm} onChange={(e) => setNeedleDepthMm(Number(e.target.value))} className="w-full" />
-          </label>
-          <label className="block">
-            <div className="flex justify-between"><span>Cephalad Angulation</span><span className="font-mono text-cyan-300">{cephaladDeg}°</span></div>
-            <input type="range" min={5} max={65} step={1} value={cephaladDeg} onChange={(e) => setCephaladDeg(Number(e.target.value))} className="w-full" />
-          </label>
+          {slider(L('Flexion du rachis (dos rond)', 'Spine flexion (rounded back)'), Math.round(flexion * 100), ' %', 0, 100, 5, (v) => setFlexion(v / 100))}
+          {slider(L('Tissus mous sur les épineuses', 'Soft tissue over spinous processes'), softTissueMm, ' mm', 8, 50, 1, setSoftTissueMm)}
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-300">
-          <div className="font-bold text-amber-300 flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5" /> Spatial Clinical Pearl
+        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-rose-300">{L('2. Aiguille de Tuohy 17 G', '2. Tuohy needle 17 G')}</h2>
+            <button onClick={() => resetNeedle(region, approach)} className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-white cursor-pointer">
+              <RotateCcw className="w-3 h-3" /> {L('Retirer', 'Withdraw')}
+            </button>
           </div>
-          <p>
-            Mid-thoracic spinous processes (T4–T8) shingle steeply downward, blocking shallow midline trajectories. Flexing the spine and entering 1 cm lateral (paramedian) lets the Tuohy needle "walk off" the superior border of the lamina straight into the ligamentum flavum.
+          {slider(L('Point de ponction (crânial +)', 'Entry point (cranial +)'), entryOffsetMm, ' mm', -20, 20, 1, setEntryOffsetMm)}
+          {slider(L('Angle céphalique', 'Cephalad angle'), cephaladDeg, '°', 0, 70, 1, setCephaladDeg, 'text-cyan-300')}
+          {approach === 'paramedian' && slider(L('Angle médial', 'Medial angle'), medialDeg, '°', 0, 30, 1, setMedialDeg, 'text-cyan-300')}
+          <div>
+            {slider(L('Progression', 'Advance'), depthMm, ' mm', 0, MAX_DEPTH_MM, 0.5, setDepthMm, 'text-rose-300')}
+            <div className="flex gap-1 mt-1">
+              {[-5, -1, -0.5, 0.5, 1, 5].map((d) => (
+                <button key={d} onClick={() => setDepthMm((v) => Math.max(0, Math.min(MAX_DEPTH_MM, Math.round((v + d) * 2) / 2)))} className="flex-1 py-1 rounded bg-slate-900 border border-slate-700 font-mono text-[10px] cursor-pointer hover:border-rose-400">
+                  {d > 0 ? `+${d}` : d}
+                </button>
+              ))}
+            </div>
+          </div>
+          {suggested !== null && (
+            <p className="text-[10px] text-slate-500 leading-snug">
+              {suggested
+                ? L('« Retirer » replace l’aiguille sur une trajectoire type qui atteint l’espace péridural pour cette anatomie (calculée sur les os réels). Modifiez-la pour sentir la différence.', '"Withdraw" puts the needle back on a typical trajectory that reaches the epidural space for this anatomy (traced on the real bones). Change it to feel the difference.')
+                : L('Aucune trajectoire proche n’atteint l’espace péridural à cette flexion : arrondissez le dos ou changez d’abord.', 'No nearby trajectory reaches the epidural space at this flexion: round the back more or change approach.')}
+            </p>
+          )}
+          {slider(L('Opacité des os', 'Bone opacity'), Math.round(boneOpacity * 100), ' %', 20, 100, 5, (v) => setBoneOpacity(v / 100))}
+        </div>
+
+        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
+          <div className="font-bold text-amber-300 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5" /> {L('À observer', 'Things to notice')}
+          </div>
+          {region === 'thoracic' ? (
+            <p>
+              {L(
+                'Thoracique moyen : les épineuses descendent en tuiles. Une aiguille médiane peu inclinée bute sur l’épineuse. En paramédian, toucher d’abord la lame, puis augmenter l’angle céphalique pour « glisser » au-dessus d’elle dans le ligament jaune. La moelle est juste sous la dure-mère.',
+                'Mid-thoracic: spinous processes overlap like roof tiles. A shallow midline needle meets the spinous process. Paramedian: touch the lamina first, then increase the cephalad angle to "walk off" its upper edge into the ligamentum flavum. The cord lies just under the dura.'
+              )}
+            </p>
+          ) : (
+            <p>
+              {L(
+                'Lombaire : épineuses presque horizontales. Le dos rond ouvre les fenêtres interlamaires (regardez la radio de profil). La profondeur peau–espace péridural dépend surtout de l’épaisseur des tissus mous.',
+                'Lumbar: spinous processes are nearly horizontal. Flexing the back opens the interlaminar windows (watch the lateral X-ray). Skin-to-epidural depth depends mostly on soft-tissue thickness.'
+              )}
+            </p>
+          )}
+          <p className="text-[10px] text-slate-500">
+            {L(
+              `Modèle de simulation : vertèbres réelles (BodyParts3D, un homme adulte, posture debout) ; ligament jaune, espace péridural, dure-mère et moelle placés à partir du canal mesuré, épaisseurs illustratives. Profondeur du canal mesurée ici : ${out ? out.canalDepthMm.toFixed(0) : '—'} mm. Résistances de la seringue illustratives.`,
+              `Simulator model: real vertebrae (BodyParts3D, one adult male, standing posture); flavum, epidural space, dura and cord placed from the measured canal with illustrative thicknesses. Canal depth measured here: ${out ? out.canalDepthMm.toFixed(0) : '—'} mm. Syringe resistances are illustrative.`
+            )}
           </p>
+          <p className="text-[10px] text-slate-400">
+            {L(
+              'Repère publié : distance peau–espace péridural médiane 4,7 cm (L3–L4 : 4,93 cm) chez 1000 parturientes (Harrison & Clowes, Anaesthesia 1985). Ne jamais se fier à une profondeur fixe.',
+              'Published reference: median skin-to-epidural distance 4.7 cm (L3–L4: 4.93 cm) in 1000 parturients (Harrison & Clowes, Anaesthesia 1985). Never rely on a fixed depth.'
+            )}
+          </p>
+          <p className="text-[9px] text-slate-600">{ANATOMY_CREDIT}</p>
         </div>
       </aside>
     </main>
   );
 }
 
-function drawVirtualCarm(
-  canvas: HTMLCanvasElement | null,
-  s: { region: SpineRegion; approach: ApproachType; flexion: number; scoliosisDeg: number; needleDepthMm: number; cephaladDeg: number; carmView: CarmView }
-) {
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = canvas.clientWidth;
-  const h = canvas.clientHeight;
-  if (canvas.width !== Math.floor(w * dpr) || canvas.height !== Math.floor(h * dpr)) {
-    canvas.width = Math.floor(w * dpr);
-    canvas.height = Math.floor(h * dpr);
-  }
-  ctx.save();
-  ctx.scale(dpr, dpr);
-
-  // Circular fluoroscopy intensifier vignette
-  ctx.fillStyle = '#030509';
-  ctx.fillRect(0, 0, w, h);
-  const cx = w / 2;
-  const cy = h / 2;
-  const rad = Math.min(w, h) * 0.44;
-  ctx.beginPath();
-  ctx.arc(cx, cy, rad, 0, Math.PI * 2);
-  ctx.fillStyle = '#1b222c';
-  ctx.fill();
-  ctx.clip();
-
-  ctx.strokeStyle = 'rgba(226, 232, 240, 0.72)';
-  ctx.fillStyle = 'rgba(226, 232, 240, 0.16)';
-  ctx.lineWidth = 2;
-
-  for (let i = -2; i <= 2; i++) {
-    const vy = cy + i * (52 + s.flexion * 10);
-    const vx = cx + (s.carmView === 'LATERAL' ? -35 : i * s.scoliosisDeg * 0.7);
-    if (s.carmView === 'LATERAL') {
-      ctx.fillRect(vx - 30, vy - 18, 56, 36);
-      ctx.strokeRect(vx - 30, vy - 18, 56, 36);
-      // Spinous process silhouette
-      ctx.beginPath();
-      ctx.moveTo(vx + 26, vy - 6);
-      ctx.lineTo(vx + 82, vy + (s.region === 'thoracic' ? 32 : 6));
-      ctx.stroke();
-    } else {
-      // AP or Oblique Scotty Dog projection
-      ctx.fillRect(vx - 36, vy - 18, 72, 36);
-      ctx.strokeRect(vx - 36, vy - 18, 72, 36);
-      const pedOffset = s.carmView === 'OBLIQUE_SCOTTY' ? 14 : 24;
-      ctx.beginPath();
-      ctx.arc(vx - pedOffset, vy, 7, 0, Math.PI * 2);
-      ctx.arc(vx + pedOffset, vy, 7, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
-
-  // Radiopaque Tuohy needle projection
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3;
-  const nLen = (s.needleDepthMm / 85) * 115;
-  const ang = THREE.MathUtils.degToRad(s.cephaladDeg);
-  if (s.carmView === 'LATERAL') {
-    ctx.beginPath();
-    ctx.moveTo(cx + 115, cy + 45);
-    ctx.lineTo(cx + 115 - Math.cos(ang) * nLen, cy + 45 - Math.sin(ang) * nLen);
-    ctx.stroke();
-  } else {
-    const lat = s.approach === 'paramedian' ? 18 : 0;
-    ctx.beginPath();
-    ctx.moveTo(cx + lat, cy + 36);
-    ctx.lineTo(cx + lat * 0.2, cy + 36 - nLen * 0.35);
-    ctx.stroke();
-  }
-
-  ctx.fillStyle = '#fde047';
-  ctx.font = '600 10px ui-monospace, monospace';
-  ctx.fillText(`FLUORO: ${s.carmView} | ${s.region.toUpperCase()}`, cx - rad + 22, cy - rad + 28);
-  ctx.restore();
+function Metric({ label, value, accent = 'text-slate-100' }: { label: string; value: string; accent?: string }) {
+  return (
+    <div className="bg-slate-950/60 border border-slate-800 rounded-lg px-2 py-1.5">
+      <div className="text-[10px] text-slate-500">{label}</div>
+      <div className={`font-mono font-semibold ${accent}`}>{value}</div>
+    </div>
+  );
 }
-

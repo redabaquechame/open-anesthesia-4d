@@ -1,0 +1,44 @@
+name: Clinical error
+description: Report something clinically wrong or misleading in Open Anesthesia 4D
+title: "[Module] short description"
+labels: ["clinical-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping keep this tool accurate. Please do not include any patient information.
+  - type: input
+    id: module
+    attributes:
+      label: Module
+      placeholder: e.g. M5
+    validations:
+      required: true
+  - type: input
+    id: claim_id
+    attributes:
+      label: Claim id (if shown in the review panel)
+      placeholder: e.g. m5-sugammadex-doses
+  - type: textarea
+    id: wrong
+    attributes:
+      label: What is wrong or misleading?
+    validations:
+      required: true
+  - type: textarea
+    id: correct
+    attributes:
+      label: What it should be, with a guideline, label or paper if possible
+  - type: input
+    id: role
+    attributes:
+      label: Your role (optional)
+      placeholder: e.g. anaesthesiologist, resident, nurse anaesthetist
+  - type: input
+    id: build
+    attributes:
+      label: Build
+  - type: input
+    id: locale
+    attributes:
+      label: Interface language

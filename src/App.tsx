@@ -38,6 +38,8 @@ import type { WorkerOutMessage } from './physics/physicsWorker';
 import { WorkstationScene } from './modules/m1-workstation/WorkstationScene';
 import { BedsideMonitorCanvas } from './components/BedsideMonitorCanvas';
 import { ModuleRouter } from './modules/ModuleRouter';
+import { BETA_NOTICE, ReviewDrawer, ReviewStatusChip } from './components/ReviewPanel';
+import { QualitySelect } from './components/QualitySelect';
 import { openPrintableDebriefCard, queueOfflineXapiEvent } from './utils/lmsAndDebrief';
 
 type ModuleId = 'M1_M2' | 'M3' | 'M4' | 'M5' | 'M6' | 'M7' | 'M8';
@@ -151,6 +153,7 @@ export default function App() {
 
   // Drawers & Modals
   const [showEvidence, setShowEvidence] = useState<boolean>(false);
+  const [showReview, setShowReview] = useState<boolean>(false);
   const [showChecklist, setShowChecklist] = useState<boolean>(false);
   const [checklistType, setChecklistType] = useState<'SFAR' | 'ASA' | 'MAPLESON'>('SFAR');
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
@@ -294,6 +297,7 @@ export default function App() {
         <div className="flex items-center gap-1.5">
           <ShieldAlert className="w-3.5 h-3.5 shrink-0 text-amber-400" />
           <span>{t('eduDisclaimer')}</span>
+          <span className="hidden sm:inline text-amber-300/90">• {BETA_NOTICE[locale]}</span>
         </div>
         <span className="hidden md:inline font-mono text-[10px] text-amber-300/80">
           Apache-2.0 • Zero Login • Offline PWA
@@ -329,6 +333,8 @@ export default function App() {
                 <option value="ar-MA" className="bg-slate-900">العربية (المغرب / إفريقيا)</option>
               </select>
             </div>
+
+            <QualitySelect locale={locale} />
 
             {/* Regional Gas Standard Switcher */}
             <select
@@ -415,6 +421,7 @@ export default function App() {
 
         {/* Permanent 8-Module Navigation Strip */}
         <nav className="max-w-[1600px] mx-auto mt-2 flex gap-1.5 overflow-x-auto pb-0.5">
+          <ReviewStatusChip moduleTab={activeModule} locale={locale} onOpen={() => setShowReview(true)} />
           {MODULES_META.map((m) => {
             const active = activeModule === m.id;
             return (
@@ -954,6 +961,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {showReview && <ReviewDrawer moduleTab={activeModule} locale={locale} onClose={() => setShowReview(false)} />}
 
       {/* SLIDE-OVER: Evidence & Equations Drawer */}
       {showEvidence && (

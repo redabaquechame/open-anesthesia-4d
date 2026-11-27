@@ -1,0 +1,702 @@
+{
+  "supraclavicular_right.glb": {
+    "title": "Right supraclavicular region",
+    "parts": {
+      "clavicle": {
+        "fileId": "FJ3362",
+        "fma": "FMA13322",
+        "name": "Right clavicle"
+      },
+      "firstRib": {
+        "fileId": "FJ3334",
+        "fma": "FMA7857",
+        "name": "Right first rib"
+      },
+      "subclavianVein": {
+        "fileId": "FJ3587",
+        "fma": "FMA4755",
+        "name": "Right subclavian vein"
+      },
+      "internalJugularVein": {
+        "fileId": "FJ3585",
+        "fma": "FMA4754",
+        "name": "Right internal jugular vein"
+      },
+      "subclavianArtery": {
+        "fileId": "FJ3579",
+        "fma": "FMA3953",
+        "name": "Right subclavian artery"
+      },
+      "secondRib": {
+        "fileId": "FJ3336",
+        "fma": "FMA7882",
+        "name": "Right second rib"
+      },
+      "t1": {
+        "fileId": "FJ3158",
+        "fma": "FMA9165",
+        "name": "First thoracic vertebra"
+      },
+      "c7": {
+        "fileId": "FJ3172",
+        "fma": "FMA12525",
+        "name": "Seventh cervical vertebra"
+      },
+      "commonCarotid": {
+        "fileId": "FJ3564",
+        "fma": "FMA3941",
+        "name": "Right common carotid artery"
+      },
+      "brachiocephalicArtery": {
+        "fileId": "FJ3417",
+        "fma": "FMA3932",
+        "name": "Brachiocephalic artery"
+      }
+    }
+  },
+  "airway.glb": {
+    "title": "Tracheobronchial tree and great vessels",
+    "parts": {
+      "trachea": {
+        "fileId": "FJ2541",
+        "fma": "FMA7394",
+        "name": "Trachea"
+      },
+      "rightMainBronchus": {
+        "fileId": "FJ2539",
+        "fma": "FMA68418",
+        "name": "Right main bronchus proper"
+      },
+      "leftMainBronchus": {
+        "fileId": "FJ2450",
+        "fma": "FMA7396",
+        "name": "Left main bronchus"
+      },
+      "RUL_apical_0": {
+        "fileId": "FJ2454",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_apical_1": {
+        "fileId": "FJ2520",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_apical_2": {
+        "fileId": "FJ2521",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_apical_3": {
+        "fileId": "FJ2522",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_apical_4": {
+        "fileId": "FJ2523",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_apical_5": {
+        "fileId": "FJ2524",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_apical_6": {
+        "fileId": "FJ2525",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_apical_7": {
+        "fileId": "FJ2526",
+        "fma": "FMA68211",
+        "name": "Right apical segmental bronchial tree"
+      },
+      "RUL_posterior_0": {
+        "fileId": "FJ2458",
+        "fma": "FMA68213",
+        "name": "Right posterior segmental bronchial tree"
+      },
+      "RUL_posterior_1": {
+        "fileId": "FJ2515",
+        "fma": "FMA68213",
+        "name": "Right posterior segmental bronchial tree"
+      },
+      "RUL_posterior_2": {
+        "fileId": "FJ2516",
+        "fma": "FMA68213",
+        "name": "Right posterior segmental bronchial tree"
+      },
+      "RUL_posterior_3": {
+        "fileId": "FJ2517",
+        "fma": "FMA68213",
+        "name": "Right posterior segmental bronchial tree"
+      },
+      "RUL_posterior_4": {
+        "fileId": "FJ2518",
+        "fma": "FMA68213",
+        "name": "Right posterior segmental bronchial tree"
+      },
+      "RUL_posterior_5": {
+        "fileId": "FJ2519",
+        "fma": "FMA68213",
+        "name": "Right posterior segmental bronchial tree"
+      },
+      "RUL_anterior_0": {
+        "fileId": "FJ2453",
+        "fma": "FMA68212",
+        "name": "Right anterior segmental bronchial tree"
+      },
+      "RUL_anterior_1": {
+        "fileId": "FJ2509",
+        "fma": "FMA68212",
+        "name": "Right anterior segmental bronchial tree"
+      },
+      "RUL_anterior_2": {
+        "fileId": "FJ2510",
+        "fma": "FMA68212",
+        "name": "Right anterior segmental bronchial tree"
+      },
+      "RUL_anterior_3": {
+        "fileId": "FJ2511",
+        "fma": "FMA68212",
+        "name": "Right anterior segmental bronchial tree"
+      },
+      "RUL_anterior_4": {
+        "fileId": "FJ2512",
+        "fma": "FMA68212",
+        "name": "Right anterior segmental bronchial tree"
+      },
+      "RUL_anterior_5": {
+        "fileId": "FJ2513",
+        "fma": "FMA68212",
+        "name": "Right anterior segmental bronchial tree"
+      },
+      "RUL_anterior_6": {
+        "fileId": "FJ2514",
+        "fma": "FMA68212",
+        "name": "Right anterior segmental bronchial tree"
+      },
+      "RML_lateral_0": {
+        "fileId": "FJ2449",
+        "fma": "FMA68215",
+        "name": "Lateral segmental bronchial tree"
+      },
+      "RML_lateral_1": {
+        "fileId": "FJ2503",
+        "fma": "FMA68215",
+        "name": "Lateral segmental bronchial tree"
+      },
+      "RML_lateral_2": {
+        "fileId": "FJ2504",
+        "fma": "FMA68215",
+        "name": "Lateral segmental bronchial tree"
+      },
+      "RML_lateral_3": {
+        "fileId": "FJ2505",
+        "fma": "FMA68215",
+        "name": "Lateral segmental bronchial tree"
+      },
+      "RML_medial_0": {
+        "fileId": "FJ2451",
+        "fma": "FMA68214",
+        "name": "Medial segmental bronchial tree"
+      },
+      "RML_medial_1": {
+        "fileId": "FJ2506",
+        "fma": "FMA68214",
+        "name": "Medial segmental bronchial tree"
+      },
+      "RML_medial_2": {
+        "fileId": "FJ2507",
+        "fma": "FMA68214",
+        "name": "Medial segmental bronchial tree"
+      },
+      "RML_medial_3": {
+        "fileId": "FJ2508",
+        "fma": "FMA68214",
+        "name": "Medial segmental bronchial tree"
+      },
+      "RLL_superior_0": {
+        "fileId": "FJ2459",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_1": {
+        "fileId": "FJ2495",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_2": {
+        "fileId": "FJ2496",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_3": {
+        "fileId": "FJ2497",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_4": {
+        "fileId": "FJ2498",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_5": {
+        "fileId": "FJ2499",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_6": {
+        "fileId": "FJ2500",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_7": {
+        "fileId": "FJ2501",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_superior_8": {
+        "fileId": "FJ2502",
+        "fma": "FMA68216",
+        "name": "Right superior segmental bronchial tree"
+      },
+      "RLL_medialBasal_0": {
+        "fileId": "FJ2456",
+        "fma": "FMA68218",
+        "name": "Right medial basal segmental bronchial tree"
+      },
+      "RLL_medialBasal_1": {
+        "fileId": "FJ2488",
+        "fma": "FMA68218",
+        "name": "Right medial basal segmental bronchial tree"
+      },
+      "RLL_anteriorBasal_0": {
+        "fileId": "FJ2452",
+        "fma": "FMA68321",
+        "name": "Right anterior basal segmental bronchial tree"
+      },
+      "RLL_anteriorBasal_1": {
+        "fileId": "FJ2493",
+        "fma": "FMA68321",
+        "name": "Right anterior basal segmental bronchial tree"
+      },
+      "RLL_anteriorBasal_2": {
+        "fileId": "FJ2494",
+        "fma": "FMA68321",
+        "name": "Right anterior basal segmental bronchial tree"
+      },
+      "RLL_lateralBasal_0": {
+        "fileId": "FJ2455",
+        "fma": "FMA68220",
+        "name": "Right lateral basal segmental bronchial tree"
+      },
+      "RLL_lateralBasal_1": {
+        "fileId": "FJ2490",
+        "fma": "FMA68220",
+        "name": "Right lateral basal segmental bronchial tree"
+      },
+      "RLL_lateralBasal_2": {
+        "fileId": "FJ2491",
+        "fma": "FMA68220",
+        "name": "Right lateral basal segmental bronchial tree"
+      },
+      "RLL_lateralBasal_3": {
+        "fileId": "FJ2492",
+        "fma": "FMA68220",
+        "name": "Right lateral basal segmental bronchial tree"
+      },
+      "RLL_posteriorBasal_0": {
+        "fileId": "FJ2457",
+        "fma": "FMA68221",
+        "name": "Right posterior basal segmental bronchial tree"
+      },
+      "RLL_posteriorBasal_1": {
+        "fileId": "FJ2470",
+        "fma": "FMA68221",
+        "name": "Right posterior basal segmental bronchial tree"
+      },
+      "RLL_posteriorBasal_2": {
+        "fileId": "FJ2481",
+        "fma": "FMA68221",
+        "name": "Right posterior basal segmental bronchial tree"
+      },
+      "RLL_posteriorBasal_3": {
+        "fileId": "FJ2486",
+        "fma": "FMA68221",
+        "name": "Right posterior basal segmental bronchial tree"
+      },
+      "RLL_posteriorBasal_4": {
+        "fileId": "FJ2487",
+        "fma": "FMA68221",
+        "name": "Right posterior basal segmental bronchial tree"
+      },
+      "RLL_posteriorBasal_5": {
+        "fileId": "FJ2489",
+        "fma": "FMA68221",
+        "name": "Right posterior basal segmental bronchial tree"
+      },
+      "LUL_apical_0": {
+        "fileId": "FJ2444",
+        "fma": "FMA68223",
+        "name": "Left apical segmental bronchial tree"
+      },
+      "LUL_apical_1": {
+        "fileId": "FJ2460",
+        "fma": "FMA68223",
+        "name": "Left apical segmental bronchial tree"
+      },
+      "LUL_apical_2": {
+        "fileId": "FJ2461",
+        "fma": "FMA68223",
+        "name": "Left apical segmental bronchial tree"
+      },
+      "LUL_apical_3": {
+        "fileId": "FJ2462",
+        "fma": "FMA68223",
+        "name": "Left apical segmental bronchial tree"
+      },
+      "LUL_apical_4": {
+        "fileId": "FJ2463",
+        "fma": "FMA68223",
+        "name": "Left apical segmental bronchial tree"
+      },
+      "LUL_apical_5": {
+        "fileId": "FJ2464",
+        "fma": "FMA68223",
+        "name": "Left apical segmental bronchial tree"
+      },
+      "LUL_posterior_0": {
+        "fileId": "FJ2447",
+        "fma": "FMA68225",
+        "name": "Left posterior segmental bronchial tree"
+      },
+      "LUL_posterior_1": {
+        "fileId": "FJ2465",
+        "fma": "FMA68225",
+        "name": "Left posterior segmental bronchial tree"
+      },
+      "LUL_posterior_2": {
+        "fileId": "FJ2466",
+        "fma": "FMA68225",
+        "name": "Left posterior segmental bronchial tree"
+      },
+      "LUL_anterior_0": {
+        "fileId": "FJ2443",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_anterior_1": {
+        "fileId": "FJ2467",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_anterior_2": {
+        "fileId": "FJ2468",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_anterior_3": {
+        "fileId": "FJ2469",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_anterior_4": {
+        "fileId": "FJ2471",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_anterior_5": {
+        "fileId": "FJ2472",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_anterior_6": {
+        "fileId": "FJ2473",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_anterior_7": {
+        "fileId": "FJ2474",
+        "fma": "FMA68222",
+        "name": "Left anterior segmental bronchial tree"
+      },
+      "LUL_superiorLingular_0": {
+        "fileId": "FJ2476",
+        "fma": "FMA68226",
+        "name": "Superior lingular bronchial tree"
+      },
+      "LUL_superiorLingular_1": {
+        "fileId": "FJ2477",
+        "fma": "FMA68226",
+        "name": "Superior lingular bronchial tree"
+      },
+      "LUL_superiorLingular_2": {
+        "fileId": "FJ2478",
+        "fma": "FMA68226",
+        "name": "Superior lingular bronchial tree"
+      },
+      "LUL_superiorLingular_3": {
+        "fileId": "FJ2540",
+        "fma": "FMA68226",
+        "name": "Superior lingular bronchial tree"
+      },
+      "LUL_inferiorLingular_0": {
+        "fileId": "FJ2441",
+        "fma": "FMA68227",
+        "name": "Inferior lingular bronchial tree"
+      },
+      "LUL_inferiorLingular_1": {
+        "fileId": "FJ2475",
+        "fma": "FMA68227",
+        "name": "Inferior lingular bronchial tree"
+      },
+      "LLL_superior_0": {
+        "fileId": "FJ2448",
+        "fma": "FMA68228",
+        "name": "Left superior segmental bronchial tree"
+      },
+      "LLL_superior_1": {
+        "fileId": "FJ2479",
+        "fma": "FMA68228",
+        "name": "Left superior segmental bronchial tree"
+      },
+      "LLL_superior_2": {
+        "fileId": "FJ2480",
+        "fma": "FMA68228",
+        "name": "Left superior segmental bronchial tree"
+      },
+      "LLL_superior_3": {
+        "fileId": "FJ2482",
+        "fma": "FMA68228",
+        "name": "Left superior segmental bronchial tree"
+      },
+      "LLL_superior_4": {
+        "fileId": "FJ2483",
+        "fma": "FMA68228",
+        "name": "Left superior segmental bronchial tree"
+      },
+      "LLL_superior_5": {
+        "fileId": "FJ2484",
+        "fma": "FMA68228",
+        "name": "Left superior segmental bronchial tree"
+      },
+      "LLL_superior_6": {
+        "fileId": "FJ2485",
+        "fma": "FMA68228",
+        "name": "Left superior segmental bronchial tree"
+      },
+      "LLL_anteriorBasal_0": {
+        "fileId": "FJ2535",
+        "fma": "FMA68231",
+        "name": "Left anterior basal segmental bronchial tree"
+      },
+      "LLL_anteriorBasal_1": {
+        "fileId": "FJ2536",
+        "fma": "FMA68231",
+        "name": "Left anterior basal segmental bronchial tree"
+      },
+      "LLL_anteriorBasal_2": {
+        "fileId": "FJ2538",
+        "fma": "FMA68231",
+        "name": "Left anterior basal segmental bronchial tree"
+      },
+      "LLL_medialBasal_0": {
+        "fileId": "FJ2442",
+        "fma": "FMA68230",
+        "name": "Left medial basal segmental bronchial tree"
+      },
+      "LLL_medialBasal_1": {
+        "fileId": "FJ2537",
+        "fma": "FMA68230",
+        "name": "Left medial basal segmental bronchial tree"
+      },
+      "LLL_lateralBasal_0": {
+        "fileId": "FJ2445",
+        "fma": "FMA68232",
+        "name": "Left lateral basal segmental bronchial tree"
+      },
+      "LLL_lateralBasal_1": {
+        "fileId": "FJ2532",
+        "fma": "FMA68232",
+        "name": "Left lateral basal segmental bronchial tree"
+      },
+      "LLL_lateralBasal_2": {
+        "fileId": "FJ2533",
+        "fma": "FMA68232",
+        "name": "Left lateral basal segmental bronchial tree"
+      },
+      "LLL_lateralBasal_3": {
+        "fileId": "FJ2534",
+        "fma": "FMA68232",
+        "name": "Left lateral basal segmental bronchial tree"
+      },
+      "LLL_posteriorBasal_0": {
+        "fileId": "FJ2446",
+        "fma": "FMA68233",
+        "name": "Left posterior basal segmental bronchial tree"
+      },
+      "LLL_posteriorBasal_1": {
+        "fileId": "FJ2527",
+        "fma": "FMA68233",
+        "name": "Left posterior basal segmental bronchial tree"
+      },
+      "LLL_posteriorBasal_2": {
+        "fileId": "FJ2528",
+        "fma": "FMA68233",
+        "name": "Left posterior basal segmental bronchial tree"
+      },
+      "LLL_posteriorBasal_3": {
+        "fileId": "FJ2529",
+        "fma": "FMA68233",
+        "name": "Left posterior basal segmental bronchial tree"
+      },
+      "LLL_posteriorBasal_4": {
+        "fileId": "FJ2530",
+        "fma": "FMA68233",
+        "name": "Left posterior basal segmental bronchial tree"
+      },
+      "LLL_posteriorBasal_5": {
+        "fileId": "FJ2531",
+        "fma": "FMA68233",
+        "name": "Left posterior basal segmental bronchial tree"
+      },
+      "ctx_aorticArch": {
+        "fileId": "FJ3411",
+        "fma": "FMA3768",
+        "name": "Arch of aorta"
+      },
+      "ctx_ascendingAorta": {
+        "fileId": "FJ3413",
+        "fma": "FMA3736",
+        "name": "Ascending aorta"
+      },
+      "ctx_descendingAorta": {
+        "fileId": "FJ1931",
+        "fma": "FMA87217",
+        "name": "Descending thoracic aorta"
+      },
+      "ctx_pulmonaryTrunk": {
+        "fileId": "FJ2966",
+        "fma": "FMA8612",
+        "name": "Pulmonary trunk"
+      },
+      "ctx_rightPA": {
+        "fileId": "FJ3019",
+        "fma": "FMA50872",
+        "name": "Right pulmonary artery"
+      },
+      "ctx_leftPA": {
+        "fileId": "FJ2924",
+        "fma": "FMA50873",
+        "name": "Left pulmonary artery"
+      },
+      "ctx_oesophagus": {
+        "fileId": "FJ2563",
+        "fma": "FMA7131",
+        "name": "Esophagus"
+      }
+    }
+  },
+  "spine.glb": {
+    "title": "Thoracic and lumbar spine",
+    "parts": {
+      "t4": {
+        "fileId": "FJ3166",
+        "fma": "FMA9248",
+        "name": "Fourth thoracic vertebra"
+      },
+      "t5": {
+        "fileId": "FJ3169",
+        "fma": "FMA9922",
+        "name": "Fifth thoracic vertebra"
+      },
+      "t6": {
+        "fileId": "FJ3171",
+        "fma": "FMA9945",
+        "name": "Sixth thoracic vertebra"
+      },
+      "t7": {
+        "fileId": "FJ3173",
+        "fma": "FMA9968",
+        "name": "Seventh thoracic vertebra"
+      },
+      "t8": {
+        "fileId": "FJ3174",
+        "fma": "FMA9991",
+        "name": "Eighth thoracic vertebra"
+      },
+      "t9": {
+        "fileId": "FJ3175",
+        "fma": "FMA10014",
+        "name": "Ninth thoracic vertebra"
+      },
+      "l2": {
+        "fileId": "FJ3159",
+        "fma": "FMA13073",
+        "name": "Second lumbar vertebra"
+      },
+      "l3": {
+        "fileId": "FJ3162",
+        "fma": "FMA13074",
+        "name": "Third lumbar vertebra"
+      },
+      "l4": {
+        "fileId": "FJ3165",
+        "fma": "FMA13075",
+        "name": "Fourth lumbar vertebra"
+      },
+      "l5": {
+        "fileId": "FJ3168",
+        "fma": "FMA13076",
+        "name": "Fifth lumbar vertebra"
+      },
+      "sacrum": {
+        "fileId": "FJ3393",
+        "fma": "FMA16202",
+        "name": "Sacrum"
+      },
+      "discT4": {
+        "fileId": "FJ3203",
+        "fma": "FMA13501",
+        "name": "Intervertebral disk of fourth thoracic vertebra"
+      },
+      "discT5": {
+        "fileId": "FJ3204",
+        "fma": "FMA13502",
+        "name": "Intervertebral disk of fifth thoracic vertebra"
+      },
+      "discT6": {
+        "fileId": "FJ3205",
+        "fma": "FMA13503",
+        "name": "Intervertebral disk of sixth thoracic vertebra"
+      },
+      "discT7": {
+        "fileId": "FJ3206",
+        "fma": "FMA13504",
+        "name": "Intervertebral disk of seventh thoracic vertebra"
+      },
+      "discT8": {
+        "fileId": "FJ3207",
+        "fma": "FMA13505",
+        "name": "Intervertebral disk of eighth thoracic vertebra"
+      },
+      "discL2": {
+        "fileId": "FJ3214",
+        "fma": "FMA16034",
+        "name": "Intervertebral disk of second lumbar vertebra"
+      },
+      "discL3": {
+        "fileId": "FJ3215",
+        "fma": "FMA16035",
+        "name": "Intervertebral disk of third lumbar vertebra"
+      },
+      "discL4": {
+        "fileId": "FJ3216",
+        "fma": "FMA16036",
+        "name": "Intervertebral disk of fourth lumbar vertebra"
+      }
+    }
+  }
+}
