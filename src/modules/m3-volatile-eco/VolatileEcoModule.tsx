@@ -294,8 +294,8 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
   return (
     <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
       <section className="lg:col-span-8 flex flex-col gap-3">
-        <div className="bg-[#080d16] border border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
+        <div className="bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden">
+          <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
             <span className="font-bold text-cyan-300">
               {L(
                 'Captation et distribution multi-compartiments (modèle du simulateur, échelle W^0,75)',
@@ -341,7 +341,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
         </div>
 
         {/* Kinetics Plot & Live Climate Footprint Strip */}
-        <div className="bg-[#060a12] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-canvas border border-slate-800 rounded-xl p-3 space-y-2.5">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 font-mono text-xs">
             <div className="bg-slate-900 rounded-lg p-2 border border-slate-800">
               <div className="text-[10px] text-slate-400">FD / FI / FA</div>
@@ -394,12 +394,12 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
             </div>
           </div>
 
-          <canvas ref={chartRef} className="w-full h-44 block rounded-lg bg-[#050810]" />
+          <canvas ref={chartRef} className="w-full h-44 block rounded-lg bg-oa-canvas" />
         </div>
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
             {L('1. Halogéné, climat et coût', '1. Volatile Agent, Climate & Cost Controls')}
           </h2>
@@ -509,7 +509,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
         </div>
 
         {/* High-Yield Clinical & Africa Transition Scenarios */}
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400">
             {L('2. Scénarios pédagogiques', '2. Teaching Presets')}
           </h2>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BookMarked, CheckCircle2, Circle, Download, ExternalLink, FileText, GraduationCap, Library, Printer, Scale, Search } from 'lucide-react';
 import type { LocaleCode } from '../../standards/clinicalStandards';
-import type { AppModuleId, OfficialResource, Programme, RegionId, ResourceKind } from '../../standards/programmeTypes';
+import type { AppModuleId, OfficialResource, Programme, ProgrammeItem, RegionId, ResourceKind } from '../../standards/programmeTypes';
 import { PROGRAMMES } from '../../standards/programmes';
 import { OFFICIAL_RESOURCES } from '../../standards/officialResources';
 import { DOMAINS } from '../../standards/curriculum';
@@ -38,6 +38,7 @@ const READING_CLS: Record<string, string> = {
 };
 
 type Progress = Record<string, string>; // item id → ISO date when ticked
+type StatusFilter = 'all' | 'todo' | 'done';
 
 function loadProgress(): Progress {
   try {
@@ -82,12 +83,12 @@ function exportProgress(progress: Progress) {
 
 function ResourceCard({ r, onNavigate }: { r: OfficialResource; onNavigate?: (m: AppModuleId) => void }) {
   return (
-    <div id={`res-${r.id}`} className="border border-slate-800 rounded-lg p-2.5 bg-slate-950/60 text-xs scroll-mt-24">
+    <div id={`res-${r.id}`} className="border border-oa-hairline rounded p-2.5 bg-oa-surface text-xs scroll-mt-24">
       <div className="flex items-start justify-between gap-2">
-        <a href={r.url} target="_blank" rel="noreferrer" className="font-semibold text-slate-100 hover:text-cyan-300 hover:underline">
+        <a href={r.url} target="_blank" rel="noreferrer" className="font-semibold text-slate-100 hover:text-white hover:underline">
           {r.title} <ExternalLink className="inline w-3 h-3" />
         </a>
-        <span className="shrink-0 font-mono text-[10px] text-slate-400">{r.year}</span>
+        <span className="shrink-0 oa-num text-[10px] text-slate-400">{r.year}</span>
       </div>
       {r.originalTitle && <div className="text-[10px] italic text-slate-500">{r.originalTitle}</div>}
       <div className="text-[11px] text-slate-400 mt-0.5">
@@ -101,7 +102,7 @@ function ResourceCard({ r, onNavigate }: { r: OfficialResource; onNavigate?: (m:
         {r.licence && <span className="px-1.5 rounded border border-slate-700 text-slate-400">{r.licence}</span>}
       </div>
       {r.keyPoints && r.keyPoints.length > 0 && (
-        <ul className="list-disc pl-4 mt-1.5 space-y-0.5 text-slate-300">
+        <ul className="list-disc ps-4 mt-1.5 space-y-0.5 text-slate-300">
           {r.keyPoints.map((k, i) => (
             <li key={i}>{k}</li>
           ))}
@@ -110,7 +111,7 @@ function ResourceCard({ r, onNavigate }: { r: OfficialResource; onNavigate?: (m:
       {r.modules && r.modules.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5">
           {r.modules.map((m) => (
-            <button key={m} onClick={() => onNavigate?.(m)} className="px-1.5 py-0.5 rounded bg-cyan-900/40 border border-cyan-700/50 text-cyan-200 text-[10px] hover:bg-cyan-800/60 cursor-pointer">
+            <button key={m} onClick={() => onNavigate?.(m)} className="px-1.5 py-0.5 rounded bg-oa-raised border border-oa-border-strong text-slate-200 text-[10px] hover:bg-oa-hover cursor-pointer">
               ▶ {MODULE_LABEL[m]}
             </button>
           ))}
@@ -128,6 +129,8 @@ export function ParcoursModule({ locale, onNavigate }: { locale: LocaleCode; onN
   const [kind, setKind] = useState<ResourceKind | 'all'>('all');
   const [libRegion, setLibRegion] = useState<string>('all');
   const [domain, setDomain] = useState<string>('all');
+  const [mq, setMq] = useState('');
+  const [status, setStatus] = useState<StatusFilter>('all');
 
   useEffect(() => {
     try {
@@ -175,19 +178,35 @@ export function ParcoursModule({ locale, onNavigate }: { locale: LocaleCode; onN
   const total = programme ? programme.stages.reduce((n, s) => n + s.items.length, 0) : 0;
   const done = programme ? programme.stages.reduce((n, s) => n + s.items.filter((i) => progress[i.id]).length, 0) : 0;
 
+  const en = locale === 'en-INT';
+  const STATUS_CHIPS: { id: StatusFilter; label: string }[] = [
+    { id: 'all', label: en ? 'All' : 'Tous' },
+    { id: 'todo', label: en ? 'To do' : 'À faire' },
+    { id: 'done', label: en ? 'Done' : 'Validés' },
+  ];
+  const needle = mq.trim().toLowerCase();
+  const matches = (i: ProgrammeItem) =>
+    (status === 'all' || (status === 'done') === !!progress[i.id]) && (!needle || i.text.toLowerCase().includes(needle));
+  const filtering = status !== 'all' || !!needle;
+  const visibleStages = programme ? programme.stages.map((s) => ({ s, items: s.items.filter(matches) })).filter((x) => !filtering || x.items.length > 0) : [];
+
+  const chipCls = (on: boolean) =>
+    `px-2 min-h-7 rounded border cursor-pointer flex items-center gap-1 ${on ? 'bg-oa-hover border-slate-400 text-white' : 'bg-oa-raised border-oa-hairline text-slate-300 hover:border-oa-border-strong'}`;
+  const toolBtn = 'px-2 min-h-7 rounded border border-oa-border-strong bg-oa-raised hover:bg-oa-hover cursor-pointer flex items-center gap-1 text-slate-200';
+
   return (
     <main className="flex-1 max-w-[1200px] w-full mx-auto p-3 flex flex-col gap-3 text-slate-200">
-      <section className="bg-[#0b1220] border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
+      <section className="bg-oa-surface border border-oa-hairline rounded p-3 flex flex-col gap-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-bold text-cyan-300 flex items-center gap-2">
-            <GraduationCap className="w-5 h-5" /> Parcours officiel de l’interne en anesthésie-réanimation
+          <h2 className="font-semibold text-slate-100 flex items-center gap-2">
+            <GraduationCap className="w-5 h-5 text-slate-400" /> Parcours officiel de l’interne en anesthésie-réanimation
           </h2>
           <div className="flex gap-1.5 text-xs">
-            <button onClick={() => setView('programme')} className={`px-2.5 py-1 rounded-lg border cursor-pointer flex items-center gap-1 ${view === 'programme' ? 'bg-cyan-700 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'}`}>
+            <button onClick={() => setView('programme')} className={chipCls(view === 'programme')}>
               <BookMarked className="w-3.5 h-3.5" /> Programmes
             </button>
-            <button onClick={() => setView('library')} className={`px-2.5 py-1 rounded-lg border cursor-pointer flex items-center gap-1 ${view === 'library' ? 'bg-cyan-700 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'}`}>
-              <Library className="w-3.5 h-3.5" /> Bibliothèque officielle ({OFFICIAL_RESOURCES.length})
+            <button onClick={() => setView('library')} className={chipCls(view === 'library')}>
+              <Library className="w-3.5 h-3.5" /> Bibliothèque officielle (<span className="oa-num">{OFFICIAL_RESOURCES.length}</span>)
             </button>
           </div>
         </div>
@@ -198,40 +217,80 @@ export function ParcoursModule({ locale, onNavigate }: { locale: LocaleCode; onN
 
       {view === 'programme' && (
         <>
-          <div className="flex flex-wrap gap-1.5">
-            {REGION_ORDER.map((r) => {
-              const n = PROGRAMMES.filter((p) => p.region === r.id).length;
-              return (
-                <button
-                  key={r.id}
-                  onClick={() => {
-                    setRegion(r.id);
-                    setPid(PROGRAMMES.find((p) => p.region === r.id)?.id);
-                  }}
-                  className={`px-3 py-1.5 rounded-lg border text-sm cursor-pointer ${region === r.id ? 'bg-cyan-700/70 border-cyan-400 text-white font-semibold' : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'}`}
-                >
-                  {r.flag} {r.label} <span className="text-[10px] text-slate-400">({n})</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {programmes.length > 1 && (
-            <div className="flex flex-wrap gap-1.5 text-xs">
-              {programmes.map((p) => (
-                <button key={p.id} onClick={() => setPid(p.id)} className={`px-2 py-1 rounded border cursor-pointer ${programme?.id === p.id ? 'bg-slate-700 border-slate-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}>
-                  {p.label}
-                </button>
-              ))}
+          <section className="md:sticky md:top-11 md:z-20 bg-oa-surface border border-oa-hairline rounded text-xs flex flex-col">
+            <div className="flex flex-wrap items-center gap-1.5 px-3 py-2">
+              {REGION_ORDER.map((r) => {
+                const n = PROGRAMMES.filter((p) => p.region === r.id).length;
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => {
+                      setRegion(r.id);
+                      setPid(PROGRAMMES.find((p) => p.region === r.id)?.id);
+                    }}
+                    className={chipCls(region === r.id)}
+                  >
+                    {r.flag} {r.label} <span className="oa-num text-[10px] text-slate-400">({n})</span>
+                  </button>
+                );
+              })}
+              {programmes.length > 1 && (
+                <>
+                  <span className="w-px self-stretch bg-oa-hairline mx-1" aria-hidden />
+                  {programmes.map((p) => (
+                    <button key={p.id} onClick={() => setPid(p.id)} className={chipCls(programme?.id === p.id)}>
+                      {p.label}
+                    </button>
+                  ))}
+                </>
+              )}
+              {programme && (
+                <div className="ms-auto flex gap-1.5">
+                  <button onClick={() => printPortfolio(programme, progress)} className={toolBtn}>
+                    <Printer className="w-3.5 h-3.5" /> Imprimer mon portfolio
+                  </button>
+                  <button onClick={() => exportProgress(progress)} className={toolBtn}>
+                    <Download className="w-3.5 h-3.5" /> Exporter
+                  </button>
+                </div>
+              )}
             </div>
-          )}
+            <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-t border-oa-hairline">
+              <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+                <div className="flex-1 h-1.5 rounded-sm bg-oa-raised overflow-hidden">
+                  <div className="h-full bg-emerald-500" style={{ width: `${total ? (100 * done) / total : 0}%` }} />
+                </div>
+                <span className="oa-num text-slate-200 shrink-0">
+                  {done} / {total}
+                </span>
+              </div>
+              <label className="flex items-center gap-1.5 flex-1 min-w-[180px] min-h-7 bg-oa-canvas border border-oa-hairline rounded px-2 focus-within:border-oa-border-strong">
+                <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                <input
+                  type="search"
+                  value={mq}
+                  onChange={(e) => setMq(e.target.value)}
+                  placeholder={en ? 'Search milestones…' : 'Rechercher une compétence…'}
+                  aria-label={en ? 'Search milestones' : 'Rechercher une compétence'}
+                  className="bg-transparent outline-none flex-1 min-w-0 text-slate-200"
+                />
+              </label>
+              <div className="flex gap-1" role="group">
+                {STATUS_CHIPS.map((c) => (
+                  <button key={c.id} onClick={() => setStatus(c.id)} aria-pressed={status === c.id} className={chipCls(status === c.id)}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
 
           {!programme && <div className="text-sm text-slate-400 p-4">Programme en cours de constitution pour cette région.</div>}
 
           {programme && (
             <>
-              <section className="bg-[#0b1220] border border-slate-800 rounded-xl p-3 text-xs flex flex-col gap-1.5">
-                <a href={programme.url} target="_blank" rel="noreferrer" className="font-semibold text-sm text-white hover:text-cyan-300 hover:underline">
+              <section className="bg-oa-surface border border-oa-hairline rounded p-3 text-xs flex flex-col gap-1.5">
+                <a href={programme.url} target="_blank" rel="noreferrer" className="font-semibold text-sm text-white hover:underline">
                   {programme.flag} {programme.officialTitle} <ExternalLink className="inline w-3.5 h-3.5" />
                 </a>
                 <div className="text-slate-400">
@@ -251,90 +310,97 @@ export function ParcoursModule({ locale, onNavigate }: { locale: LocaleCode; onN
                       <Scale className="w-3.5 h-3.5" /> Textes officiels
                     </span>
                     {programme.legal.map((l) => (
-                      <a key={l.url + l.title} href={l.url} target="_blank" rel="noreferrer" className="text-cyan-300 hover:underline">
+                      <a key={l.url + l.title} href={l.url} target="_blank" rel="noreferrer" className="text-slate-300 underline decoration-oa-border-strong hover:text-white">
                         {l.title}
                       </a>
                     ))}
                   </div>
                 )}
                 {programme.caveats && programme.caveats.length > 0 && (
-                  <ul className="text-amber-300/90 list-disc pl-4">
+                  <ul className="text-amber-300/90 list-disc ps-4">
                     {programme.caveats.map((c, i) => (
                       <li key={i}>{c}</li>
                     ))}
                   </ul>
                 )}
                 <div className="text-[10px] text-slate-500">Droits : {programme.reuse}</div>
-
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <div className="flex-1 min-w-[160px] h-2 rounded bg-slate-800 overflow-hidden">
-                    <div className="h-full bg-emerald-500" style={{ width: `${total ? (100 * done) / total : 0}%` }} />
-                  </div>
-                  <span className="font-mono text-slate-300">
-                    {done}/{total}
-                  </span>
-                  <button onClick={() => printPortfolio(programme, progress)} className="px-2 py-1 rounded border border-slate-700 bg-slate-900 hover:border-slate-500 cursor-pointer flex items-center gap-1">
-                    <Printer className="w-3.5 h-3.5" /> Imprimer mon portfolio
-                  </button>
-                  <button onClick={() => exportProgress(progress)} className="px-2 py-1 rounded border border-slate-700 bg-slate-900 hover:border-slate-500 cursor-pointer flex items-center gap-1">
-                    <Download className="w-3.5 h-3.5" /> Exporter
-                  </button>
-                </div>
               </section>
 
-              {programme.stages.map((s) => {
-                const sd = s.items.filter((i) => progress[i.id]).length;
-                return (
-                  <section key={s.id} className="bg-[#0b1220] border border-slate-800 rounded-xl p-3 text-xs flex flex-col gap-2">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <h3 className="font-bold text-slate-100 text-sm">
-                        {s.title} {s.duration && <span className="text-[11px] font-normal text-slate-400">· {s.duration}</span>}
-                      </h3>
-                      <span className="font-mono text-[10px] text-slate-400">
-                        {sd}/{s.items.length}
-                      </span>
-                    </div>
-                    {s.summary && <p className="text-slate-400">{s.summary}</p>}
-                    {s.placements && s.placements.length > 0 && (
-                      <div className="text-slate-300">
-                        <span className="font-semibold text-slate-100">Stages : </span>
-                        {s.placements.join(' · ')}
+              <section className="bg-oa-surface border border-oa-hairline rounded text-xs">
+                {visibleStages.length === 0 && (
+                  <div className="px-3 py-4 text-slate-400">{en ? 'No milestone matches.' : 'Aucune compétence ne correspond.'}</div>
+                )}
+                {visibleStages.map(({ s, items }, si) => {
+                  const sd = s.items.filter((i) => progress[i.id]).length;
+                  return (
+                    <div key={s.id} className={si > 0 ? 'border-t border-oa-border-strong' : ''}>
+                      <div className="px-3 pt-3 pb-2 flex flex-col gap-1 bg-oa-raised/40">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <h3 className="font-semibold text-slate-100 text-sm">
+                            {s.title} {s.duration && <span className="text-[11px] font-normal text-slate-400">· {s.duration}</span>}
+                          </h3>
+                          <span className="oa-num text-[11px] text-slate-400">
+                            {sd} / {s.items.length}
+                          </span>
+                        </div>
+                        {s.summary && <p className="text-slate-400">{s.summary}</p>}
+                        {s.placements && s.placements.length > 0 && (
+                          <div className="text-slate-300">
+                            <span className="font-semibold text-slate-100">Stages : </span>
+                            {s.placements.join(' · ')}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <ul className="flex flex-col gap-1">
-                      {s.items.map((i) => {
-                        const ok = !!progress[i.id];
-                        return (
-                          <li key={i.id} className="flex gap-2 items-start rounded-lg px-1.5 py-1 hover:bg-slate-900/70">
-                            <button onClick={() => toggle(i.id)} aria-label={ok ? 'Décocher' : 'Cocher'} className="mt-0.5 cursor-pointer shrink-0">
-                              {ok ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <Circle className="w-4 h-4 text-slate-500" />}
-                            </button>
-                            <div className="flex-1">
-                              <span className={ok ? 'text-slate-400 line-through decoration-slate-600' : 'text-slate-200'}>{i.text}</span>
-                              <div className="flex flex-wrap gap-1 mt-0.5">
-                                {i.domain && <span className="text-[10px] text-slate-500">{domainName(i.domain)}</span>}
-                                {(i.modules ?? []).map((m) => (
-                                  <button key={m} onClick={() => onNavigate?.(m)} className="px-1.5 rounded bg-cyan-900/40 border border-cyan-700/50 text-cyan-200 text-[10px] hover:bg-cyan-800/60 cursor-pointer">
-                                    ▶ {MODULE_LABEL[m]}
-                                  </button>
-                                ))}
-                                {(i.resources ?? []).map((rid) => {
-                                  const r = resourcesById.get(rid);
-                                  return r ? (
-                                    <button key={rid} onClick={() => openResource(rid)} className="px-1.5 rounded bg-slate-800 border border-slate-700 text-slate-300 text-[10px] hover:border-slate-500 cursor-pointer flex items-center gap-0.5">
-                                      <FileText className="w-3 h-3" /> {r.body.split(/[ (/]/)[0]} {r.year}
+                      <ul>
+                        {items.map((i) => {
+                          const ok = !!progress[i.id];
+                          return (
+                            <li key={i.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 min-h-8 px-3 py-1.5 border-t border-oa-hairline hover:bg-oa-hover">
+                              <button
+                                onClick={() => toggle(i.id)}
+                                role="checkbox"
+                                aria-checked={ok}
+                                title={ok ? 'Décocher' : 'Cocher'}
+                                className="flex-1 min-w-[220px] flex items-start gap-2 text-start cursor-pointer"
+                              >
+                                {ok ? <CheckCircle2 className="w-4 h-4 mt-px shrink-0 text-emerald-400" /> : <Circle className="w-4 h-4 mt-px shrink-0 text-slate-500" />}
+                                <span className="flex flex-col">
+                                  <span className={ok ? 'text-slate-400 line-through decoration-slate-600' : 'text-slate-200'}>{i.text}</span>
+                                  {i.domain && <span className="text-[10px] text-slate-500">{domainName(i.domain)}</span>}
+                                </span>
+                              </button>
+                              {((i.resources ?? []).length > 0 || (i.modules ?? []).length > 0) && (
+                                <div className="flex flex-wrap items-center gap-1 ms-auto">
+                                  {(i.resources ?? []).map((rid) => {
+                                    const r = resourcesById.get(rid);
+                                    return r ? (
+                                      <button key={rid} onClick={() => openResource(rid)} className="px-1.5 min-h-6 rounded border border-oa-hairline text-slate-400 text-[10px] hover:text-slate-200 hover:border-oa-border-strong cursor-pointer flex items-center gap-0.5">
+                                        <FileText className="w-3 h-3" /> {r.body.split(/[ (/]/)[0]} <span className="oa-num">{r.year}</span>
+                                      </button>
+                                    ) : null;
+                                  })}
+                                  {(i.modules ?? []).map((m) => (
+                                    <button
+                                      key={m}
+                                      onClick={() => onNavigate?.(m)}
+                                      title={MODULE_LABEL[m]}
+                                      aria-label={`${en ? 'Simulate' : 'Simuler'} : ${MODULE_LABEL[m]}`}
+                                      className="px-2 min-h-6 rounded border border-oa-border-strong bg-oa-raised text-slate-100 text-[11px] hover:bg-oa-hover hover:border-slate-400 cursor-pointer flex items-center gap-1.5"
+                                    >
+                                      <span className="oa-num text-[10px] text-slate-400">{MODULE_LABEL[m].split(' ')[0]}</span>
+                                      {en ? 'Simulate →' : 'Simuler →'}
                                     </button>
-                                  ) : null;
-                                })}
-                              </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </section>
-                );
-              })}
+                                  ))}
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </section>
             </>
           )}
         </>
@@ -342,8 +408,8 @@ export function ParcoursModule({ locale, onNavigate }: { locale: LocaleCode; onN
 
       {view === 'library' && (
         <>
-          <section className="bg-[#0b1220] border border-slate-800 rounded-xl p-3 flex flex-wrap gap-2 text-xs items-center">
-            <label className="flex items-center gap-1 flex-1 min-w-[200px] bg-slate-900 border border-slate-700 rounded px-2 py-1">
+          <section className="bg-oa-surface border border-oa-hairline rounded p-3 flex flex-wrap gap-2 text-xs items-center">
+            <label className="flex items-center gap-1 flex-1 min-w-[200px] bg-oa-canvas border border-oa-hairline rounded px-2 py-1">
               <Search className="w-3.5 h-3.5 text-slate-400" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher (titre, société, dose, mot-clé)…" className="bg-transparent outline-none flex-1 text-slate-200" />
             </label>
@@ -374,7 +440,7 @@ export function ParcoursModule({ locale, onNavigate }: { locale: LocaleCode; onN
                 </option>
               ))}
             </select>
-            <span className="text-slate-400 font-mono">{library.length}</span>
+            <span className="text-slate-400 oa-num">{library.length}</span>
           </section>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             {library.map((r) => (

@@ -374,8 +374,8 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
   return (
     <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
       <section className="lg:col-span-8 flex flex-col gap-3">
-        <div className="bg-[#070b14] border border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
+        <div className="bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden">
+          <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
             <span className="font-bold text-cyan-300">
               {L(
                 'Jonction neuromusculaire 4D (ACh vert | rocuronium rouge | sugammadex or)',
@@ -402,7 +402,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
 
         {/* Split-Screen Quantitative TOF Comparison: Sourcilier (Intubate) vs Adducteur du Pouce (Extubate) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
+          <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
             <div className="flex justify-between items-center text-xs">
               <span className="font-bold text-sky-300">{L('Face / muscle sourcilier (corrugator supercilii)', 'Facial / Corrugator Supercilii')}</span>
               <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200">{L('INTUBATION UNIQUEMENT', 'INTUBATION ONLY')}</span>
@@ -421,7 +421,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
             </div>
           </div>
 
-          <div className={`bg-[#0d1422] border rounded-xl p-3 space-y-2 ${thumbSafeToExtubate ? 'border-emerald-500/40' : 'border-rose-500/50'}`}>
+          <div className={`bg-oa-surface border rounded-xl p-3 space-y-2 ${thumbSafeToExtubate ? 'border-emerald-500/40' : 'border-rose-500/50'}`}>
             <div className="flex justify-between items-center text-xs">
               <span className="font-bold text-emerald-300">{L('Nerf ulnaire / adducteur du pouce', 'Ulnar / Adductor Pollicis')}</span>
               <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${thumbSafeToExtubate ? 'bg-emerald-500/20 text-emerald-200' : 'bg-rose-500/25 text-rose-200'}`}>
@@ -447,7 +447,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
             <Syringe className="w-3.5 h-3.5" /> {L('1. Curares (agents bloquants neuromusculaires)', '1. Synthetic Neuromuscular Agents')}
           </h2>
@@ -473,7 +473,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
           </div>
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
             <Zap className="w-3.5 h-3.5" /> {L('2. Stimulation quantitative et sugammadex', '2. Quantitative Stimulation & Sugammadex')}
           </h2>

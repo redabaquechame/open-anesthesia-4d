@@ -411,8 +411,8 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
       <section className="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div className="bg-[#05080f] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex items-center justify-between text-xs">
+        <div className="bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+          <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex items-center justify-between text-xs">
             <span className="font-bold text-cyan-300">{fr ? 'Anatomie 3D réelle — région supraclaviculaire droite' : 'Real 3D anatomy — right supraclavicular region'}</span>
             <div className="flex gap-1">
               <button onClick={() => stageRef.current?.rig.flyTo('probe')} className="px-1.5 py-0.5 rounded border border-slate-700 hover:border-cyan-500 text-[10px] cursor-pointer">
@@ -440,7 +440,7 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
         </div>
 
         <div className="bg-black border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-          <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex justify-between items-center text-xs">
+          <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex justify-between items-center text-xs">
             <span className="font-bold text-slate-100 flex items-center gap-1.5">
               <ScanLine className="w-3.5 h-3.5 text-cyan-400" /> {fr ? 'Image échographique calculée (linéaire 12 MHz)' : 'Computed ultrasound image (linear 12 MHz)'}
             </span>
@@ -449,7 +449,7 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
             </button>
           </div>
           <canvas ref={usRef} className="w-full h-[360px] block bg-black" />
-          <div className="px-3 py-1.5 bg-[#0b1220] border-t border-slate-800 text-[10px] text-slate-400 flex justify-between gap-2">
+          <div className="px-3 py-1.5 bg-oa-surface2 border-t border-slate-800 text-[10px] text-slate-400 flex justify-between gap-2">
             <span>{fr ? 'Ombre osseuse, renforcement postérieur et lignes A sont calculés, pas dessinés.' : 'Bone shadow, posterior enhancement and A-lines are computed, not drawn.'}</span>
             <span className={`font-mono shrink-0 ${needleVis > 0.5 ? 'text-emerald-300' : needleVis > 0.15 ? 'text-amber-300' : 'text-rose-300'}`}>
               {fr ? 'Aiguille' : 'Needle'} {Math.round(needleVis * 100)}%
@@ -459,14 +459,14 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{fr ? 'Sonde' : 'Probe'}</h3>
           {slider('slideMm', fr ? 'Glissement le long de l’artère' : 'Slide along the artery', -14, 14, 1, ' mm')}
           {slider('tiltDeg', fr ? 'Bascule (sort l’aiguille du plan)' : 'Tilt (takes the needle out of plane)', -10, 10, 1, '°', 'text-amber-300')}
           {slider('compression', fr ? 'Compression (test veineux)' : 'Compression (vein test)', 0, 1, 0.05, '')}
           {slider('gainDb', fr ? 'Gain' : 'Gain', -12, 12, 1, ' dB')}
         </div>
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{fr ? 'Aiguille (dans le plan, postéro-latérale)' : 'Needle (in-plane, from posterolateral)'}</h3>
           {slider('needleAngleDeg', fr ? 'Angle avec la peau' : 'Angle to the skin', 10, 60, 1, '°')}
           {slider('needleAdvanceMm', fr ? 'Progression' : 'Advance', 0, 45, 0.5, ' mm', 'text-cyan-300')}

@@ -5,6 +5,7 @@ import { ANATOMY_CREDIT } from '../../engine/loadAnatomy';
 import { createSpineScene, REGIONS, spaceName, type Approach, type SpineOutputs, type SpineRegion, type SpineScene, type SpineView } from './spineScene';
 import { TISSUE_INFO, type SpineTissue } from './spineGeometry';
 import type { FluoroProjection } from './fluoroView';
+import { ClinicalStepper } from '../../components/ClinicalStepper';
 
 const MAX_DEPTH_MM = 90;
 
@@ -23,7 +24,7 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
   const [depthMm, setDepthMm] = useState(15);
   const [cut, setCut] = useState(true);
   const [boneOpacity, setBoneOpacity] = useState(1);
-  const [labels, setLabels] = useState(true);
+  const [labels, setLabels] = useState(false); // 3D labels off at load (DESIGN.md §1.5)
   const [fluoro, setFluoro] = useState<FluoroProjection>('LAT');
   const [out, setOut] = useState<SpineOutputs | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -125,17 +126,19 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
   const btn = (on: boolean, extra = '') =>
     `px-2 py-1 rounded-lg border text-[11px] font-semibold cursor-pointer ${on ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-300'} ${extra}`;
 
+  // Tactile stepper (DESIGN.md §1.4) in place of a raw range slider; same ranges and steps as before.
   const slider = (label: string, value: number, unit: string, min: number, max: number, step: number, set: (v: number) => void, color = 'text-slate-200') => (
-    <label className="block">
-      <div className="flex justify-between text-[11px]">
-        <span>{label}</span>
-        <span className={`font-mono ${color}`}>
-          {value}
-          {unit}
-        </span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => set(Number(e.target.value))} className="w-full accent-cyan-500" />
-    </label>
+    <ClinicalStepper
+      label={label}
+      value={value}
+      min={min}
+      max={max}
+      step={step}
+      decimals={step < 1 ? 1 : 0}
+      unit={unit.trim()}
+      tone={color}
+      onChange={set}
+    />
   );
 
   return (
@@ -143,8 +146,8 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
       <section className="lg:col-span-8 flex flex-col gap-3">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           {/* 3D */}
-          <div className="md:col-span-3 bg-[#060a12] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
+          <div className="md:col-span-3 bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+            <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex flex-wrap items-center gap-1.5 text-xs">
               <span className="font-bold text-cyan-300 mr-auto">
                 {L('Rachis réel — ', 'Real spine — ')}
                 {region === 'lumbar' ? 'L2–L5' : 'T4–T9'}
@@ -172,8 +175,8 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
           </div>
 
           {/* C-arm */}
-          <div className="md:col-span-2 bg-[#05070c] border border-slate-800 rounded-xl overflow-hidden flex flex-col">
-            <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex justify-between items-center text-xs">
+          <div className="md:col-span-2 bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden flex flex-col">
+            <div className="px-3 py-2 bg-oa-surface2 border-b border-slate-800 flex justify-between items-center text-xs">
               <span className="font-bold text-slate-100 flex items-center gap-1">
                 <Crosshair className="w-3.5 h-3.5 text-amber-400" /> {L('Amplificateur de brillance', 'C-arm fluoroscopy')}
               </span>
@@ -192,7 +195,7 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
                 {fluoro === 'AP' ? L('Face', 'AP') : fluoro === 'LAT' ? L('Profil', 'Lateral') : L('Oblique 35°', 'Oblique 35°')}
               </div>
             </div>
-            <div className="px-3 py-2 bg-[#0b1220] border-t border-slate-800 flex items-center gap-2 text-xs">
+            <div className="px-3 py-2 bg-oa-surface2 border-t border-slate-800 flex items-center gap-2 text-xs">
               <span className="font-mono text-[10px] text-slate-300 shrink-0">{L('Seringue PDR', 'LOR syringe')}</span>
               <div className="flex-1 h-3 bg-slate-900 rounded-full overflow-hidden border border-slate-700">
                 <div
@@ -206,7 +209,7 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
         </div>
 
         {/* Depth ruler */}
-        <div className={`bg-[#0d1422] border rounded-xl p-3 transition-colors ${lorFlash ? 'border-emerald-400' : 'border-slate-800'}`}>
+        <div className={`bg-oa-surface border rounded-xl p-3 transition-colors ${lorFlash ? 'border-emerald-400' : 'border-slate-800'}`}>
           <div className="flex justify-between items-baseline text-[11px] mb-1.5">
             <span className="font-bold uppercase tracking-wider text-cyan-400">{L('Couches traversées sur cette trajectoire', 'Layers along this trajectory')}</span>
             {lorFlash && <span className="font-bold text-emerald-300 animate-pulse">{L('PERTE DE RÉSISTANCE', 'LOSS OF RESISTANCE')}</span>}
@@ -247,7 +250,7 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
       </section>
 
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{L('1. Niveau, abord, patient', '1. Level, approach, patient')}</h2>
           <div className="grid grid-cols-2 gap-1.5">
             {(['lumbar', 'thoracic'] as SpineRegion[]).map((r) => (
@@ -284,7 +287,7 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
           {slider(L('Tissus mous sur les épineuses', 'Soft tissue over spinous processes'), softTissueMm, ' mm', 8, 50, 1, setSoftTissueMm)}
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2.5">
           <div className="flex justify-between items-center">
             <h2 className="text-xs font-bold uppercase tracking-wider text-rose-300">{L('2. Aiguille de Tuohy 17 G', '2. Tuohy needle 17 G')}</h2>
             <button onClick={() => resetNeedle(region, approach)} className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-white cursor-pointer">
@@ -314,7 +317,7 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
           {slider(L('Opacité des os', 'Bone opacity'), Math.round(boneOpacity * 100), ' %', 20, 100, 5, (v) => setBoneOpacity(v / 100))}
         </div>
 
-        <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-1.5 text-[11px] text-slate-300 leading-relaxed">
           <div className="font-bold text-amber-300 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5" /> {L('À observer', 'Things to notice')}
           </div>

@@ -48,7 +48,7 @@ export function UltrasoundCardiacModule({ locale }: { locale: LocaleCode }) {
         <>
           <SonoLab locale={locale} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 text-xs">
-            <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-1.5">
+            <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-1.5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400">{fr ? 'Séquence en 5 étapes' : '5-step sequence'}</h3>
               <ul className="space-y-1 text-[11px] text-slate-300">
                 {BLOCK_STEPS[fr ? 'fr' : 'en'].map((st) => (

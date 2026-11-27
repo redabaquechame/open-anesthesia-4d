@@ -31,7 +31,7 @@ export function CurriculumDrawer({ locale, onClose }: { locale: LocaleCode; onCl
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex justify-end" onClick={onClose}>
-      <div className="w-full max-w-2xl bg-[#0d1422] border-l border-slate-800 h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-2xl bg-oa-surface border-l border-slate-800 h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-slate-800 flex items-start justify-between gap-3">
           <div>
             <h3 className="font-bold text-white text-sm flex items-center gap-2">

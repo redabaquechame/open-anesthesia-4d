@@ -169,9 +169,9 @@ export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMod
   const big = projectorMode ? 'text-xl font-bold' : 'text-base font-bold';
 
   return (
-    <div className="flex flex-col bg-[#060a12] border border-slate-800 rounded-xl overflow-hidden">
+    <div className="flex flex-col bg-oa-canvas border border-slate-800 rounded-xl overflow-hidden">
       {/* Live Vitals Strip */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 p-2.5 bg-[#0b1220] border-b border-slate-800 font-mono">
+      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 p-2.5 bg-oa-surface2 border-b border-slate-800 font-mono">
         <div className="bg-slate-900/90 rounded-lg p-1.5 border border-amber-500/20">
           <div className="text-[10px] text-amber-400">Paw</div>
           <div className={`${big} text-amber-300`}>

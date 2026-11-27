@@ -36,15 +36,19 @@ export const BETA_NOTICE: Record<LocaleCode, string> = {
 export function ReviewStatusChip({ moduleTab, locale, onOpen }: { moduleTab: string; locale: LocaleCode; onOpen: () => void }) {
   const counts = useMemo(() => statusCounts(claimsForModule(moduleTab)), [moduleTab]);
   const L = lang(locale);
+  const DOT: Record<ClaimStatus, string> = { sourced: 'bg-emerald-500', 'from-memory': 'bg-amber-500', illustrative: 'bg-slate-500' };
+  const title = (Object.keys(STATUS_META) as ClaimStatus[]).map((s) => `${counts[s]} ${STATUS_META[s].label[L]}`).join(' · ');
   return (
     <button
       onClick={onOpen}
-      className="shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-700 bg-slate-900 hover:border-slate-500 text-[10px] font-mono cursor-pointer"
-      title="Clinical review status of this module"
+      className="shrink-0 flex items-center gap-2 px-2 h-6 rounded border border-oa-hairline hover:border-slate-500 text-[10px] font-mono text-slate-300 cursor-pointer"
+      title={title}
+      aria-label={title}
     >
       {(Object.keys(STATUS_META) as ClaimStatus[]).map((s) => (
-        <span key={s} className={`px-1.5 py-0.5 rounded border ${STATUS_META[s].cls}`}>
-          {counts[s]} {STATUS_META[s].label[L]}
+        <span key={s} className="flex items-center gap-1">
+          <span className={`w-1.5 h-1.5 rounded-full ${DOT[s]}`} />
+          {counts[s]}
         </span>
       ))}
     </button>
@@ -73,7 +77,7 @@ export function ReviewDrawer({ moduleTab, locale, onClose }: { moduleTab: string
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 flex justify-end" onClick={onClose}>
-      <div className="w-full max-w-xl bg-[#0d1422] border-l border-slate-800 h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-xl bg-oa-surface border-l border-slate-800 h-full flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b border-slate-800 flex items-start justify-between gap-3">
           <div>
             <h3 className="font-bold text-white text-sm">
