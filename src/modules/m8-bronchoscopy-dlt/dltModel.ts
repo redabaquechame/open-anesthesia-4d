@@ -90,8 +90,9 @@ export function toModelArc(s: number, side: 'left' | 'right', lm: Landmarks, spe
 // ── Device ──────────────────────────────────────────────────────────────────
 export type DltSize = 35 | 37 | 39 | 41;
 /**
- * Outer diameter = Fr / 3 mm (French gauge definition). Bronchial-limb OD and lumen IDs are typical
- * catalogue-style values entered from memory — VERIFY against a manufacturer's datasheet.
+ * Outer diameter = Fr / 3 mm, matching Shiley's catalogue (11.7/12.3/13.0/13.7 mm; claim m8-dlt-od).
+ * Lumen IDs and bronchial-limb OD are illustrative: manufacturers publish one limiting ID per size
+ * (Shiley 4.8/5.1/5.3/5.4 mm), not per-lumen values; bronchial-limb OD is close to Hegland 2019 measurements.
  */
 export const DLT_SPECS: Record<DltSize, { od: number; bronchialOd: number; trachealId: number; bronchialId: number }> = {
   35: { od: 35 / 3, bronchialOd: 9.5, trachealId: 4.5, bronchialId: 4.3 },

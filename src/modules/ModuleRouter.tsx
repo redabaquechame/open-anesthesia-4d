@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react';
 import type { LocaleCode } from '../standards/clinicalStandards';
+import type { AppModuleId } from '../standards/programmeTypes';
 
 // Code-split each module so the initial PWA shell stays small
 const VolatileEcoModule = lazy(() =>
@@ -26,19 +27,30 @@ const BronchoscopyDltModule = lazy(() =>
     default: m.BronchoscopyDltModule,
   }))
 );
+const CrisisModule = lazy(() =>
+  import('./m9-crisis/CrisisModule').then((m) => ({ default: m.CrisisModule }))
+);
+const PreopModule = lazy(() =>
+  import('./m10-preop/PreopModule').then((m) => ({ default: m.PreopModule }))
+);
+const ParcoursModule = lazy(() =>
+  import('./m11-parcours/ParcoursModule').then((m) => ({ default: m.ParcoursModule }))
+);
 
 export function ModuleRouter({
   activeModule,
   locale,
+  onNavigate,
 }: {
-  activeModule: 'M3' | 'M4' | 'M5' | 'M6' | 'M7' | 'M8';
+  activeModule: 'M3' | 'M4' | 'M5' | 'M6' | 'M7' | 'M8' | 'M9' | 'M10' | 'M11';
   locale: LocaleCode;
+  onNavigate?: (m: AppModuleId) => void;
 }) {
   return (
     <Suspense
       fallback={
         <div className="flex-1 flex items-center justify-center p-10 text-xs font-mono text-cyan-300">
-          Loading 3D module ({activeModule}) — WebGL…
+          {locale !== 'en-INT' ? 'Chargement du module' : 'Loading module'} ({activeModule.replace('_', '+')})…
         </div>
       }
     >
@@ -48,6 +60,9 @@ export function ModuleRouter({
       {activeModule === 'M6' && <UltrasoundCardiacModule locale={locale} />}
       {activeModule === 'M7' && <NeuraxialSpineModule locale={locale} />}
       {activeModule === 'M8' && <BronchoscopyDltModule locale={locale} />}
+      {activeModule === 'M9' && <CrisisModule locale={locale} />}
+      {activeModule === 'M10' && <PreopModule locale={locale} />}
+      {activeModule === 'M11' && <ParcoursModule locale={locale} onNavigate={onNavigate} />}
     </Suspense>
   );
 }

@@ -24,7 +24,7 @@ const BLOCK_STEPS: Record<'fr' | 'en', string[]> = {
 
 export function UltrasoundCardiacModule({ locale }: { locale: LocaleCode }) {
   const [subTab, setSubTab] = useState<'ultrasound' | 'cardiac'>('ultrasound');
-  const fr = locale.startsWith('fr');
+  const fr = locale !== 'en-INT';
 
   const tabBtn = (id: 'ultrasound' | 'cardiac', icon: React.ReactNode, label: string) => (
     <button
@@ -57,7 +57,7 @@ export function UltrasoundCardiacModule({ locale }: { locale: LocaleCode }) {
               </ul>
             </div>
             <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-[11px] text-rose-200 leading-relaxed">
-              <strong>LAST (ASRA checklist):</strong> stop injecting, call for help, airway + 100% O2, seizure control, and <strong>20% lipid emulsion</strong>: over 70 kg → bolus ~100 mL over 2–3 min, then infuse ~250 mL over 15–20 min; under 70 kg → bolus ~1.5 mL/kg over 2–3 min, then ~0.25 mL/kg/min. Still unstable → repeat bolus and double the infusion. Continue &gt;15 min once stable; maximum 12 mL/kg. Epinephrine: smaller doses, start &lt;1 mcg/kg. Avoid local anaesthetics, beta-blockers, calcium-channel blockers and vasopressin. (ASRA LAST checklist 2020 v1.1 — under review, update expected 2027.)
+              <strong>LAST (ASRA checklist):</strong> call for help, get the LAST rescue kit, consider the cardiopulmonary bypass team, and give <strong>20% lipid emulsion</strong> early: over 70 kg → bolus ~100 mL over 2–3 min, then infuse ~250 mL over 15–20 min; under 70 kg → bolus ~1.5 mL/kg over 2–3 min, then ~0.25 mL/kg/min. Still unstable → repeat bolus and double the infusion. Continue ≥15 min once stable; maximum 12 mL/kg. Seizure: ensure an adequate airway, benzodiazepine preferred (if only propofol, small doses, e.g. 20 mg). Epinephrine: smaller than usual, start with ≤1 mcg/kg. Avoid local anaesthetics, beta-blockers, calcium-channel blockers and vasopressin. (ASRA LAST checklist 2020 v1.1 — under review, update expected 2027.)
             </div>
           </div>
         </>

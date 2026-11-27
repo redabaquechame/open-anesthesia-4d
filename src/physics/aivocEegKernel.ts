@@ -68,7 +68,7 @@ export function computePropofolPk(model: PropofolModelId, av: VirtualAvatar): Pk
       k13,
       k21,
       k31,
-      ke0: 0.26, // Diprifusor ke0
+      ke0: 0.26, // Diprifusor ke0: not part of Marsh 1991 (from-memory)
       ce50: 3.2, // Marsh has no PD model: simulator assumption
       gammaLow: 1.5,
       gammaHigh: 1.9,
@@ -77,7 +77,8 @@ export function computePropofolPk(model: PropofolModelId, av: VirtualAvatar): Pk
   }
 
   if (model === 'schnider') {
-    // Published Schnider 1998 equations (note James LBM collapse at extreme BMI!)
+    // Schnider 1998 equations (abstract-only check; matches tivatci, PyTCI, Westover 2015). VERIFY.
+    // Math.max floors are simulator safeguards, not part of the model. James LBM collapses at high BMI.
     const v1 = 4.27;
     const v2 = Math.max(2.5, 18.9 - 0.391 * (av.ageYears - 53));
     const v3 = 238;
@@ -104,9 +105,10 @@ export function computePropofolPk(model: PropofolModelId, av: VirtualAvatar): Pk
     };
   }
 
-  // Eleveld et al. 2018 (BJA) model STRUCTURE, arterial V1, reference 35 y / 70 kg / 170 cm male.
-  // Maturation terms (post-menstrual age) are OMITTED: valid only from early childhood upward.
-  // Parameter values entered from the published table — VERIFY against Eleveld 2018 Table 2.
+  // Eleveld et al. 2018 (BJA 120:942-59), arterial V1, reference 35 y / 70 kg / 170 cm male.
+  // Checked 2026-11-27 against the paper's final-model equations and Tables 2-3 (claim m4-eleveld).
+  // Q3 maturation (PMA in weeks = age x 52 + 40, E50 68.3 wk) and the Q2 immaturity term (x1.30)
+  // are included. Only the clearance maturation term is omitted: it is ~1 from age 1 year upward.
   const fCentral = (w: number) => w / (w + 33.6);
   const wRatio = av.weightKg / 70;
   const ageFactorV2 = Math.exp(-0.0156 * (av.ageYears - 35));
@@ -120,8 +122,12 @@ export function computePropofolPk(model: PropofolModelId, av: VirtualAvatar): Pk
   const v3 = 273 * (ffm / ffmRef) * opioidV3Factor;
   const clRef = av.sex === 'M' ? 1.79 : 2.1;
   const cl1 = clRef * Math.pow(wRatio, 0.75) * opioidClFactor;
-  const q2 = 1.75 * Math.pow(v2 / 25.5, 0.75);
-  const q3 = 1.11 * Math.pow(v3 / 273, 0.75);
+  const pmaWeeks = (ageYears: number) => ageYears * 52 + 40;
+  const fQ3mat = (ageYears: number) => pmaWeeks(ageYears) / (pmaWeeks(ageYears) + 68.3);
+  const q3Mat = fQ3mat(av.ageYears);
+  const q2 = 1.75 * Math.pow(v2 / 25.5, 0.75) * (1 + 1.3 * (1 - q3Mat));
+  // V3 reference 273 L without the opioid factor, as in the paper's reference implementations.
+  const q3 = 1.11 * Math.pow(v3 / 273, 0.75) * (q3Mat / fQ3mat(35));
   const ke0 = 0.146 * Math.pow(wRatio, -0.25);
   const ce50 = 3.08 * Math.exp(-0.00635 * (av.ageYears - 35));
 
@@ -136,6 +142,8 @@ export function computePropofolPk(model: PropofolModelId, av: VirtualAvatar): Pk
     k31: q3 / v3,
     ke0,
     ce50,
+    // Paper's PD equation: 1.47 at or below Ce50, 1.89 above. Its Table 3 labels them the other
+    // way round. VERIFY against the NONMEM code in the supplement.
     gammaLow: 1.47,
     gammaHigh: 1.89,
     lbmJames: lbm,
@@ -143,6 +151,7 @@ export function computePropofolPk(model: PropofolModelId, av: VirtualAvatar): Pk
 }
 
 export function computeMintoRemifentanilPk(av: VirtualAvatar): PkParams {
+  // Minto 1997 covariate model (VERIFY: abstract only). Floors below are simulator safeguards.
   const lbm = Math.max(30, jamesLbm(av.weightKg, av.heightCm, av.sex));
   const v1 = Math.max(1.5, 5.1 - 0.0201 * (av.ageYears - 40) + 0.072 * (lbm - 55));
   const v2 = Math.max(2.0, 9.82 - 0.0811 * (av.ageYears - 40) + 0.108 * (lbm - 55));

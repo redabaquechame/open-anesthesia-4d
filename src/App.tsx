@@ -4,11 +4,13 @@ import {
   Activity,
   AlertTriangle,
   BookOpen,
+  GraduationCap,
   CheckSquare,
   Eye,
   EyeOff,
   Gauge,
   Globe,
+  Home,
   Layers,
   Pause,
   Play,
@@ -28,6 +30,7 @@ import {
 } from './standards/clinicalStandards';
 import { ASA_2008_CHECKLIST, MAPLESON_CIRCUITS, SFAR_FOSO_CHECKLIST } from './standards/checklists';
 import { EVIDENCE_REGISTRY } from './evidence/evidenceRegistry';
+import { EVIDENCE_FR } from './evidence/evidenceFr';
 import type {
   MachineAndPatientParams,
   SimulationSnapshot,
@@ -38,11 +41,25 @@ import type { WorkerOutMessage } from './physics/physicsWorker';
 import { WorkstationScene } from './modules/m1-workstation/WorkstationScene';
 import { BedsideMonitorCanvas } from './components/BedsideMonitorCanvas';
 import { ModuleRouter } from './modules/ModuleRouter';
+import { CurriculumDrawer } from './components/CurriculumDrawer';
 import { BETA_NOTICE, ReviewDrawer, ReviewStatusChip } from './components/ReviewPanel';
 import { QualitySelect } from './components/QualitySelect';
+import { HomePage } from './components/HomePage';
+import { ModuleGuidePanel } from './components/ModuleGuidePanel';
+import { MODULE_GUIDES } from './standards/moduleGuides';
 import { openPrintableDebriefCard, queueOfflineXapiEvent } from './utils/lmsAndDebrief';
 
-type ModuleId = 'M1_M2' | 'M3' | 'M4' | 'M5' | 'M6' | 'M7' | 'M8';
+type ModuleId = 'HOME' | 'M1_M2' | 'M3' | 'M4' | 'M5' | 'M6' | 'M7' | 'M8' | 'M9' | 'M10' | 'M11';
+const MODULE_IDS = ['M1_M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'M10', 'M11'] as const;
+
+/** Landing view: a shared machine state opens M1, `#M9`-style links open that module, otherwise the home page. */
+function initialModule(): ModuleId {
+  if (typeof window === 'undefined') return 'HOME';
+  const h = window.location.hash;
+  if (h.startsWith('#state=')) return 'M1_M2';
+  const id = h.slice(1).toUpperCase().replace('+', '_');
+  return (MODULE_IDS as readonly string[]).includes(id) ? (id as ModuleId) : 'HOME';
+}
 type CognitiveMode = 'guided' | 'sandbox' | 'blind_crisis';
 
 const DEFAULT_PARAMS: MachineAndPatientParams = {
@@ -78,30 +95,20 @@ const DEFAULT_PARAMS: MachineAndPatientParams = {
   },
 };
 
-const MODULES_META: {
-  id: ModuleId;
-  short: string;
-  titleFr: string;
-  titleEn: string;
-  status: 'LIVE';
-  summary: string;
-}[] = [
-  { id: 'M1_M2', short: 'M1+M2', titleFr: 'Poste 4D, Ventilation & Capno', titleEn: '4D Workstation, Vent & Capno', status: 'LIVE', summary: '6 swappable drives (including draw-over + concentrator), APL vs CPAP, Mapleson A–F, FOSO/ASA checkouts, Equation of Motion & Capnography.' },
-  { id: 'M3', short: 'M3', titleFr: 'Halogénés, Bas Débit & Afrique', titleEn: 'Volatile Kinetics & Eco-OR', status: 'LIVE', summary: 'Multi-compartment volatile uptake, Second Gas Effect, low-flow CO2e counter, Halothane-to-Sevoflurane transition.' },
-  { id: 'M4', short: 'M4', titleFr: 'AIVOC/TIVA & EEG/DSA 3D→2D', titleEn: 'TIVA/TCI & 3D→2D EEG/DSA', status: 'LIVE', summary: 'Marsh/Schnider/Eleveld/Minto ghost comparison, manual-pump training, cellular synapse & 3D→2D DSA spectrogram.' },
-  { id: 'M5', short: 'M5', titleFr: 'Curares TOF/PTC & Synapse 4D', titleEn: 'TOF/PTC & Cellular NMJ', status: 'LIVE', summary: 'Facial corrugator vs ulnar adductor pollicis monitoring, TOF ≥ 0.9, PTC & sugammadex encapsulation.' },
-  { id: 'M6', short: 'M6', titleFr: 'Écho-ALR 3D→2D & Cœur P-V', titleEn: '3D→2D Ultrasound & Cardiac PV', status: 'LIVE', summary: '3D→2D ultrasound sonoanatomy slicer + cardiac valvular P-V loops & shock pressor drill.' },
-  { id: 'M7', short: 'M7', titleFr: 'Rachis 4D & Péridurale Thor.', titleEn: '4D Thoracic Epidural & C-Arm', status: 'LIVE', summary: 'Translucent thoracic & lumbar spine, posture morphing, loss-of-resistance & virtual C-arm.' },
-  { id: 'M8', short: 'M8', titleFr: 'Fibroscopie 4D & Sonde DLT', titleEn: '4D Bronchoscopy & DLT Airway', status: 'LIVE', summary: 'Split-screen tracheobronchial tree + first-person bronchoscope camera with DLT positioning.' },
-];
+/** Navigation order follows the workflow: programme, pre-op, machine, drugs, airway, regional, crisis. */
+const NAV_ORDER: Exclude<ModuleId, 'HOME'>[] = ['M11', 'M10', 'M1_M2', 'M3', 'M4', 'M5', 'M8', 'M6', 'M7', 'M9'];
+const MODULES_META = NAV_ORDER.map((id) => {
+  const g = MODULE_GUIDES.find((x) => x.id === id)!;
+  return { id, short: id.replace('_', '+'), titleFr: g.title.fr, titleEn: g.title.en };
+});
 
-const DRIVE_LABELS: Record<VentilatorDriveType, { label: string; tag: string }> = {
-  ascending_bellows: { label: 'Ascending Bellows', tag: 'Collapses visibly on disconnect • ~2–3 cmH2O inherent PEEP • FGF adds to Vt' },
-  descending_bellows: { label: 'Descending Bellows (Legacy)', tag: 'Keeps refilling by gravity on disconnect: silent trap' },
-  piston_fgd: { label: 'Electric Piston + Fresh Gas Decoupling', tag: 'Electric drive (no drive gas) • FGD blocks flush volutrauma' },
-  turbine: { label: 'High-Speed Turbine / Blower', tag: 'Leak compensation • Active CPAP in spontaneous mode' },
-  volume_reflector: { label: 'Volume Reflector', tag: 'Leak compensation • Live reflector gas front' },
-  glostavent_drawover: { label: 'Draw-Over + O2 Concentrator', tag: 'Low-resource setting • Runs without wall O2' },
+const DRIVE_LABELS: Record<VentilatorDriveType, { fr: string; en: string; tagFr: string; tagEn: string }> = {
+  ascending_bellows: { fr: 'Soufflet ascendant', en: 'Ascending bellows', tagFr: 'S’affaisse visiblement en cas de déconnexion • le débit de gaz frais s’ajoute au volume courant', tagEn: 'Collapses visibly on disconnect • fresh gas flow adds to tidal volume' },
+  descending_bellows: { fr: 'Soufflet descendant (ancien)', en: 'Descending bellows (legacy)', tagFr: 'Continue de se remplir par gravité en cas de déconnexion : piège silencieux', tagEn: 'Keeps refilling by gravity on disconnect: silent trap' },
+  piston_fgd: { fr: 'Piston électrique + découplage du gaz frais', en: 'Electric piston + fresh gas decoupling', tagFr: 'Entraînement électrique (pas de gaz moteur) • le découplage évite le volotraumatisme au flush', tagEn: 'Electric drive (no drive gas) • decoupling prevents flush volutrauma' },
+  turbine: { fr: 'Turbine haute vitesse', en: 'High-speed turbine / blower', tagFr: 'Compensation des fuites • CPAP active en ventilation spontanée', tagEn: 'Leak compensation • active CPAP in spontaneous mode' },
+  volume_reflector: { fr: 'Réflecteur de volume', en: 'Volume reflector', tagFr: 'Compensation des fuites • front gazeux du réflecteur visible', tagEn: 'Leak compensation • reflector gas front visible' },
+  glostavent_drawover: { fr: 'Draw-over + concentrateur d’O₂', en: 'Draw-over + O₂ concentrator', tagFr: 'Contexte à ressources limitées • fonctionne sans O₂ mural', tagEn: 'Low-resource setting • runs without wall O₂' },
 };
 
 const FAULT_KEYS: { key: keyof MachineAndPatientParams['faults']; fr: string; en: string }[] = [
@@ -128,12 +135,13 @@ function decodeHashState(): Partial<MachineAndPatientParams> | null {
 }
 
 export default function App() {
-  const [activeModule, setActiveModule] = useState<ModuleId>('M1_M2');
+  const [activeModule, setActiveModule] = useState<ModuleId>(initialModule);
   const [locale, setLocale] = useState<LocaleCode>('fr-FR');
   const [gasStandard, setGasStandard] = useState<GasStandardId>('ISO_EU_AF');
   const [agent, setAgent] = useState<VolatileAgentId>('sevoflurane');
   const [cogMode, setCogMode] = useState<CognitiveMode>('sandbox');
   const [xrayOpacity, setXrayOpacity] = useState<number>(0.75);
+  const [showLabels3d, setShowLabels3d] = useState(() => typeof window === 'undefined' || window.innerWidth >= 640);
   const [slowMo, setSlowMo] = useState<boolean>(false);
   const [paused, setPaused] = useState<boolean>(false);
   const [showEqZones, setShowEqZones] = useState<boolean>(true);
@@ -153,6 +161,7 @@ export default function App() {
 
   // Drawers & Modals
   const [showEvidence, setShowEvidence] = useState<boolean>(false);
+  const [showCurriculum, setShowCurriculum] = useState<boolean>(false);
   const [showReview, setShowReview] = useState<boolean>(false);
   const [showChecklist, setShowChecklist] = useState<boolean>(false);
   const [checklistType, setChecklistType] = useState<'SFAR' | 'ASA' | 'MAPLESON'>('SFAR');
@@ -172,6 +181,13 @@ export default function App() {
 
   const t = (key: string) => CLINICAL_GLOSSARY[key]?.[locale] ?? key;
   const isRtl = locale === 'ar-MA';
+  const fr = locale !== 'en-INT';
+  const L = (f: string, e: string) => (fr ? f : e);
+  const isM1 = activeModule === 'M1_M2';
+  const goTo = (m: ModuleId) => {
+    setActiveModule(m);
+    window.scrollTo({ top: 0 });
+  };
 
   // Boot 50 Hz Physics Web Worker
   useEffect(() => {
@@ -218,6 +234,8 @@ export default function App() {
       if (!info) return; // scene was disposed while the renderer was booting
       setGpuBadge(`${info.backend.toUpperCase()} • ${info.tier}`);
       ws.setXrayLevel(xrayOpacity);
+      ws.setLanguage(locale !== 'en-INT');
+      ws.setLabelsVisible(showLabels3d);
     });
 
     return () => {
@@ -238,6 +256,14 @@ export default function App() {
   useEffect(() => {
     sceneRef.current?.setXrayLevel(xrayOpacity);
   }, [xrayOpacity]);
+
+  useEffect(() => {
+    sceneRef.current?.setLanguage(locale !== 'en-INT');
+  }, [locale]);
+
+  useEffect(() => {
+    sceneRef.current?.setLabelsVisible(showLabels3d);
+  }, [showLabels3d]);
 
   const handleReset = () => {
     setParams(DEFAULT_PARAMS);
@@ -263,7 +289,7 @@ export default function App() {
     }));
     setCogMode('blind_crisis');
     setXrayOpacity(0.0); // Lock opaque workstation faceplate
-    setMysteryFaultName(locale.startsWith('fr') ? chosen.fr : chosen.en);
+    setMysteryFaultName(locale !== 'en-INT' ? chosen.fr : chosen.en);
     setMysteryRevealed(false);
   };
 
@@ -300,22 +326,22 @@ export default function App() {
           <span className="hidden sm:inline text-amber-300/90">• {BETA_NOTICE[locale]}</span>
         </div>
         <span className="hidden md:inline font-mono text-[10px] text-amber-300/80">
-          Apache-2.0 • Zero Login • Offline PWA
+          {L('Apache-2.0 • sans compte • hors ligne', 'Apache-2.0 • no login • offline')}
         </span>
       </div>
 
       {/* Top Global Header & Standards Bar */}
-      <header className="sticky top-0 z-30 bg-[#0d1422]/95 backdrop-blur border-b border-slate-800 px-3 py-2">
+      <header className="relative md:sticky md:top-0 z-30 bg-[#0d1422]/95 backdrop-blur border-b border-slate-800 px-3 py-2">
         <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+          <button onClick={() => goTo('HOME')} className="flex items-center gap-2 text-left cursor-pointer" title={L('Accueil', 'Home')}>
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
               <Activity className="w-4 h-4 text-white" />
             </div>
             <div>
               <h1 className="text-sm font-bold tracking-tight text-white leading-none">{t('appTitle')}</h1>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{gpuBadge}</p>
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5">{isM1 ? gpuBadge : L('Gratuit • sans compte • hors ligne', 'Free • no account • offline')}</p>
             </div>
-          </div>
+          </button>
 
           <div className="flex flex-wrap items-center gap-1.5 text-xs">
             {/* Locale Switcher */}
@@ -336,16 +362,18 @@ export default function App() {
 
             <QualitySelect locale={locale} />
 
+            {isM1 && (<>
             {/* Regional Gas Standard Switcher */}
             <select
               value={gasStandard}
               onChange={(e) => setGasStandard(e.target.value as GasStandardId)}
               className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-100 outline-none cursor-pointer"
-              aria-label="Medical Gas Standard"
+              aria-label={L('Norme des couleurs des gaz médicaux', 'Medical gas colour standard')}
+              title={L('Norme des couleurs des gaz médicaux', 'Medical gas colour standard')}
             >
-              <option value="ISO_EU_AF" className="bg-slate-900">ISO 32 (White O2)</option>
-              <option value="CSA_CA_QC" className="bg-slate-900">CSA Z7396.1 Québec (White O2)</option>
-              <option value="NFPA_US" className="bg-slate-900">NFPA 99 US (Green O2)</option>
+              <option value="ISO_EU_AF" className="bg-slate-900">{L('ISO 32 (O₂ blanc)', 'ISO 32 (white O₂)')}</option>
+              <option value="CSA_CA_QC" className="bg-slate-900">{L('CSA Z7396.1 Québec (O₂ blanc)', 'CSA Z7396.1 Québec (white O₂)')}</option>
+              <option value="NFPA_US" className="bg-slate-900">{L('NFPA 99 États-Unis (O₂ vert)', 'NFPA 99 US (green O₂)')}</option>
             </select>
 
             {/* Educator & Study Tools */}
@@ -358,12 +386,13 @@ export default function App() {
               }`}
             >
               <Gauge className="w-3.5 h-3.5" />
-              {slowMo ? '0.25x Slow' : '1.0x'}
+              {slowMo ? L('Ralenti ×0,25', 'Slow ×0.25') : L('Vitesse ×1', 'Speed ×1')}
             </button>
 
             <button
               onClick={() => setPaused((p) => !p)}
-              aria-label={paused ? 'Resume' : 'Pause'}
+              aria-label={paused ? L('Reprendre', 'Resume') : L('Pause', 'Pause')}
+              title={paused ? L('Reprendre', 'Resume') : L('Pause', 'Pause')}
               className="px-2 py-1 rounded-lg border bg-slate-900 border-slate-700 text-slate-200 hover:border-slate-500 flex items-center gap-1 cursor-pointer"
             >
               {paused ? <Play className="w-3.5 h-3.5 text-emerald-400" /> : <Pause className="w-3.5 h-3.5" />}
@@ -376,10 +405,10 @@ export default function App() {
                   ? 'bg-indigo-500/25 border-indigo-400 text-indigo-200'
                   : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
               }`}
-              title="Chalk-Talk Projector Mode"
+              title={L('Mode projecteur (gros caractères pour la salle)', 'Projector mode (large text for the room)')}
             >
               <Presentation className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Projector</span>
+              <span className="hidden sm:inline">{L('Projecteur', 'Projector')}</span>
             </button>
 
             <button
@@ -387,47 +416,74 @@ export default function App() {
               className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-emerald-300 hover:border-emerald-500 flex items-center gap-1 cursor-pointer"
             >
               <CheckSquare className="w-3.5 h-3.5" />
-              <span>FOSO / ASA</span>
+              <span>{L('Check-lists', 'Checklists')}</span>
             </button>
+            </>)}
 
             <button
               onClick={() => setShowEvidence(true)}
               className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-cyan-300 hover:border-cyan-500 flex items-center gap-1 cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5" />
-              <span>Evidence</span>
+              <span>{L('Sources', 'Evidence')}</span>
             </button>
 
+            <button
+              onClick={() => setShowCurriculum(true)}
+              className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-violet-300 hover:border-violet-500 flex items-center gap-1 cursor-pointer"
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>{L('Couverture', 'Coverage')}</span>
+            </button>
+
+            {activeModule !== 'HOME' && (
             <button
               onClick={() => {
                 openPrintableDebriefCard(activeModule, locale);
                 queueOfflineXapiEvent(activeModule, 'practiced', `Opened structured debrief card (${locale})`).catch(() => {});
               }}
               className="px-2.5 py-1 rounded-lg border bg-slate-900 border-slate-700 text-amber-300 hover:border-amber-500 flex items-center gap-1 cursor-pointer"
-              title="Printable debriefing card"
+              title={L('Fiche de débriefing imprimable', 'Printable debriefing card')}
             >
-              <span>Debrief</span>
+              <span>{L('Débriefing', 'Debrief')}</span>
             </button>
+            )}
 
+            {isM1 && (
             <button
               onClick={openShareQr}
               className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium flex items-center gap-1 cursor-pointer"
+              title={L('Partager ce réglage par QR code', 'Share this setup by QR code')}
             >
               <QrCode className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">QR Share</span>
+              <span className="hidden sm:inline">{L('Partager (QR)', 'Share (QR)')}</span>
             </button>
+            )}
           </div>
         </div>
 
-        {/* Permanent 8-Module Navigation Strip */}
+        {/* Module navigation */}
         <nav className="max-w-[1600px] mx-auto mt-2 flex gap-1.5 overflow-x-auto pb-0.5">
-          <ReviewStatusChip moduleTab={activeModule} locale={locale} onOpen={() => setShowReview(true)} />
+          <button
+            onClick={() => goTo('HOME')}
+            className={`shrink-0 px-2.5 py-1 rounded-lg text-xs border transition flex items-center gap-1.5 cursor-pointer ${
+              activeModule === 'HOME'
+                ? 'bg-cyan-500/20 border-cyan-400 text-white font-semibold'
+                : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:text-white hover:border-slate-700'
+            }`}
+          >
+            <Home className="w-3.5 h-3.5 text-cyan-400" />
+            <span>{L('Accueil', 'Home')}</span>
+          </button>
+          {activeModule !== 'HOME' && (
+            <ReviewStatusChip moduleTab={activeModule} locale={locale} onOpen={() => setShowReview(true)} />
+          )}
           {MODULES_META.map((m) => {
             const active = activeModule === m.id;
             return (
               <button
                 key={m.id}
-                onClick={() => setActiveModule(m.id)}
+                onClick={() => goTo(m.id)}
                 className={`shrink-0 px-2.5 py-1 rounded-lg text-xs border transition flex items-center gap-1.5 cursor-pointer ${
                   active
                     ? 'bg-cyan-500/20 border-cyan-400 text-white font-semibold'
@@ -435,16 +491,24 @@ export default function App() {
                 }`}
               >
                 <span className="font-mono text-[10px] text-cyan-400">{m.short}</span>
-                <span>{locale.startsWith('fr') ? m.titleFr : m.titleEn}</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span>{fr ? m.titleFr : m.titleEn}</span>
               </button>
             );
           })}
         </nav>
       </header>
 
+      {activeModule !== 'HOME' && <ModuleGuidePanel key={activeModule} moduleId={activeModule} locale={locale} />}
+
       {/* Main Workspace */}
-      {activeModule === 'M1_M2' ? (
+      {activeModule === 'HOME' ? (
+        <HomePage
+          locale={locale}
+          onOpen={(m) => goTo(m)}
+          onOpenCurriculum={() => setShowCurriculum(true)}
+          onOpenEvidence={() => setShowEvidence(true)}
+        />
+      ) : activeModule === 'M1_M2' ? (
         <main className="flex-1 max-w-[1600px] w-full mx-auto p-3 grid grid-cols-1 lg:grid-cols-12 gap-3">
           {/* LEFT / MAIN COLUMN: 4D Three.js Viewport + OR Monitor */}
           <section className="lg:col-span-8 flex flex-col gap-3">
@@ -465,6 +529,10 @@ export default function App() {
                     aria-label={t('xraySlider')}
                   />
                   <span className="font-mono text-[11px] text-cyan-300 w-9">{Math.round(xrayOpacity * 100)}%</span>
+                  <label className="flex items-center gap-1 ml-2 text-slate-300 cursor-pointer">
+                    <input type="checkbox" checked={showLabels3d} onChange={(e) => setShowLabels3d(e.target.checked)} />
+                    {L('Légendes', 'Labels')}
+                  </label>
                 </div>
 
                 {/* Cognitive Mode Switcher */}
@@ -480,7 +548,7 @@ export default function App() {
                         cogMode === mode ? 'bg-cyan-600 text-white font-semibold' : 'text-slate-400 hover:text-slate-200'
                       }`}
                     >
-                      {mode === 'guided' ? 'Guided' : mode === 'sandbox' ? 'Sandbox' : 'Blind ECOS'}
+                      {mode === 'guided' ? L('Guidé', 'Guided') : mode === 'sandbox' ? L('Libre', 'Sandbox') : L('ECOS à l’aveugle', 'Blind OSCE')}
                     </button>
                   ))}
                 </div>
@@ -496,11 +564,11 @@ export default function App() {
                     <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
                     {mysteryRevealed ? (
                       <span>
-                        <strong>Diagnosis Revealed:</strong> {mysteryFaultName} — inspect the glowing 3D component above!
+                        <strong>{L('Diagnostic : ', 'Diagnosis: ')}</strong> {mysteryFaultName} — {L('repérez la pièce en surbrillance dans la vue 3D.', 'find the highlighted part in the 3D view.')}
                       </span>
                     ) : (
                       <span>
-                        <strong>Blind Mystery Fault Active:</strong> Chassis locked opaque. Diagnose from bellows motion, Paw curve, and capnogram!
+                        <strong>{L('Panne cachée active : ', 'Hidden fault active: ')}</strong>{L('capot verrouillé opaque. Faites le diagnostic à partir du mouvement du soufflet, de la courbe de pression et du capnogramme.', 'casing locked opaque. Diagnose from bellows motion, the pressure curve and the capnogram.')}
                       </span>
                     )}
                   </div>
@@ -510,14 +578,14 @@ export default function App() {
                         onClick={revealMysteryXray}
                         className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold flex items-center gap-1 cursor-pointer"
                       >
-                        <Eye className="w-3.5 h-3.5" /> Reveal X-Ray & Debrief
+                        <Eye className="w-3.5 h-3.5" /> {L('Révéler et débriefer', 'Reveal and debrief')}
                       </button>
                     )}
                     <button
                       onClick={launchBlindMysteryFault}
                       className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white cursor-pointer"
                     >
-                      Next Mystery Fault
+                      {L('Panne suivante', 'Next fault')}
                     </button>
                   </div>
                 </div>
@@ -527,7 +595,7 @@ export default function App() {
               <div className="px-3 py-1.5 bg-[#0b1220] border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
                 <span>{REGIONAL_GAS_STANDARDS[gasStandard].safetyBanner[locale]}</span>
                 <span className="font-mono text-[10px] text-cyan-400/90">
-                  Drag to orbit • Pinch/Scroll to zoom • O2 Blue | CO2 Red | Agent ISO 5360 | Argon Violet
+                  {L('Glisser pour tourner • pincer ou molette pour zoomer • particules : O₂ bleu | CO₂ rouge | halogéné couleur ISO 5360 | argon violet', 'Drag to orbit • pinch or scroll to zoom • particles: O₂ blue | CO₂ red | agent ISO 5360 colour | argon violet')}
                 </span>
               </div>
             </div>
@@ -536,7 +604,7 @@ export default function App() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-1">
                 <span className="text-xs font-semibold text-slate-300">
-                  Live Synchronized OR Monitor (50 Hz Equation of Motion & Capnography)
+                  {L('Moniteur synchronisé : pression, débit et capnogramme (équation du mouvement, 50 Hz)', 'Synchronised monitor: pressure, flow and capnogram (equation of motion, 50 Hz)')}
                 </span>
                 <label className="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
                   <input
@@ -545,7 +613,7 @@ export default function App() {
                     onChange={(e) => setShowEqZones(e.target.checked)}
                     className="rounded"
                   />
-                  Color-Code Equation of Motion (F*R vs V/C)
+                  {L('Colorer l’équation du mouvement (débit×R / V/C)', 'Colour the equation of motion (flow×R / V/C)')}
                 </label>
               </div>
               <BedsideMonitorCanvas
@@ -563,13 +631,13 @@ export default function App() {
             <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
               <div className="flex items-center justify-between">
                 <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">
-                  1. Swappable Workstation Drive (6 Architectures)
+                  {L('1. Type de ventilateur (6 architectures)', '1. Ventilator drive (6 architectures)')}
                 </h2>
                 <button
                   onClick={handleReset}
                   className="text-[11px] text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
                 >
-                  <RotateCcw className="w-3 h-3" /> Reset
+                  <RotateCcw className="w-3 h-3" /> {L('Réinitialiser', 'Reset')}
                 </button>
               </div>
 
@@ -583,16 +651,16 @@ export default function App() {
                   }))
                 }
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white outline-none"
-                aria-label="Ventilator drive"
+                aria-label={L('Type de ventilateur', 'Ventilator drive')}
               >
                 {(Object.keys(DRIVE_LABELS) as VentilatorDriveType[]).map((d) => (
                   <option key={d} value={d} className="bg-slate-900">
-                    {DRIVE_LABELS[d].label}
+                    {fr ? DRIVE_LABELS[d].fr : DRIVE_LABELS[d].en}
                   </option>
                 ))}
               </select>
               <div className="text-[11px] text-cyan-300/90 bg-cyan-950/30 border border-cyan-500/20 rounded-lg px-2.5 py-1.5">
-                {DRIVE_LABELS[params.driveType].tag}
+                {fr ? DRIVE_LABELS[params.driveType].tagFr : DRIVE_LABELS[params.driveType].tagEn}
               </div>
 
               <div className="grid grid-cols-3 gap-1.5 pt-1">
@@ -606,25 +674,25 @@ export default function App() {
                         : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-slate-500'
                     }`}
                   >
-                    {vm === 'MANUAL_APL_SPONT' ? 'Spont + APL' : vm}
+                    {vm === 'MANUAL_APL_SPONT' ? L('Spontanée + APL', 'Spont + APL') : fr ? (vm === 'VCV' ? 'VC (volume)' : 'PC (pression)') : vm}
                   </button>
                 ))}
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">O2 Supply Source</label>
+                  <label className="text-[10px] text-slate-400 block mb-1">{L('Source d’O₂', 'O₂ supply')}</label>
                   <select
                     value={params.o2Source}
                     onChange={(e) => setParams((p) => ({ ...p, o2Source: e.target.value as 'pipeline' | 'concentrator' }))}
                     className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs"
                   >
-                    <option value="pipeline">Wall Pipeline (100% O2)</option>
-                    <option value="concentrator">O2 Concentrator (~95% + Argon)</option>
+                    <option value="pipeline">{L('Réseau mural (O₂ 100 %)', 'Wall pipeline (100% O₂)')}</option>
+                    <option value="concentrator">{L('Concentrateur d’O₂ (~95 % + argon)', 'O₂ concentrator (~95% + argon)')}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-[10px] text-slate-400 block mb-1">ISO 5360 Vaporizer</label>
+                  <label className="text-[10px] text-slate-400 block mb-1">{L('Évaporateur (ISO 5360)', 'Vaporizer (ISO 5360)')}</label>
                   <select
                     value={agent}
                     onChange={(e) => setAgent(e.target.value as VolatileAgentId)}
@@ -642,12 +710,12 @@ export default function App() {
 
             {/* 2. Fresh Gas, Ventilator & Lung Mechanics */}
             <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5 text-xs">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">2. Gas Flow, APL & Lung Mechanics</h2>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{L('2. Débits, APL et mécanique pulmonaire', '2. Gas flow, APL and lung mechanics')}</h2>
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>O2 Flow</span>
+                    <span>{L('Débit O₂', 'O₂ flow')}</span>
                     <span className="font-mono text-sky-300">{params.fgfO2Lpm.toFixed(1)} L/m</span>
                   </div>
                   <input
@@ -663,7 +731,7 @@ export default function App() {
 
                 <label className="block">
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>Air Flow</span>
+                    <span>{L('Débit air', 'Air flow')}</span>
                     <span className="font-mono text-slate-300">{params.fgfAirLpm.toFixed(1)} L/m</span>
                   </div>
                   <input
@@ -679,7 +747,7 @@ export default function App() {
 
                 <label className="block">
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>Vaporizer Dial</span>
+                    <span>{L('Réglage évaporateur', 'Vaporizer dial')}</span>
                     <span className="font-mono text-yellow-300">{params.vaporizerDialPct.toFixed(1)}%</span>
                   </div>
                   <input
@@ -695,7 +763,7 @@ export default function App() {
 
                 <label className="block">
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>{params.ventMode === 'MANUAL_APL_SPONT' ? t('aplValve') : 'PEEP Set'}</span>
+                    <span>{params.ventMode === 'MANUAL_APL_SPONT' ? t('aplValve') : L('PEP réglée', 'PEEP set')}</span>
                     <span className="font-mono text-amber-300">
                       {params.ventMode === 'MANUAL_APL_SPONT' ? params.aplCmH2O : params.peepSetCmH2O} cmH2O
                     </span>
@@ -718,7 +786,7 @@ export default function App() {
 
                 <label className="block">
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>Airway Resistance (R)</span>
+                    <span>{L('Résistance des voies aériennes (R)', 'Airway resistance (R)')}</span>
                     <span className="font-mono text-amber-300">{params.resistanceCmH2OPerLps}</span>
                   </div>
                   <input
@@ -741,7 +809,7 @@ export default function App() {
 
                 <label className="block">
                   <div className="flex justify-between text-[11px] mb-0.5">
-                    <span>Lung Compliance (C)</span>
+                    <span>{L('Compliance pulmonaire (C)', 'Lung compliance (C)')}</span>
                     <span className="font-mono text-cyan-300">{params.complianceMlPerCmH2O} mL/cmH2O</span>
                   </div>
                   <input
@@ -769,13 +837,13 @@ export default function App() {
                   }
                   className="px-2 py-1 rounded bg-amber-500/15 border border-amber-500/30 text-amber-200 text-[11px] hover:bg-amber-500/25 cursor-pointer"
                 >
-                  Bronchospasm (Shark Fin)
+                  {L('Bronchospasme (aileron de requin)', 'Bronchospasm (shark fin)')}
                 </button>
                 <button
                   onClick={() => setParams((p) => ({ ...DEFAULT_PARAMS, driveType: p.driveType, complianceMlPerCmH2O: 26 }))}
                   className="px-2 py-1 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 text-[11px] hover:bg-cyan-500/25 cursor-pointer"
                 >
-                  Pneumoperitoneum (Low C)
+                  {L('Pneumopéritoine (C basse)', 'Pneumoperitoneum (low C)')}
                 </button>
                 <button
                   onClick={() =>
@@ -790,7 +858,7 @@ export default function App() {
                   }
                   className="px-2 py-1 rounded bg-purple-500/15 border border-purple-500/30 text-purple-200 text-[11px] hover:bg-purple-500/25 cursor-pointer"
                 >
-                  APL vs CPAP Demo
+                  {L('Démo APL / CPAP', 'APL vs CPAP demo')}
                 </button>
                 <button
                   onClick={() =>
@@ -804,7 +872,7 @@ export default function App() {
                   }
                   className="px-2 py-1 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-[11px] hover:bg-emerald-500/25 cursor-pointer"
                 >
-                  Low-Flow Argon Trap
+                  {L('Piège de l’argon à bas débit', 'Low-flow argon trap')}
                 </button>
               </div>
             </div>
@@ -812,12 +880,12 @@ export default function App() {
             {/* 3. Fault Injection Lab */}
             <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-rose-400">3. Interactive Clinical Fault Lab</h2>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-rose-400">{L('3. Pannes à déclencher', '3. Fault lab')}</h2>
                 <button
                   onClick={launchBlindMysteryFault}
                   className="px-2 py-0.5 rounded bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                 >
-                  <EyeOff className="w-3 h-3" /> Blind Mystery
+                  <EyeOff className="w-3 h-3" /> {L('Panne cachée', 'Hidden fault')}
                 </button>
               </div>
 
@@ -836,7 +904,7 @@ export default function App() {
                           : 'bg-slate-900/80 border-slate-800 text-slate-300 hover:border-slate-600'
                       }`}
                     >
-                      <span>{locale.startsWith('fr') ? f.fr : f.en}</span>
+                      <span>{fr ? f.fr : f.en}</span>
                       <span
                         className={`w-2 h-2 rounded-full ${active && !hideLabel ? 'bg-rose-400 animate-pulse' : 'bg-slate-700'}`}
                       />
@@ -848,7 +916,7 @@ export default function App() {
           </aside>
         </main>
       ) : (
-        <ModuleRouter activeModule={activeModule} locale={locale} />
+        <ModuleRouter activeModule={activeModule} locale={locale} onNavigate={(m) => goTo(m)} />
       )}
 
       {/* SLIDE-OVER: SFAR FOSO / ASA / Mapleson Drawer */}
@@ -965,6 +1033,7 @@ export default function App() {
       {showReview && <ReviewDrawer moduleTab={activeModule} locale={locale} onClose={() => setShowReview(false)} />}
 
       {/* SLIDE-OVER: Evidence & Equations Drawer */}
+      {showCurriculum && <CurriculumDrawer locale={locale} onClose={() => setShowCurriculum(false)} />}
       {showEvidence && (
         <div className="fixed inset-0 z-50 bg-black/70 flex justify-end" onClick={() => setShowEvidence(false)}>
           <div
@@ -972,13 +1041,16 @@ export default function App() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-              <h3 className="font-bold text-white text-sm">Evidence, Equations & Open Provenance</h3>
+              <h3 className="font-bold text-white text-sm">{locale !== 'en-INT' ? 'Preuves, équations et sources' : 'Evidence, Equations & Open Provenance'}</h3>
               <button onClick={() => setShowEvidence(false)} aria-label="Close" className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-3 text-xs">
-              {EVIDENCE_REGISTRY.map((ev) => (
+              {EVIDENCE_REGISTRY.map((src) => {
+                const tr = locale !== 'en-INT' ? EVIDENCE_FR[src.id] : undefined;
+                const ev = tr ? { ...src, ...tr } : src;
+                return (
                 <div key={ev.id} className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-1.5">
                   <div className="flex justify-between gap-2">
                     <span className="font-bold text-cyan-300">{ev.title}</span>
@@ -990,7 +1062,7 @@ export default function App() {
                     </div>
                   )}
                   <p className="text-slate-300 leading-relaxed">{ev.keyFinding}</p>
-                  <p className="text-emerald-300/90">Takeaway: {ev.clinicalTakeaway}</p>
+                  <p className="text-emerald-300/90">{tr ? 'À retenir' : 'Takeaway'} : {ev.clinicalTakeaway}</p>
                   <div className="flex justify-between items-center pt-1 text-[10px] text-slate-400">
                     <span>{ev.sourceCitation}</span>
                     <a href={ev.sourceUrl} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline shrink-0 ml-2">
@@ -998,7 +1070,8 @@ export default function App() {
                     </a>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

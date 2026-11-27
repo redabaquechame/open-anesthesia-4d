@@ -137,6 +137,51 @@ export async function createStage(opts: StageOptions): Promise<Stage> {
     container.appendChild(el);
   }
 
+  /**
+   * Nudge HTML labels back inside the viewport so none is cut off at the edge (narrow phone screens).
+   * The shift lives in margin so it does not fight the transform CSS2DRenderer writes every frame.
+   * Reads all rects first, then writes, so this costs one layout per frame.
+   */
+  const keepLabelsInside = () => {
+    if (!labelRenderer) return;
+    const root = labelRenderer.domElement;
+    const els = Array.from(root.children) as HTMLElement[];
+    if (els.length === 0) return;
+    const box = root.getBoundingClientRect();
+    const pad = 4;
+    const fit = (start: number, end: number, min: number, max: number) => {
+      if (end - start > max - min) return min - start;
+      if (start < min) return min - start;
+      if (end > max) return max - end;
+      return 0;
+    };
+    const shifts = els.map((el) => {
+      if (el.style.display === 'none') return null;
+      const r = el.getBoundingClientRect();
+      if (r.width === 0) return null;
+      const sx = Number(el.dataset.sx ?? 0);
+      const sy = Number(el.dataset.sy ?? 0);
+      const left = r.left - sx;
+      const top = r.top - sy;
+      return {
+        x: Math.round(fit(left, left + r.width, box.left + pad, box.right - pad)),
+        y: Math.round(fit(top, top + r.height, box.top + pad, box.bottom - pad)),
+      };
+    });
+    els.forEach((el, i) => {
+      const s = shifts[i];
+      if (!s) return;
+      if (Number(el.dataset.sx ?? 0) !== s.x) {
+        el.dataset.sx = String(s.x);
+        el.style.marginLeft = s.x ? `${s.x}px` : '';
+      }
+      if (Number(el.dataset.sy ?? 0) !== s.y) {
+        el.dataset.sy = String(s.y);
+        el.style.marginTop = s.y ? `${s.y}px` : '';
+      }
+    });
+  };
+
   const materials = createMaterialLibrary(tier);
 
   // ── Post-processing ──────────────────────────────────────────────────────
@@ -220,6 +265,7 @@ export async function createStage(opts: StageOptions): Promise<Stage> {
     for (const fn of frameFns) fn({ dt, time });
     postFx.render(dt);
     labelRenderer?.render(scene, camera);
+    keepLabelsInside();
     adapt(dt);
   };
 

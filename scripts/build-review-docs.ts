@@ -3,9 +3,11 @@
  * Run: npm run review:docs   →   docs/clinical-review/*.md
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { CLAIMS, type ClaimStatus, type ClinicalClaim } from '../src/standards/claimRegistry.ts';
 
-const OUT = new URL('../docs/clinical-review/', import.meta.url);
+// Relative to the repo root (npm runs scripts there); the script is bundled into node_modules/.cache first.
+const OUT = new URL('docs/clinical-review/', pathToFileURL(`${process.cwd()}/`));
 mkdirSync(OUT, { recursive: true });
 
 const GROUPS: { file: string; title: string; modules: string[] }[] = [
@@ -16,6 +18,9 @@ const GROUPS: { file: string; title: string; modules: string[] }[] = [
   { file: 'M6.md', title: 'M6 — Ultrasound-guided block, LAST & cardiac loops', modules: ['M6'] },
   { file: 'M7.md', title: 'M7 — Thoracic & lumbar epidural', modules: ['M7'] },
   { file: 'M8.md', title: 'M8 — Bronchoscopy & double-lumen tube', modules: ['M8'] },
+  { file: 'M9.md', title: 'M9 — Crisis management', modules: ['M9'] },
+  { file: 'M10.md', title: 'M10 — Pre-operative assessment', modules: ['M10'] },
+  { file: 'M11.md', title: 'M11 — Official curriculum & library', modules: ['M11'] },
 ];
 
 const LABEL: Record<ClaimStatus, string> = {

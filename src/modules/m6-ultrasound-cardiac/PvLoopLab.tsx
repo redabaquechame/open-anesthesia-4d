@@ -12,14 +12,14 @@ const LESIONS: { id: ValveLesion; en: string; fr: string }[] = [
 ];
 
 const SHOCK_MATRIX = [
-  { type: 'Anaphylactic distributive', firstLine: 'Epinephrine (stabilises mast cells + vasopressor/inotrope)', color: 'text-rose-300' },
-  { type: 'Septic distributive', firstLine: 'IV fluids + norepinephrine → add vasopressin', color: 'text-amber-300' },
-  { type: 'Cardiogenic', firstLine: 'Context-dependent inotrope (assess LV/RV/valves)', color: 'text-cyan-300' },
-  { type: 'Haemorrhagic / hypovolaemic', firstLine: 'Stop the bleeding + blood products; vasopressor only as a short bridge', color: 'text-emerald-300' },
+  { type: { fr: 'Distributif anaphylactique', en: 'Anaphylactic distributive' }, firstLine: { fr: 'Adrénaline (vasoconstricteur, inotrope, inhibe l’activation mastocytaire) — RCUK 2021', en: 'Adrenaline (vasoconstrictor, inotrope, inhibits mast-cell activation) — RCUK 2021' }, color: 'text-rose-300' },
+  { type: { fr: 'Distributif septique', en: 'Septic distributive' }, firstLine: { fr: 'Cristalloïdes puis noradrénaline → ajouter la vasopressine si les doses augmentent — SSC 2026', en: 'Crystalloid then noradrenaline → add vasopressin as doses rise — SSC 2026' }, color: 'text-amber-300' },
+  { type: { fr: 'Cardiogénique', en: 'Cardiogenic' }, firstLine: { fr: 'Inotrope selon le contexte (évaluer VG, VD, valves) — non vérifié', en: 'Context-dependent inotrope (assess LV/RV/valves) — not checked' }, color: 'text-cyan-300' },
+  { type: { fr: 'Hémorragique / hypovolémique', en: 'Haemorrhagic / hypovolaemic' }, firstLine: { fr: 'Arrêter le saignement + produits sanguins ; noradrénaline seulement transitoire si les cibles ne sont pas atteintes — trauma européen 2023', en: 'Stop the bleeding + blood products; noradrenaline only transiently if targets fail — European trauma 2023' }, color: 'text-emerald-300' },
 ];
 
 export function PvLoopLab({ locale }: { locale: LocaleCode }) {
-  const fr = locale.startsWith('fr');
+  const fr = locale !== 'en-INT';
   const [lesion, setLesion] = useState<ValveLesion>('normal');
   const [preload, setPreload] = useState(1);
   const [afterload, setAfterload] = useState(1);
@@ -129,9 +129,9 @@ export function PvLoopLab({ locale }: { locale: LocaleCode }) {
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">{fr ? 'Vasopresseurs selon le type de choc' : 'Shock-type vasopressor framework'}</h3>
           {SHOCK_MATRIX.map((row) => (
-            <div key={row.type} className="p-2 rounded-lg bg-slate-900 border border-slate-800">
-              <div className={`font-bold ${row.color}`}>{row.type}</div>
-              <div className="text-[11px] text-slate-300">{row.firstLine}</div>
+            <div key={row.type.en} className="p-2 rounded-lg bg-slate-900 border border-slate-800">
+              <div className={`font-bold ${row.color}`}>{fr ? row.type.fr : row.type.en}</div>
+              <div className="text-[11px] text-slate-300">{fr ? row.firstLine.fr : row.firstLine.en}</div>
             </div>
           ))}
         </div>

@@ -3,7 +3,7 @@
  * Each check prints PASS/FAIL. Exit code 1 if any check fails.
  *
  * Reference data used here (all opened and read):
- * - Eleveld 2018 BJA abstract (doi:10.1016/j.bja.2018.01.018): reference 35 y / 170 cm / 70 kg male
+ * - Eleveld 2018 BJA full text (doi:10.1016/j.bja.2018.01.018): reference 35 y / 170 cm / 70 kg male
  *   without concomitant drugs: V1 6.28, V2 25.5, V3 273 L; CL 1.79, Q2 1.75, Q3 1.11 L/min; ke0 0.146 /min.
  * - Yasuda 1991 Anesth Analg abstract (doi:10.1213/00000539-199103000-00007): FA/FI at 30 min of constant
  *   inspired concentration: sevoflurane 0.850 ± 0.018, isoflurane 0.733 ± 0.027 (volunteers, FI sevo 1.0 %, iso 0.6 %).
@@ -14,6 +14,9 @@ import { computePropofolPk, SYNTHETIC_AVATARS, ThreeCompartmentEngine } from '..
 import { simulateHeart } from '../../src/physics/cardiovascularKernel';
 import { runSpineChecks } from './spine';
 import { runAirwayChecks } from './airway';
+import { runCrisisPreopChecks } from './crisisPreop';
+import { runParcoursChecks } from './parcours';
+import { runMonitorChecks } from './monitor';
 
 let failures = 0;
 function check(name: string, ok: boolean, detail: string) {
@@ -82,7 +85,10 @@ const pk = computePropofolPk('eleveld', ref);
 const cl = pk.k10 * pk.v1, q2 = pk.k12 * pk.v1, q3 = pk.k13 * pk.v1;
 const near = (v: number, t: number) => Math.abs(v - t) / t < 0.01;
 check('M4 Eleveld ref V1/V2/V3 = 6.28/25.5/273 L', near(pk.v1, 6.28) && near(pk.v2, 25.5) && near(pk.v3, 273), `${pk.v1.toFixed(2)}/${pk.v2.toFixed(1)}/${pk.v3.toFixed(0)}`);
-check('M4 Eleveld ref CL/Q2/Q3 = 1.79/1.75/1.11 L/min', near(cl, 1.79) && near(q2, 1.75) && near(q3, 1.11), `${cl.toFixed(2)}/${q2.toFixed(2)}/${q3.toFixed(2)}`);
+// Eleveld 2018 final model: Q2 = 1.75 x (V2/V2ref)^0.75 x (1 + 1.30 x (1 - fQ3mat)), fQ3mat = PMA/(PMA + 68.3),
+// PMA = 35 x 52 + 40 = 1860 wk. The immaturity factor is not normalised, so Q2 at the reference is ~1.83.
+const q2Ref = 1.75 * (1 + 1.3 * (1 - 1860 / (1860 + 68.3)));
+check('M4 Eleveld ref CL/Q2/Q3 = 1.79/1.83/1.11 L/min (paper equations)', near(cl, 1.79) && near(q2, q2Ref) && near(q3, 1.11), `${cl.toFixed(2)}/${q2.toFixed(2)}/${q3.toFixed(2)}`);
 check('M4 Eleveld ref ke0 = 0.146 /min', near(pk.ke0, 0.146), `${pk.ke0.toFixed(3)}`);
 for (const model of ['eleveld', 'schnider', 'marsh'] as const) {
   const m = computePropofolPk(model, SYNTHETIC_AVATARS[0]);
@@ -110,6 +116,9 @@ check('M6 MS: small EDV, transmitral gradient > 5', hms.edv < hn.edv && hms.mean
 // ── M7 neuraxial geometry on the real spine model ──────────────────────────
 await runSpineChecks(check);
 runAirwayChecks(check);
+runCrisisPreopChecks(check);
+runParcoursChecks(check);
+runMonitorChecks(check);
 
 console.log(failures ? `\n${failures} check(s) FAILED` : '\nAll sanity checks passed');
 process.exit(failures ? 1 : 0);

@@ -34,6 +34,14 @@ function occupancyToTwitches(occ: number): { twitches: number[]; ratio: number; 
 }
 
 export function NmjTofModule({ locale }: { locale: LocaleCode }) {
+  const fr = locale !== 'en-INT';
+  const L = (f: string, e: string) => (fr ? f : e);
+  // Display-only decimal separator for French text (values themselves are unchanged)
+  const dec = (s: string) => (fr ? s.replace('.', ',') : s);
+  const baselineBanner = L(
+    'Transmission neuromusculaire de base intacte (rapport T4/T1 1,00).',
+    'Baseline neuromuscular transmission intact (TOF Ratio 1.00).'
+  );
   const [avatarWeightKg, setAvatarWeightKg] = useState(75);
   const [renalFailure, setRenalFailure] = useState(false);
   const [speedX, setSpeedX] = useState(10);
@@ -49,7 +57,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
     thumbTofRatio: 1.0,
     ptcCount: 15,
     ptcCooldownSec: 0,
-    feedbackBanner: 'Baseline neuromuscular transmission intact (TOF Ratio 1.00).',
+    feedbackBanner: baselineBanner,
   });
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -61,7 +69,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
     eyelidOcc: 0,
     thumbOcc: 0,
     ptcCooldown: 0,
-    banner: 'Baseline neuromuscular transmission intact (TOF Ratio 1.00).',
+    banner: baselineBanner,
   });
   const speedRef = useRef(speedX);
   speedRef.current = speedX;
@@ -294,34 +302,55 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
     const s = simRef.current;
     s.rocPlasma += doseMgKg * 1.45;
     s.rocPeripheral += doseMgKg * 1.1;
-    s.banner = `Administered Rocuronium ${doseMgKg} mg/kg (virtual avatar ${avatarWeightKg} kg). Watch the corrugator supercilii reach block before the adductor pollicis (simulated timing).`;
+    s.banner = L(
+      `Rocuronium ${dec(String(doseMgKg))} mg/kg administré (avatar virtuel de ${avatarWeightKg} kg). Observez le muscle sourcilier (corrugator supercilii) atteindre le bloc avant l’adducteur du pouce (chronologie simulée).`,
+      `Administered Rocuronium ${doseMgKg} mg/kg (virtual avatar ${avatarWeightKg} kg). Watch the corrugator supercilii reach block before the adductor pollicis (simulated timing).`
+    );
   };
 
   const giveSugammadex = (doseMgKg: number, fixedVial200 = false) => {
     if (renalFailure) {
-      simRef.current.banner = 'Sugammadex is NOT RECOMMENDED in severe renal impairment (CrCl < 30 mL/min, per label). The simulator withholds it here.';
+      simRef.current.banner = L(
+        'Sugammadex NON RECOMMANDÉ en cas d’insuffisance rénale sévère (ClCr < 30 mL/min, selon le RCP). Le simulateur ne l’administre pas ici.',
+        'Sugammadex is NOT RECOMMENDED in severe renal impairment (CrCl < 30 mL/min, per label). The simulator withholds it here.'
+      );
       return;
     }
     const effectiveMgKg = fixedVial200 ? 200 / avatarWeightKg : doseMgKg;
     simRef.current.sugaFree += effectiveMgKg * 0.42;
     simRef.current.banner = fixedVial200
-      ? `Fixed 200 mg vial in ${avatarWeightKg} kg avatar (${effectiveMgKg.toFixed(1)} mg/kg) — watch temporary recovery followed by REBOUND RECURARIZATION from peripheral redistribution!`
-      : `Sugammadex ${doseMgKg} mg/kg encapsulating rocuronium molecules in synaptic cleft. Verify Adductor Pollicis TOF Ratio >= 0.90 before extubation.`;
+      ? L(
+          `Flacon fixe de 200 mg chez un avatar de ${avatarWeightKg} kg (${dec(effectiveMgKg.toFixed(1))} mg/kg) — observez la récupération transitoire suivie d’une RECURARISATION par redistribution périphérique !`,
+          `Fixed 200 mg vial in ${avatarWeightKg} kg avatar (${effectiveMgKg.toFixed(1)} mg/kg) — watch temporary recovery followed by REBOUND RECURARIZATION from peripheral redistribution!`
+        )
+      : L(
+          `Sugammadex ${doseMgKg} mg/kg : encapsulation des molécules de rocuronium dans la fente synaptique. Vérifiez un rapport T4/T1 ≥ 0,90 à l’adducteur du pouce avant l’extubation.`,
+          `Sugammadex ${doseMgKg} mg/kg encapsulating rocuronium molecules in synaptic cleft. Verify Adductor Pollicis TOF Ratio >= 0.90 before extubation.`
+        );
   };
 
   const firePtc = () => {
     const s = simRef.current;
     const thumbCount = occupancyToTwitches(s.thumbOcc).count;
     if (thumbCount > 0) {
-      s.banner = 'PTC is only needed when the TOF count is 0. With TOF count > 0, read the TOF instead.';
+      s.banner = L(
+        'Le compte post-tétanique (PTC) n’est utile que si le compte du train-de-quatre (TOF) est à 0. Si le compte TOF > 0, lisez plutôt le TOF.',
+        'PTC is only needed when the TOF count is 0. With TOF count > 0, read the TOF instead.'
+      );
       return;
     }
     if (s.ptcCooldown > 0) {
-      s.banner = `Tetanic stimulation potentiates later responses, so PTCs need spacing. The simulator uses 6 min (interval unverified): ${Math.ceil(s.ptcCooldown)} s remaining.`;
+      s.banner = L(
+        `La stimulation tétanique potentialise les réponses suivantes : les PTC doivent être espacés. Le standard de recherche GCRP 2023 les sépare d’au moins 2 min ; le simulateur utilise 2 min : ${Math.ceil(s.ptcCooldown)} s restantes.`,
+        `Tetanic stimulation potentiates later responses, so PTCs need spacing. The GCRP 2023 research standard spaces them by at least 2 min; the simulator uses 2 min: ${Math.ceil(s.ptcCooldown)} s remaining.`
+      );
       return;
     }
-    s.ptcCooldown = 360;
-    s.banner = `PTC done. Label dosing: deep block (PTC 1–2) → sugammadex 4 mg/kg; reappearance of T2 → 2 mg/kg. PTC 0 = profound block.`;
+    s.ptcCooldown = 120; // GCRP 2023 Geneva revision, Table 4: ≥ 2 min between PTCs (claim m5-ptc-spacing)
+    s.banner = L(
+      `PTC réalisé. Posologie du RCP : bloc profond (PTC 1–2) → sugammadex 4 mg/kg ; réapparition de T2 → 2 mg/kg. PTC 0 = bloc intense.`,
+      `PTC done. Label dosing: deep block (PTC 1–2) → sugammadex 4 mg/kg; reappearance of T2 → 2 mg/kg. PTC 0 = profound block.`
+    );
   };
 
   const launchObeseRecurarizationCrisis = () => {
@@ -334,7 +363,10 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
     s.sugaFree = 0;
     s.eyelidOcc = 0.85;
     s.thumbOcc = 0.94;
-    s.banner = 'OBESE RECURARIZATION DRILL (135 kg avatar, deep block): Click "Unmonitored 200 mg Vial" to see transient TOF rise followed by dangerous rebound blockade!';
+    s.banner = L(
+      'EXERCICE DE RECURARISATION CHEZ L’OBÈSE (avatar de 135 kg, bloc profond) : cliquez sur « Flacon fixe de 200 mg sans monitorage » pour voir la remontée transitoire du TOF suivie d’un dangereux rebond du bloc neuromusculaire !',
+      'OBESE RECURARIZATION DRILL (135 kg avatar, deep block): Click "Unmonitored 200 mg Vial" to see transient TOF rise followed by dangerous rebound blockade!'
+    );
   };
 
   const thumbSafeToExtubate = state.thumbTofRatio >= 0.9;
@@ -345,9 +377,10 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
         <div className="bg-[#070b14] border border-slate-800 rounded-xl overflow-hidden">
           <div className="px-3 py-2 bg-[#0b1220] border-b border-slate-800 flex flex-wrap justify-between items-center gap-2 text-xs">
             <span className="font-bold text-cyan-300">
-              {locale.startsWith('fr')
-                ? 'Jonction Neuromusculaire 4D (ACh Vert | Rocuronium Rouge | Sugammadex Or)'
-                : '4D Cellular Neuromuscular Junction (ACh Green | Rocuronium Red | Sugammadex Gold)'}
+              {L(
+                'Jonction neuromusculaire 4D (ACh vert | rocuronium rouge | sugammadex or)',
+                '4D Cellular Neuromuscular Junction (ACh Green | Rocuronium Red | Sugammadex Gold)'
+              )}
             </span>
             <div className="flex items-center gap-1.5 font-mono text-[11px]">
               <span>t = {Math.round(state.elapsedSec)} s</span>
@@ -356,7 +389,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
                   {x}x
                 </button>
               ))}
-              <button onClick={() => { simRef.current = { tSec: 0, rocPlasma: 0, rocPeripheral: 0, sugaFree: 0, eyelidOcc: 0, thumbOcc: 0, ptcCooldown: 0, banner: 'Reset to baseline.' }; }} className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 cursor-pointer">
+              <button onClick={() => { simRef.current = { tSec: 0, rocPlasma: 0, rocPeripheral: 0, sugaFree: 0, eyelidOcc: 0, thumbOcc: 0, ptcCooldown: 0, banner: L('Retour à l’état de base.', 'Reset to baseline.') }; }} title={L('Réinitialiser', 'Reset')} aria-label={L('Réinitialiser', 'Reset')} className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 cursor-pointer">
                 <RotateCcw className="w-3 h-3" />
               </button>
             </div>
@@ -371,8 +404,8 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-sky-300">Facial / Corrugator Supercilii (Sourcilier)</span>
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200">INTUBATION ONLY</span>
+              <span className="font-bold text-sky-300">{L('Face / muscle sourcilier (corrugator supercilii)', 'Facial / Corrugator Supercilii')}</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-200">{L('INTUBATION UNIQUEMENT', 'INTUBATION ONLY')}</span>
             </div>
             <div className="flex items-end gap-3 h-24 bg-slate-950 rounded-lg p-3 border border-slate-800">
               {state.eyelidTwitches.map((h, i) => (
@@ -383,16 +416,18 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
               ))}
             </div>
             <div className="flex justify-between font-mono text-xs">
-              <span>TOF Ratio: <strong>{(state.eyelidTofRatio * 100).toFixed(0)}%</strong></span>
-              <span className="text-slate-400">Faster onset than thumb</span>
+              <span>{L('Rapport T4/T1 : ', 'TOF Ratio: ')}<strong>{(state.eyelidTofRatio * 100).toFixed(0)}{L(' %', '%')}</strong></span>
+              <span className="text-slate-400">{L('Installation plus rapide qu’au pouce', 'Faster onset than thumb')}</span>
             </div>
           </div>
 
           <div className={`bg-[#0d1422] border rounded-xl p-3 space-y-2 ${thumbSafeToExtubate ? 'border-emerald-500/40' : 'border-rose-500/50'}`}>
             <div className="flex justify-between items-center text-xs">
-              <span className="font-bold text-emerald-300">Ulnar / Adductor Pollicis (Pouce)</span>
+              <span className="font-bold text-emerald-300">{L('Nerf ulnaire / adducteur du pouce', 'Ulnar / Adductor Pollicis')}</span>
               <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${thumbSafeToExtubate ? 'bg-emerald-500/20 text-emerald-200' : 'bg-rose-500/25 text-rose-200'}`}>
-                {thumbSafeToExtubate ? 'SAFE EXTUBATION >= 0.90' : 'RESIDUAL BLOCK — DO NOT EXTUBATE'}
+                {thumbSafeToExtubate
+                  ? L('EXTUBATION POSSIBLE SI TOF ≥ 0,90', 'SAFE EXTUBATION >= 0.90')
+                  : L('BLOC RÉSIDUEL — NE PAS EXTUBER', 'RESIDUAL BLOCK — DO NOT EXTUBATE')}
               </span>
             </div>
             <div className="flex items-end gap-3 h-24 bg-slate-950 rounded-lg p-3 border border-slate-800">
@@ -404,8 +439,8 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
               ))}
             </div>
             <div className="flex justify-between font-mono text-xs">
-              <span>TOF Ratio: <strong>{(state.thumbTofRatio * 100).toFixed(0)}%</strong></span>
-              <span className="text-slate-400">PTC: {state.ptcCount}</span>
+              <span>{L('Rapport T4/T1 : ', 'TOF Ratio: ')}<strong>{(state.thumbTofRatio * 100).toFixed(0)}{L(' %', '%')}</strong></span>
+              <span className="text-slate-400">{L('PTC : ', 'PTC: ')}{state.ptcCount}</span>
             </div>
           </div>
         </div>
@@ -414,53 +449,56 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
       <aside className="lg:col-span-4 flex flex-col gap-3 text-xs">
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2.5">
           <h2 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
-            <Syringe className="w-3.5 h-3.5" /> 1. Synthetic Neuromuscular Agents
+            <Syringe className="w-3.5 h-3.5" /> {L('1. Curares (agents bloquants neuromusculaires)', '1. Synthetic Neuromuscular Agents')}
           </h2>
           <label className="block">
             <div className="flex justify-between text-[11px]">
-              <span>Virtual Avatar Weight</span>
+              <span>{L('Poids de l’avatar virtuel', 'Virtual Avatar Weight')}</span>
               <span className="font-mono text-cyan-300">{avatarWeightKg} kg</span>
             </div>
             <input type="range" min={45} max={150} step={5} value={avatarWeightKg}
               onChange={(e) => setAvatarWeightKg(Number(e.target.value))} className="w-full" />
           </label>
           <label className="flex items-center justify-between p-2 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer">
-            <span>Severe renal impairment (CrCl &lt; 30)</span>
+            <span>{L('Insuffisance rénale sévère (ClCr < 30)', 'Severe renal impairment (CrCl < 30)')}</span>
             <input type="checkbox" checked={renalFailure} onChange={(e) => setRenalFailure(e.target.checked)} />
           </label>
           <div className="grid grid-cols-2 gap-1.5">
             <button onClick={() => giveRocuronium(0.6)} className="py-2 px-2 rounded-lg bg-rose-600/80 hover:bg-rose-500 text-white font-semibold cursor-pointer">
-              Rocuronium 0.6 mg/kg
+              {L('Rocuronium 0,6 mg/kg', 'Rocuronium 0.6 mg/kg')}
             </button>
             <button onClick={() => giveRocuronium(1.2)} className="py-2 px-2 rounded-lg bg-rose-700 hover:bg-rose-600 text-white font-semibold cursor-pointer">
-              Rocuronium 1.2 (RSI)
+              {L('Rocuronium 1,2 (ISR)', 'Rocuronium 1.2 (RSI)')}
             </button>
           </div>
         </div>
 
         <div className="bg-[#0d1422] border border-slate-800 rounded-xl p-3 space-y-2">
           <h2 className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-            <Zap className="w-3.5 h-3.5" /> 2. Quantitative Stimulation & Sugammadex
+            <Zap className="w-3.5 h-3.5" /> {L('2. Stimulation quantitative et sugammadex', '2. Quantitative Stimulation & Sugammadex')}
           </h2>
           <button onClick={firePtc} className="w-full py-1.5 rounded-lg bg-slate-900 border border-cyan-500/40 text-cyan-200 hover:bg-slate-800 cursor-pointer">
-            Trigger Post-Tetanic Count (PTC) {state.ptcCooldownSec > 0 ? `[Wait ${Math.ceil(state.ptcCooldownSec)}s]` : ''}
+            {L('Lancer un compte post-tétanique (PTC)', 'Trigger Post-Tetanic Count (PTC)')}{' '}
+            {state.ptcCooldownSec > 0
+              ? L(`[Attendre ${Math.ceil(state.ptcCooldownSec)} s]`, `[Wait ${Math.ceil(state.ptcCooldownSec)}s]`)
+              : ''}
           </button>
           <div className="grid grid-cols-3 gap-1.5">
             <button onClick={() => giveSugammadex(2)} className="py-1.5 rounded-lg bg-amber-600/80 hover:bg-amber-500 text-white font-semibold cursor-pointer">
-              2 mg/kg (T2 back)
+              {L('2 mg/kg (retour de T2)', '2 mg/kg (T2 back)')}
             </button>
             <button onClick={() => giveSugammadex(4)} className="py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-semibold cursor-pointer">
               4 mg/kg (PTC 1–2)
             </button>
             <button onClick={() => giveSugammadex(16)} className="py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-semibold cursor-pointer">
-              16 mg/kg (immediate)
+              {L('16 mg/kg (immédiat)', '16 mg/kg (immediate)')}
             </button>
           </div>
           <button onClick={() => giveSugammadex(0, true)} className="w-full py-1.5 rounded-lg bg-rose-950/70 border border-rose-500/40 text-rose-200 hover:bg-rose-900/60 cursor-pointer">
-            Unmonitored Fixed 200 mg Vial (Recurarization Trap)
+            {L('Flacon fixe de 200 mg sans monitorage (piège de recurarisation)', 'Unmonitored Fixed 200 mg Vial (Recurarization Trap)')}
           </button>
           <button onClick={launchObeseRecurarizationCrisis} className="w-full py-2 rounded-lg bg-purple-950/60 border border-purple-400/40 text-purple-200 font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
-            <AlertTriangle className="w-3.5 h-3.5" /> Load Obese Recurarization Crisis (135 kg)
+            <AlertTriangle className="w-3.5 h-3.5" /> {L('Charger la crise de recurarisation chez l’obèse (135 kg)', 'Load Obese Recurarization Crisis (135 kg)')}
           </button>
         </div>
       </aside>

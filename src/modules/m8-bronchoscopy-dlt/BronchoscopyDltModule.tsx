@@ -34,7 +34,7 @@ const ANATOMY_LABEL: Record<D.AnatomyVariant, { fr: string; en: string }> = {
 const mm = (m: number, d = 0) => `${(m * 1000).toFixed(d)} mm`;
 
 export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
-  const fr = locale.startsWith('fr');
+  const fr = locale !== 'en-INT';
   const L = (f: string, e: string) => (fr ? f : e);
 
   // Patient and tube
@@ -188,7 +188,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
                   {status === 'loading' ? L('Chargement de l’anatomie…', 'Loading anatomy…') : L('Impossible de charger le modèle 3D.', 'Could not load the 3D model.')}
                 </div>
               )}
-              <div className="absolute bottom-2 left-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-slate-400 pointer-events-none">
+              <div className="absolute bottom-2 left-2 right-2 z-10 w-fit flex flex-wrap gap-x-2 gap-y-0.5 px-1.5 py-1 rounded-md bg-slate-950/80 text-[10px] text-slate-300 pointer-events-none">
                 <Legend color="#f4a9b0" text={L('lobe ventilé', 'ventilated lobe')} />
                 <Legend color="#f5b04a" text={L('partiellement obstrué', 'partly obstructed')} />
                 <Legend color="#6f7f99" text={L('non ventilé (collabé)', 'not ventilated (collapsing)')} />
