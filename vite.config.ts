@@ -18,7 +18,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      // No update prompt in the UI: activate a new service worker at once so each deploy reaches returning visitors.
+      registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'Open Anesthesia 4D — Transparent Reality Lab',
