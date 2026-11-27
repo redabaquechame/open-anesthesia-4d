@@ -73,6 +73,23 @@ export interface BmodeSettings {
   time: number;
 }
 
+/**
+ * Colour Doppler ("Simulator model"). The scanner only measures the velocity component along the
+ * beam: v_beam = v · cos θ (Oglat 2018, J Med Ultrasound, PMC6029191). At θ = 90° cos θ = 0, so a
+ * vessel cut exactly in short axis shows no colour however fast it flows.
+ */
+export interface DopplerSettings {
+  /** Colour box as fractions of the image (0–1). */
+  box: { c0: number; c1: number; r0: number; r1: number };
+  /**
+   * Flow velocity in display units (|v| = 1 is the top of the colour scale) for a structure, by its
+   * index in the mesh/analytic lists, or null if it carries no flow.
+   */
+  flow: (labelKey: number) => THREE.Vector3 | null;
+  /** Fraction of the scale below which the wall filter removes the signal. */
+  wallFilter: number;
+}
+
 export interface BmodeOutput {
   image: ImageData;
   cols: number;
@@ -81,6 +98,10 @@ export interface BmodeOutput {
   centroids: Partial<Record<string, { x: number; y: number; n: number }>>;
   /** Needle visibility 0..1 (for the teaching readout). */
   needleVisibility: number;
+  /** Largest |beam-axis velocity| seen in the colour box (display units), 0 when Doppler is off. */
+  dopplerPeak: number;
+  /** Number of vessel pixels inside the colour box (0 = no vessel to sample). */
+  dopplerVesselPixels: number;
 }
 
 /** Stable pseudo-random value in [0,1) from integer lattice coordinates. */
@@ -175,7 +196,8 @@ export class UltrasoundSimulator {
     analytic: AnalyticTissue[],
     needle: NeedleState | null,
     s: BmodeSettings,
-    labelFor: (tissueIndexInLists: number) => string | null
+    labelFor: (tissueIndexInLists: number) => string | null,
+    doppler?: DopplerSettings | null
   ): BmodeOutput {
     const { cols, rows, labels, labelKey, echo } = this;
     const dz = s.depthM / rows;
@@ -358,7 +380,67 @@ export class UltrasoundSimulator {
       cc.x /= cc.n;
       cc.y /= cc.n;
     }
-    return { image: this.image, cols, rows, centroids, needleVisibility };
+
+    // ── 5. Colour Doppler overlay ─────────────────────────────────────────
+    let dopplerPeak = 0;
+    let dopplerVesselPixels = 0;
+    if (doppler) {
+      const cl = (x: number) => (Number.isFinite(x) ? Math.min(1, Math.max(0, x)) : 0);
+      const c0 = Math.floor(cl(doppler.box.c0) * cols);
+      const c1 = Math.ceil(cl(doppler.box.c1) * cols);
+      const r0 = Math.floor(cl(doppler.box.r0) * rows);
+      const r1 = Math.ceil(cl(doppler.box.r1) * rows);
+      const wf = cl(doppler.wallFilter);
+      const seed = Math.floor(s.time * 30);
+      const flowCache = new Map<number, number | null>();
+      // Beam-axis component, positive = toward the transducer (frame.d points into the body).
+      const beamVel = (k: number): number | null => {
+        if (flowCache.has(k)) return flowCache.get(k) ?? null;
+        const v = doppler.flow(k);
+        const out = v ? -v.dot(frame.d) : null;
+        flowCache.set(k, out !== null && Number.isFinite(out) ? out : null);
+        return flowCache.get(k) ?? null;
+      };
+      for (let r = r0; r < r1; r++) {
+        for (let c = c0; c < c1; c++) {
+          const i = r * cols + c;
+          const k = labelKey[i];
+          if (k < 0) continue;
+          const t = TISSUES[labels[i]];
+          if (t !== 'artery' && t !== 'vein') continue;
+          const vb = beamVel(k);
+          if (vb === null) continue;
+          dopplerVesselPixels++;
+          // Slower near the wall (laminar profile, schematic): fewer same-lumen neighbours → slower.
+          let same = 0;
+          for (const [dc, dr2] of [[-2, 0], [2, 0], [0, -2], [0, 2]] as const) {
+            const cc = c + dc;
+            const rr = r + dr2;
+            if (cc >= 0 && cc < cols && rr >= 0 && rr < rows && labelKey[rr * cols + cc] === k) same++;
+          }
+          const profile = 0.45 + 0.55 * (same / 4);
+          const jitter = 0.85 + 0.3 * hash3(c, r, seed);
+          const v = vb * profile * jitter;
+          const m = Math.abs(v);
+          dopplerPeak = Math.max(dopplerPeak, Math.abs(vb));
+          if (m < wf) continue; // wall filter: slow signal is rejected, so 90° shows no colour
+          const a = Math.min(1, m);
+          const o = i * 4;
+          if (v > 0) {
+            // Toward the probe: dark red → yellow (BART: "blue away, red toward").
+            out[o] = Math.round(110 + 145 * a);
+            out[o + 1] = Math.round(220 * a * a);
+            out[o + 2] = 0;
+          } else {
+            // Away from the probe: dark blue → cyan.
+            out[o] = 0;
+            out[o + 1] = Math.round(200 * a * a);
+            out[o + 2] = Math.round(120 + 135 * a);
+          }
+        }
+      }
+    }
+    return { image: this.image, cols, rows, centroids, needleVisibility, dopplerPeak, dopplerVesselPixels };
   }
 
   private pixelWorld(frame: ProbeFrame, c: number, r: number, s: BmodeSettings, out: THREE.Vector3) {

@@ -245,6 +245,18 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
     claim: 'L’image en mode B est calculée : réflexion R = ((Z2 − Z1)/(Z2 + Z1))² à chaque interface, atténuation en dB/cm/MHz, speckle, compensation gain-temps, compression logarithmique. Le cône d’ombre osseux, la ligne pleurale, les lignes A et le renforcement postérieur derrière les vaisseaux découlent de ces règles.',
     note: 'Modèle du simulateur. Les valeurs d’impédance, d’atténuation et de diffusion sont des chiffres typiques de manuels saisis de mémoire ; les règles des lignes A et des réflecteurs forts sont des simplifications.',
   },
+  'm6-doppler-angle': {
+    claim: 'Le Doppler ne mesure que la composante de la vitesse le long du faisceau (Δf = 2·f0·v·cos θ / c) : maximale à 0°, nulle à 90° ; un vaisseau coupé exactement en petit axe n’affiche aucune couleur.',
+    note: 'Texte intégral ouvert le 2026-11-27 : équation (2) avec cos θ ; à 90°, pas de décalage Doppler. La convention rouge = vers la sonde / bleu = s’éloigne (BART) est la convention d’affichage habituelle, inversable sur l’appareil ; elle ne provient pas de cet article.',
+  },
+  'm6-doppler-flow': {
+    claim: 'Aspect du Doppler couleur : artère subclavière pulsatile et latérale (vers le bras), veine subclavière plus lente, phasique et médiale ; le filtre de paroi supprime les flux lents ; flux plus lent près de la paroi.',
+    note: 'Modèle du simulateur. Vitesses en unités d’affichage, sans chiffre ; flux pris parallèle à l’axe de l’artère au niveau de la 1re côte ; repliement (aliasing) non modélisé ; seules l’artère et la veine subclavières sont colorées.',
+  },
+  'm6-perineural-feedback': {
+    claim: 'Repère vert quand la pointe est à ~2 mm d’un tronc du plexus (et quand l’anesthésique local s’y étale), avec le principe : aiguille visible en entier, aspirer, petits volumes, sans résistance.',
+    note: 'Repère pédagogique sur un plexus schématique : ce n’est pas une zone cible validée et jamais une garantie de bloc sûr ou efficace. La distance de 2 mm est illustrative. Profondeur : Yadav 2016 (PMC4784208) rapporte une poche du coin à 1,7 ± 0,8 cm ; l’artère du modèle est à 1,8 cm (m6-sono-anatomy reste illustratif).',
+  },
   'm6-anisotropy': {
     claim: 'L’aiguille n’est brillante que lorsqu’elle est presque perpendiculaire au faisceau ; une inclinaison de la sonde la fait disparaître.',
     note: 'Modèle du simulateur : la brillance diminue selon exp(−(angle/32°)²) et avec la distance à une coupe de ~1,4 mm ; les deux constantes sont illustratives.',
