@@ -39,4 +39,5 @@ and this is a static site.
 
 ## License
 
-Apache-2.0
+Apache-2.0 for the code (`LICENSE`). Anatomy models, fonts and cited clinical sources keep their own
+licences: see `THIRD_PARTY_NOTICES.md`.
