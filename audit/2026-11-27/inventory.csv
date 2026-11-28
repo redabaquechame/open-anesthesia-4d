@@ -1,0 +1,176 @@
+﻿path,bytes,sha256,coverage,text_lines,risk_marker_count
+.claude/launch.json,399,5ecc3bfa947bc5a06bc7e30123894976c038a7ec54858f17ba7f7817c361f01c,structural and pattern scan only,17,0
+.github/ISSUE_TEMPLATE/clinical-error.yml,1200,24e782020aa01fe111282ae6fdff9c528bb82b2486bb606a29a14a7fcd2edbcd,structural and pattern scan only,44,0
+.github/workflows/deploy.yml,773,e366ccf27e886f0e7354d4ac763f57b470fee2468f120b58a0822f11713e18f0,finding-linked/selected-function inspection,40,0
+.gitignore,94,4fc0f8890463d60e80e9fdc50ba7f7a66e059dacbcf2d6cbfd606822a12a2581,structural and pattern scan only,8,0
+CLAUDE.md,3582,fe8ae4e8a2247397918c2bfca9355aa10a5592b307b2c36cac3dccaa4a1b9429,finding-linked/selected-function inspection,43,8
+LICENSE,9197,a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47,structural and pattern scan only,55,0
+README.md,2092,2de02a98c1510dee875fd81013e0d67f964174602bd9be78007b11226a05b7c9,finding-linked/selected-function inspection,43,0
+THIRD_PARTY_NOTICES.md,3041,9bac7f87a71860de14e61431461db328b9da34255ea80027a4989851986c372e,structural and pattern scan only,53,0
+docs/ROADMAP.md,12900,3ecd5911e51ff95a18ccf8ecdb81eda9fe879e4d718a0cde2b564a75ea65387d,finding-linked/selected-function inspection,125,4
+docs/clinical-review/M1-M2.md,11467,995995650cd5749e6ca17b147b560b409e9fe3838c562534046192356106b87b,structural and pattern scan only,45,12
+docs/clinical-review/M10.md,7122,de61f435d257b178fb0591aaf3c4e482a4350df0d8c7820dad050b2f82737193,structural and pattern scan only,33,3
+docs/clinical-review/M11.md,45072,9de73749702c29511bf74d4cba67c1f434b8c9f02a3e45acb4fc3623d726b702,structural and pattern scan only,91,2
+docs/clinical-review/M3.md,8251,6cba2017aeedc15db7d3e1e0d4eff48d4bc52ffb13b2e771a454e4297054d632,structural and pattern scan only,39,9
+docs/clinical-review/M4.md,7695,4de000836ed6407577c4088b3d2d1a27c59e9a7f00d115aa5aee7ab7e06abe20,structural and pattern scan only,37,12
+docs/clinical-review/M5.md,3498,10344d13d027b8c8357902af503565ba7e8737ff5496b50308ba5749486e05b1,structural and pattern scan only,30,4
+docs/clinical-review/M6.md,8279,416d7f941f5baac2a6f445d6e98be0a3f5b4bca3ec2e0ff6b3054ee43f5c51f3,structural and pattern scan only,36,11
+docs/clinical-review/M7.md,5031,b17ef2cc97094d6166320a7f6ad2822f1291bfd631d0f842be41d0a10988294e,structural and pattern scan only,31,8
+docs/clinical-review/M8.md,8230,3d0e6be0afbf8a5a9c8dde7e4fa8062a3fb25b9483cb84e327d2cf662f14387b,structural and pattern scan only,39,12
+docs/clinical-review/M9.md,23306,6f5bc321cfd47a19b982404b244eb15328e7862845b8ac02d7b593cc097942aa,structural and pattern scan only,50,7
+docs/clinical-review/README.md,1723,4c61cb3bfa7ab998196c9cec54b06f8598aef81d5def062f65659606159b0cdb,finding-linked/selected-function inspection,32,4
+handoff/gemini/CODEBASE_BRIEF.md,2915,414b981d27de61742e100ff5b82b24f47f935aa0d368e3d529a060d3391fc9b9,structural and pattern scan only,33,2
+handoff/gemini/INBOX_2026-11-27.md,13766,e5ff1f57d239a20f1d4e6cfade8dedbd3f3e4863ad9b4f31881ad3ed1e6d1ff2,structural and pattern scan only,172,10
+handoff/gemini/README.md,5515,e0bd09d14c918b48ea35dd5f9f91fea49465fd9bdd9f7e6e955e7d069e2e1fbb,structural and pattern scan only,83,4
+handoff/gemini/screenshots/01-home.png,158482,5d2a7c8e2761e87e8351a45479e7319c147d61e1566b27d9917bdad23587eb5f,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/01b-home-full.png,381447,f0ea29b81b8ac21b618ce9398df2a71d04ce3adbc2291112e8fd58ff9c8072ef,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/02-m1-workstation-3d.png,457876,89165d2a1d3584a0547cf25abce347c86e3b0029407e58bfec8a241379d5a869,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/02b-m1-full.png,541096,ade21ed9cd80a356fa4e7f3f3d7a81334fd2a785fe5a5094185ec3e47fd1e4a6,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/03-m7-spine-3d.png,398897,63be563a7292631b69fbe022ec82bd382e335b7fe1c7c76d8751529ef0e82f84,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/04-m9-crises.png,239402,8c28693f6c9e961f6e32108fd470d92aa2abd88f57f25037d42ef1ac0e1855d1,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/04b-m9-monitor-running.png,184624,8ca1c206df023b7e7d5e62b66562a5c6f9bbc038380bd165b063d8c764dc8dce,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/05-m10-preop.png,383078,99f30b2652c67f2aab469f72058e66471a3dbc597476fa9d8597569ab9095e73,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/06-m11-curriculum.png,743928,01989f1a48bcf7dc44a604341fec2a6fd966a0115daa5623c86413dd04736bcf,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/07-m1-narrow-500px.png,98919,cb63ff04f0af45285285d9f2c9a45e1d8864a329a0d1206b99c639ced011ac3d,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/redesign-01-hero.png,751116,7c4510df4a60725c2f0864959ae49b69665a05f9f49ee28d857ace85f70cc869,historical screenshot visually inspected,,
+handoff/gemini/screenshots/redesign-02-rooms.png,654856,2d44994d58e26c3874f5ea7523b352f44acd5950115555119a722ce201390eda,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/redesign-03-phone.png,670812,38173d05af30fd95dc6f4b778f518f6767d85f03aba77a74260ccd46c5bcab85,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1-01-home.png,192743,13638740c6324828f3ff3c82f5975adbed51b4bbe98c0ba3b00d276ddac3e3f4,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1-02-m1.png,431217,dcb16e1dbbe68523ea83938160a7ced83596eec5d38572246034b0a899c5a3c7,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1-03-m7.png,371223,660c9568c9fa0d31bcc10c25c002704987f8472339e1d3bef3b10ed4357447ab,historical screenshot visually inspected,,
+handoff/gemini/screenshots/sprint1-04-m9.png,237550,8583cc09ce3da0d254d18867d2006bf7b9e693f9a5b10fe59a23bc4dfdc98639,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1-05-m10.png,161332,fdb8798fa336ca5cd2b23403fab56f5b99349e523999add4822385083eaa75af,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1-06-m11.png,256634,d82346c4595af07857670b02f1aa6c9f32a0f4677e897eb5a58451ea71062592,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1-07-m9-narrow-500px.png,123011,83500bfcc1e75538f4d2e782f5a0f9bc3832e32a55fa06c124640ac8fa6f69d9,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1-08-live-home.png,192743,13638740c6324828f3ff3c82f5975adbed51b4bbe98c0ba3b00d276ddac3e3f4,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1b-01-m1-cockpit.png,349456,dce13d016a5504c9a36446edfe1b786dd73236c59794eca37e10f0562dd3c8b1,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1b-02-m1-phone-dock.png,66900,5c8107a419412f5981e4263d6a95f1e5a15bfe75f4e4d640c925c0ae9f2094a4,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint1b-03-m9-anaphylaxis-strips.png,252434,c144dadb6fe2332e14ba8f12f03216a9cc6a28c3c06305da08e3f76956f3c011,historical screenshot visually inspected,,
+handoff/gemini/screenshots/sprint1b-04-update-toast.png,197585,6af2283f6f9a4a7810710cb8e93d61eff7cc5d32feec5d78f97b02c50d5aed14,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint2a-01-m1-ribbons.png,405146,a36362f527623bff640a2feec136e2b423122dc34b243b683f101fdb01af47fc,historical screenshot visually inspected,,
+handoff/gemini/screenshots/sprint2a-02-m1-faults.png,370628,204017db719801848f3d8cd2324691e4499eceb374221f6a771ff1f6a13c251d,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint2a-03-m8-airway-rim.png,489074,2af3542368622de74d501681a3cf102f847f53b03db6ff14a7195d5a06744f19,historical screenshot visually inspected,,
+handoff/gemini/screenshots/sprint2b-01-m6-doppler-90deg.png,389336,9d8fb37cc5d9e673c550378e2e6786cc60f3a63416c53a623bf2a02c1768cf59,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/screenshots/sprint2b-02-m6-doppler-tilt12.png,386264,5854ae007e87f3424c174a4a47aea8588242b159b1eba516dba35319f72f4dea,historical screenshot visually inspected,,
+handoff/gemini/screenshots/sprint2b-03-m6-perineural.png,412509,90edbbdae206d5ba3e8c01392e0d62278e2ba1ad3f0a1720688d0c7938df51a0,asset inventoried; visual/clinical content not individually reviewed,,
+handoff/gemini/sprint-1/DESIGN.md,7717,a515ec864adcc91ef1a0339c7a542f6df6a0ee034c55d8680bdf20ccdedc1110,structural and pattern scan only,137,2
+index.html,773,1612f38f22c4539166d9c2d062a8e91750f5133e87280e12f3fe18e366cbadfc,structural and pattern scan only,15,0
+package-lock.json,292755,62405bb2ce76d6f972642d155ee3e4055a10cdab236c50805d055f53497af188,structural and pattern scan only,8049,1
+package.json,2071,92be3a707187777e3d70531466a030edfe01564a1a509353e828f8dfb0774c0f,finding-linked/selected-function inspection,45,0
+public/home/room-crisis.webp,41170,4d1718ccfe9a577354d314a2e65193a0f8e3d3caf57b01287b324caecf2b67f8,asset inventoried; visual/clinical content not individually reviewed,,
+public/home/room-learn.webp,60606,e8073fa6e08283383d9814d1e30be8eb2169a51cc3c99f46054f141bfd07d057,asset inventoried; visual/clinical content not individually reviewed,,
+public/home/room-or.webp,15640,581f6a1632a30574b091889ec0ced4f52582975e947c51b582040a21df4b53b3,asset inventoried; visual/clinical content not individually reviewed,,
+public/home/room-procedures.webp,27254,db1eefee9672bd986404e8f6097e2c7955b82d0fc48d72ef54400209ea109f00,asset inventoried; visual/clinical content not individually reviewed,,
+public/home/room-tools.webp,47552,c2c0314b43c263e7a09bd73d9f54f70269bab5c377a2c891fcbdb6f8f270334c,asset inventoried; visual/clinical content not individually reviewed,,
+public/icon.svg,252,d8182f79af79f02ed05abbace0eccf3193aa235948c19a9bfbf3207b6eea5d44,structural and pattern scan only,1,0
+public/models/anatomy/LICENSE.md,1163,e5915d9f64537af206172c0afe7cb044638c5dea4d18d07579b770c81bff3cbe,structural and pattern scan only,18,0
+public/models/anatomy/airway-map.json,43372,ad72d51a36fe1002f50941a946f5e8659512e32368ae46f0a4f350ef5be8b681,structural and pattern scan only,1,0
+public/models/anatomy/airway.glb,737276,bd6ebc1d8e18180e4bc7186a71ff4eff5d6cd6daa22f5235575bc8138db712e9,asset inventoried; visual/clinical content not individually reviewed,,
+public/models/anatomy/manifest.json,20674,b04d2d481fd51dd6231d7681391393f85c2337436e3e65942aad3150f65a17d3,structural and pattern scan only,702,0
+public/models/anatomy/spine.glb,547872,7ac1bdc0cbdbc58cf6168636fc3783a4df9cc7a953cc494af551387815c71d5e,asset inventoried; visual/clinical content not individually reviewed,,
+public/models/anatomy/supraclavicular_right.glb,127704,30702e213ea768d760f3356d47658f7c688790a865c445f592472e292ed26188,asset inventoried; visual/clinical content not individually reviewed,,
+scripts/anatomy/build-airway-map.ts,2554,57ec90a0e6fc164024b5aa6f1b3516e7a045adafdc264e40166a5f2500622d23,structural and pattern scan only,49,0
+scripts/anatomy/build-anatomy.ts,12760,3567f90e084f980d2303e020159e50db33b226b33856172f0b43491742e7975f,structural and pattern scan only,289,0
+scripts/anatomy/loadGlbParts.ts,1420,dfb8d84d720ff6725774561618638c2719e97d9fee75968b8b0c2aab95a1e593,structural and pattern scan only,34,0
+scripts/build-review-docs.ts,4833,768f083e32b246cb7ce52b9833b93f243679710a7471270a5edc86e5808b6b8c,structural and pattern scan only,106,14
+scripts/sanity/airway.ts,5572,dd901cd378f14f8545b929770cae7735f564805c51960ef1d87a55486b6874d4,finding-linked/selected-function inspection,64,0
+scripts/sanity/crisisPreop.ts,7042,ad555f52f0b25838f5b35b70f17b0c8c2d2053d1f7c44065bec4c4bb81d686ca,structural and pattern scan only,123,0
+scripts/sanity/monitor.ts,2470,6a43c219c7e04389143e3d440d3d82cf17d2ce57395977b7e904993429564f33,structural and pattern scan only,47,0
+scripts/sanity/parcours.ts,4339,afb42ed75be2c929b8e17d22d567b65b919ef477f2a7a439970ce17e80c12a3c,structural and pattern scan only,68,0
+scripts/sanity/run.ts,9466,fdaefe160829497342409b86dd73ac4668e05b7c883eca6176371e4a3e802e54,finding-linked/selected-function inspection,124,0
+scripts/sanity/spine.ts,7034,5d662b6bae43eea8113ffdf4e02954a9a7a33946eaeeff516dcfc40f1c4683ca,structural and pattern scan only,140,0
+src/App.tsx,58479,c62a25fe892ffba29d64e4692bec4015e2d230a1024f5ebc69124f7fba11e927,finding-linked/selected-function inspection,1117,1
+src/components/BedsideMonitorCanvas.tsx,9089,f75bfbdd495e87a177fab5354f6e5aec7245d8f64c39b0c7a36e31f43e44706a,structural and pattern scan only,237,0
+src/components/ClinicalStepper.tsx,3992,caa64864fe195f995dcfcba5ae89f1366d27e8edcc2b28d71bfa5888cd35afad,finding-linked/selected-function inspection,116,1
+src/components/CurriculumDrawer.tsx,5680,df02394cc5e78ab14780976edef670ab6af5c765939fdeb1cec7954b0f326d68,structural and pattern scan only,97,1
+src/components/HomeHero3D.tsx,4469,be0f69558e8207a55bdc3bed19da1131ff8f80d7bd2fdd38b9c89dd04ebe9ab9,structural and pattern scan only,124,0
+src/components/HomePage.tsx,13914,0f2f6a2e381f9dbe64b07e2968768cc398b30bd8448db407d9f07cfdbf80641a,finding-linked/selected-function inspection,216,3
+src/components/MobileDock.tsx,2188,242d13d805c911fbeb45d62c0f6ce215c56ddb76384e5e50f5d844cddcea9bcd,structural and pattern scan only,55,0
+src/components/ModuleGuidePanel.tsx,4034,08d60518c707cafb4b6c195c449b6acd13955c667164509e6b26a8381b04284e,finding-linked/selected-function inspection,98,0
+src/components/PatientMonitor.tsx,7795,d484254bcd9d3a7a615f2ae5e90e362daea8ade6dd8d90ba4a2447f8b30bfbdb,finding-linked/selected-function inspection,184,3
+src/components/QualitySelect.tsx,1312,fbe06fb45d64fd5928d23c29b0c36ed20c38e9ce33c7e6e1f20d06e014ab5cee,structural and pattern scan only,31,0
+src/components/ReviewPanel.tsx,7537,63be388d2f7da393d4c31680d6366ec6a036a52ad4e930a56e02c628fa5d8dd4,structural and pattern scan only,136,10
+src/components/UpdateToast.tsx,2115,3a3b76fd2ab0f89a73a05e2507572a7aa0c6d7af3df062b7bdf96ca742cd54e8,structural and pattern scan only,54,1
+src/components/monitor/clinicalMonitorRenderer.ts,12665,32b4eb2c914969b2c4268738894a7861b71106a4520f5c578f2c5c930c9f6d26,structural and pattern scan only,356,0
+src/components/monitor/orAudioEngine.ts,6877,0126e1b68b910e6deaa569a4ca08150cde19d845a5be207d6bf11bdedd083fff,structural and pattern scan only,172,3
+src/config.ts,550,15ada30f7b40c2da2db59f5fc454a3321ac52455475d2e6e4fce7e9f4aa8968f,finding-linked/selected-function inspection,11,0
+src/engine/cameraRig.ts,2709,51e2077abbcfff350d2db5ca63d83b3be2e0370680b215ca9b4c8ed77f035d75,structural and pattern scan only,74,0
+src/engine/createStage.ts,12231,8b780fb15c04122754645e89bee74ab605df5f2ab4227449e2818dcf7e0427cd,structural and pattern scan only,337,2
+src/engine/createTieredRenderer.ts,4727,952b8580f21885c5d9d46983d1536d415320a9fcdbbe03aad5d900dd63035f49,finding-linked/selected-function inspection,132,0
+src/engine/fresnelXray.ts,2916,d155f3250357f730f06ed5a8a04ec319bcaa07437567f63991171c458af8e97e,structural and pattern scan only,66,0
+src/engine/labels.ts,2745,eef15132f3fb1c32246ac9eb2b76c5171a6ef38c7e25cafdc233dc125d24581c,structural and pattern scan only,80,0
+src/engine/loadAnatomy.ts,2093,ff8fd513a99a8ad228005dd8bd391e7546c29affab13fc191e1d0fbd22c07ce3,finding-linked/selected-function inspection,52,0
+src/engine/materials.ts,4892,cc6d0542d5f7ef208de90617cb2482deedb018f27c794dcac6bbf1a409b0b0c6,structural and pattern scan only,113,0
+src/engine/postFx.ts,2676,8d3dc1c797ffdbaaec8350e0ca56a19b50b6a6117febaa0a645ef5498430038b,structural and pattern scan only,84,0
+src/engine/quality.ts,1689,bf980d219c41ce2f5569fb1ef762653640c6bb6f9e8d1507ae7630f1ab207422,structural and pattern scan only,49,0
+src/evidence/evidenceFr.ts,26988,aa54f44c5bc52379c9e08dcb8c80b8d2d9e5e53de861be8352599ae095becfd7,structural and pattern scan only,275,0
+src/evidence/evidenceRegistry.ts,31799,742a0e5da2da96d714c447552768dd837ab97e3de87d652ac1801adcb14feebf,structural and pattern scan only,446,0
+src/index.css,5084,1f5b7e264fe23243dba130dab9beecda670f4eef068f28c68392e206998b2600,structural and pattern scan only,176,0
+src/main.tsx,1029,d0ae8a1c330e84f31eb84838b80d8e2e26d004c18b7cb1c57fe3b34323461c2a,structural and pattern scan only,26,0
+src/modules/ModuleRouter.tsx,2669,fb5bb2c4e79599053f453371ef85b3248a0d34089bc9a14f70c61946e0b3de5f,finding-linked/selected-function inspection,69,0
+src/modules/m1-workstation/WorkstationScene.ts,63987,7744dcd99873889315bc2052b0eab7c3f0c0b18fb6e5ad37073627ee79c6db12,finding-linked/selected-function inspection,1331,6
+src/modules/m1-workstation/circuitFlowShaders.ts,9138,bafa7763cea22609b56b0914e39a553e465806f62ee5abf57d7cb798f69103fb,structural and pattern scan only,257,1
+src/modules/m10-preop/PreopModule.tsx,18356,20014ce3f0f2e288ae3a14e288713f113d96a15518a95ae13a4b1b74bafc9b1f,structural and pattern scan only,382,0
+src/modules/m10-preop/preopMath.ts,983,135e67d92401e436c6e8399c97e2642ff993a37a509fb937ec34d1cf9ff28b0c,finding-linked/selected-function inspection,20,0
+src/modules/m10-preop/preopScores.ts,22983,10e28dc40534e936dacc0a274d1299e90ff58b71a712ac0c79e839e0b3f5088f,finding-linked/selected-function inspection,249,5
+src/modules/m10-preop/preopTypes.ts,2015,b3aa96c446afebb76346f07fddba0523f7906463aa077e04ade55f15b2acb3d2,structural and pattern scan only,67,0
+src/modules/m11-parcours/ParcoursModule.tsx,25233,342ed5a88b29dcf46dfbccd3be835358eeab786c91f48c8ec5b683c2973bd65f,finding-linked/selected-function inspection,459,2
+src/modules/m3-volatile-eco/VolatileEcoModule.tsx,31743,7e92dc1280742f59c3d7dbb9e022f36ed76a3bf295780f6bb6082183082969d5,finding-linked/selected-function inspection,669,6
+src/modules/m4-aivoc-eeg/AivocEegModule.tsx,28313,783b5547fc78451eb14259f8c717854076b181367e876229b069c607a8d0103a,finding-linked/selected-function inspection,607,1
+src/modules/m5-nmj-tof/NmjTofModule.tsx,25531,a143e73549a0aa8bbee9305d783f333d592d152808b430b7833949dcc9a9c68b,finding-linked/selected-function inspection,508,2
+src/modules/m6-ultrasound-cardiac/PvLoopLab.tsx,14402,4887f4b3cb614ae36b07d2d6eea43da9f3bd56928fc2788cfecd8fee5bfe15ad,structural and pattern scan only,277,2
+src/modules/m6-ultrasound-cardiac/SonoLab.tsx,35337,086e1c393330723abdd06caebfcda60f13dd12c18a6c106dab78f5fd1c1f4d28,finding-linked/selected-function inspection,673,2
+src/modules/m6-ultrasound-cardiac/UltrasoundCardiacModule.tsx,5164,97c7fb3ac83ff12436d191d9c89db761f032b7c93d922ea16875e60ba33a7f49,structural and pattern scan only,77,0
+src/modules/m6-ultrasound-cardiac/ultrasoundSim.ts,20490,e3fe0f4ac4597a08da75d0b76112b54a276b2b8b62606bfa9610fef4b949be4a,finding-linked/selected-function inspection,485,1
+src/modules/m7-neuraxial-spine/NeuraxialSpineModule.tsx,23140,2247e6ba8e0ede84e36cbbc24c9d430bd52d2eae20f858db47584bef7eaa608e,finding-linked/selected-function inspection,365,4
+src/modules/m7-neuraxial-spine/fluoroView.ts,8675,da4dc396638caffdded1ad195201156c99e031877da32263d12afd7c53dc15c9,finding-linked/selected-function inspection,219,2
+src/modules/m7-neuraxial-spine/spineGeometry.ts,18623,6c5eb4f4131553f982a1fd621c0c8ee0d4e2dd581a6b3f88c569a7386a3f3be9,structural and pattern scan only,458,2
+src/modules/m7-neuraxial-spine/spineRegions.ts,2204,c5ab86910be3230b9e81da78076c280f08f30c10f9cb13858a02032c710e0380,structural and pattern scan only,53,3
+src/modules/m7-neuraxial-spine/spineScene.ts,26125,eb96a73244ddedcc95bf1d0f204faf8bf5c1efa3b7dd81f6081cd40ba2ef1506,structural and pattern scan only,606,0
+src/modules/m8-bronchoscopy-dlt/BronchoscopyDltModule.tsx,35314,c6f8c281b20d9d9470e3481799522420154bc6124ac8fc22a702283112d22be8,structural and pattern scan only,575,6
+src/modules/m8-bronchoscopy-dlt/airwayGeometry.ts,32309,02dbfd22a1e18cee62e0af465a1df8d9ff123491acc0d6765eef31dfd5a07c80,structural and pattern scan only,787,0
+src/modules/m8-bronchoscopy-dlt/airwayScene.ts,20705,bc4c558a77bc944767c1748a60bfc22d0fe4b8b7be01f7eee3915b2cc0b99916,structural and pattern scan only,414,0
+src/modules/m8-bronchoscopy-dlt/bronchoscopeView.ts,14361,7a8ab767420423f796285a1cb021cf76ef3182011bd639569a088b594c913960,finding-linked/selected-function inspection,340,1
+src/modules/m8-bronchoscopy-dlt/dltModel.ts,18744,e679823e56ee11ddcc94a9be4f3d9f0b1061eb7a8c3fa1506d4321d3aad096ab,finding-linked/selected-function inspection,414,14
+src/modules/m9-crisis/CrisisModule.tsx,22482,1cebb81fa3c024eb0a0b83f07911202876cad7aafe1f65c357bf71b892ac89e5,structural and pattern scan only,400,6
+src/modules/m9-crisis/crisisEngine.ts,5546,423dd6e5bc7c7db46866ba7744c4c034ba7e6575ecf3f4c9aa66f1f9578aab22,finding-linked/selected-function inspection,120,1
+src/modules/m9-crisis/crisisProtocols.ts,8131,70109c0c9736735c720b47551f1874c7adf8cde5053372949323c1073d653717,structural and pattern scan only,94,1
+src/modules/m9-crisis/crisisTypes.ts,3680,d8fee29c24569b33de93a34b97f3f4bb65c9d5370dcf404c0740b8dc667c952c,structural and pattern scan only,100,1
+src/modules/m9-crisis/drugLabels.ts,3049,e722c5f3516656e50ecc16ec01cfb84500acd7dc9f4da2f64144d1456559739f,structural and pattern scan only,50,0
+src/modules/m9-crisis/protocols/anaphylaxis.ts,8700,13d4785085b04f8de994ea9cf88a90f5acb8cdb289a56d5eafdbc3a947dadc79,structural and pattern scan only,133,0
+src/modules/m9-crisis/protocols/arrest.ts,6052,fe5de76a079a78e3d3d9f4c75360dedfeca6e0a1ca720279ebaf3f777d764dc5,finding-linked/selected-function inspection,84,0
+src/modules/m9-crisis/protocols/bleeding.ts,6269,a07ff82db5a56e1080d1407ec1c6bcb5251bd35d210dc8c0d3849acdad0d05d9,structural and pattern scan only,77,0
+src/modules/m9-crisis/protocols/cico.ts,6446,49ca375557b12b8daca97c4b990d62ba3d487086d2b4ef5b33b96b860b45911d,structural and pattern scan only,69,0
+src/modules/m9-crisis/protocols/eclampsia.ts,11463,a2e4da1b2c2f3fa4b8ae2ec56ae81874f77eae3ac3b87cdad3a33d3be3357092,structural and pattern scan only,158,0
+src/modules/m9-crisis/protocols/mh.ts,9163,3023b9ee1fa8263a09c8bbcc0846460677a7c8a8580b85ac2c240c7c9854d08a,finding-linked/selected-function inspection,121,0
+src/modules/m9-crisis/protocols/pph.ts,12084,c74fa7cd5e6f454ebcb82279614908edb94348286c93e394034716dd00049871,structural and pattern scan only,180,0
+src/modules/m9-crisis/protocols/shared.ts,223,d1510be7926de9400cf3b8c8b8e2a8615dfa3c40b5f48c39b49a3e03986a3075,structural and pattern scan only,3,0
+src/physics/aivocEegKernel.ts,13504,afa0a35e596139cfc2c5517cee5ecefc367e20a2f8ac92d25f956e46470c2175,finding-linked/selected-function inspection,362,6
+src/physics/cardiovascularKernel.ts,7455,6fcf0f18a20902687f50aa2fb027bc6f540deeede00344b67585bbd4d0493318,structural and pattern scan only,205,2
+src/physics/circuitLungKernel.ts,18554,9a8ebd28681891e4a43a4509a5e43adaf6d9e5d29e5e09df46d515ebb97db22b,finding-linked/selected-function inspection,438,0
+src/physics/monitorWaveforms.ts,4720,f73235f576ba45892244bec20f707fdeb2c8d7bb976143676bd4b7ae62c25307,finding-linked/selected-function inspection,102,1
+src/physics/physicsWorker.ts,2028,4966a24b6ce747c41e67777ff6bb28196dd4d6697503a27f513b172a75b7d671,finding-linked/selected-function inspection,69,2
+src/physics/volatileKineticsKernel.ts,11508,b3ad3a5b64a7fdca057a927d1a7e658fd73969a2553d45b080ff21d31401fdd3,structural and pattern scan only,278,0
+src/standards/checklists.ts,20787,b34b96d2144c5bd87f2a3bc0e55a2a838dfc8edaeb99153c23d4f74caf452024,structural and pattern scan only,266,11
+src/standards/claimFr.ts,55939,8629e718e6ffb31a0481f9a3f031c4c7224b6541ec10c6b9215121777502a008,structural and pattern scan only,480,6
+src/standards/claimRegistry.ts,77074,606c38097ebfe67b3b676700d34bf0c95dac0de1a825c64c1e68eca042986cf3,finding-linked/selected-function inspection,237,69
+src/standards/clinicalStandards.ts,8660,724217d5942dcf5cf291b9261b4966d27a425a459d69da544ac6019caf6871cb,structural and pattern scan only,184,12
+src/standards/curriculum.ts,14437,a080892872afd8c4f24c9724fe9dbc156324290962a79ac2a136d01f1d3f83d6,structural and pattern scan only,72,0
+src/standards/moduleGuides.ts,21522,8715ffed89984fc9b99fbb6bb99917a2af5c2b2bdc2eab4694e6923c7ed42f60,structural and pattern scan only,309,3
+src/standards/officialResources.ts,613,4ca2835469202d68e25330d4c1f22c8c3c0d086ee24adc90edfa6626f8bec539,structural and pattern scan only,12,0
+src/standards/programmeTypes.ts,3119,78a38abda0e10d82206c6c6cda25415a36709917a237f6e2981c3261eeb5365c,structural and pattern scan only,92,0
+src/standards/programmes.ts,516,ddc401a000b084c122808abd16f30c985ea72389a157f2105cbe6d3b094ea891,structural and pattern scan only,11,0
+src/standards/programmes/ca.ts,16503,268a303b9d501aa10c24aab755dc865d761d4a9cea6bdf2c1d563b3d3bf24955,structural and pattern scan only,232,0
+src/standards/programmes/eu.ts,16304,3ce7d68ea706bf017bdc54c2b87685ad4f25eaa59a806b0a0e5dbeb9ed8a9397,structural and pattern scan only,226,0
+src/standards/programmes/fr.ts,16103,6b91d61c6da5ff4d4871f5ac811bc53fb19b1fc549323e7b545066a3e7edf9a2,structural and pattern scan only,145,0
+src/standards/programmes/ma.ts,13617,747800458af4a629e7139728bb9a0e485dfa3672dfceec41a771a01e0bfd1569,structural and pattern scan only,194,0
+src/standards/resources/ca.ts,11696,933df3621c9f87b9a514b35619d8be8e12cfeacff1f2e7703fa16ddbafbff669,structural and pattern scan only,240,0
+src/standards/resources/eu.ts,15739,4a1166f3114e6471f9e44da1f278ad616516535b330a01a5250ee0525f496b26,structural and pattern scan only,378,0
+src/standards/resources/fr.ts,23369,851249b64895faa9d8212884ee0068d1ef84a813d2af6236a94937f8f7f39907,structural and pattern scan only,518,0
+src/standards/resources/intl.ts,2922,8626ca881fad8786fc1fc9d615decf56995230daccb47488ae6acfbf08ce4ab0,structural and pattern scan only,80,0
+src/standards/resources/ma.ts,13861,97933fdb98a1757484782f241a39913e9e548d314af7453475c2a18d7c5e9b0a,structural and pattern scan only,297,0
+src/utils/lmsAndDebrief.ts,9114,0834e966c1259b6ca0063098716f7b9dfbfc648da06ef8cc9633c0efe2983e6b,finding-linked/selected-function inspection,161,1
+src/utils/reportIssue.ts,1645,85d902f6057e6e81a58e3c73f71f539246e81a24187b4e8f95edb4436912dade,structural and pattern scan only,49,0
+src/vite-env.d.ts,170,e87b1a85f9f21912409c0f3d9b36b607ec4ef3b310bc6a2c113857ddfb861652,structural and pattern scan only,5,0
+tsconfig.json,542,8f92535ef28ab0fed648f30b0928d3b42d0eee4e7312b39a8c0f62a64689ab96,structural and pattern scan only,20,0
+vite.config.ts,2308,514dc9b355bdea9f380552103526962d5217318fa21348e3493a71d734dd669a,finding-linked/selected-function inspection,66,0

@@ -24,6 +24,15 @@ jobs:
           node-version: 22
           cache: 'npm'
       - run: npm ci
+      # Release gate (audit F15): nothing is published unless types, physics sanity checks,
+      # adversarial regression tests and the generated clinical-review documents all pass.
+      - run: npm run typecheck
+      - run: npm run sanity
+      - run: npm run adversarial
+      - name: Clinical review documents are up to date
+        run: |
+          npm run review:docs
+          git diff --exit-code -I "enerated [0-9]{4}-[0-9]{2}-[0-9]{2}" -- docs/clinical-review || (echo "docs/clinical-review is stale: run npm run review:docs and commit" && exit 1)
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

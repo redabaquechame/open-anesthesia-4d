@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ChevronDown, CircleHelp } from 'lucide-react';
+import { ChevronDown, CircleHelp, FlaskConical } from 'lucide-react';
 import type { LocaleCode } from '../standards/clinicalStandards';
 import { guideFor } from '../standards/moduleGuides';
+import { scopeFor } from '../standards/moduleScope';
 import { ReviewStatusChip } from './ReviewPanel';
 
 /**
@@ -19,6 +20,7 @@ export function ModuleGuidePanel({
   onOpenReview: () => void;
 }) {
   const g = guideFor(moduleId);
+  const scope = scopeFor(moduleId);
   const key = `oa4d-guide2-${moduleId}`;
   const [open, setOpen] = useState<boolean>(() => {
     try {
@@ -44,6 +46,15 @@ export function ModuleGuidePanel({
     <section className="w-full border-b border-oa-hairline bg-oa-canvas" aria-label={fr ? 'Mode d’emploi du module' : 'Module guide'}>
       <div className="max-w-[1600px] mx-auto px-3 h-9 flex items-center gap-2">
         <h2 className="text-[13px] font-semibold text-white shrink-0">{T(g.title)}</h2>
+        {scope?.status === 'prototype' && (
+          <span
+            className="shrink-0 h-5 px-1.5 rounded border border-amber-500/60 bg-amber-950/50 text-amber-200 text-[11px] font-semibold flex items-center gap-1"
+            title={fr ? 'Pas encore revu par des cliniciens nommés' : 'Not yet reviewed by named clinicians'}
+          >
+            <FlaskConical className="w-3 h-3" aria-hidden />
+            {fr ? 'Prototype' : 'Prototype'}
+          </span>
+        )}
         <span className="hidden lg:inline text-xs text-slate-500 truncate">{T(g.purpose)}</span>
         <div className="ms-auto flex items-center gap-1.5 shrink-0">
           <ReviewStatusChip moduleTab={moduleId} locale={locale} onOpen={onOpenReview} />
@@ -58,6 +69,12 @@ export function ModuleGuidePanel({
           </button>
         </div>
       </div>
+      {scope?.status === 'prototype' && (
+        <p className="max-w-[1600px] mx-auto px-3 pb-1.5 -mt-1 text-[12px] leading-snug text-amber-200/90">
+          <span className="font-semibold">{fr ? 'Pas encore modélisé : ' : 'Not modelled yet: '}</span>
+          {T(scope.notModelled)}
+        </p>
+      )}
       {open && (
         <div className="max-w-[1600px] mx-auto px-3 pb-3 pt-2 grid gap-4 md:grid-cols-3 text-xs text-slate-300 border-t border-oa-hairline">
           <p className="md:col-span-3 text-slate-400">{T(g.purpose)}</p>

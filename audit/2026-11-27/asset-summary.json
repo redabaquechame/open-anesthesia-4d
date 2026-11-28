@@ -1,0 +1,38 @@
+[
+  {
+    "file": "public/models/anatomy/airway.glb",
+    "bytes": 737276,
+    "header_valid": true,
+    "nodes": 108,
+    "meshes": 108,
+    "extensionsUsed": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization"
+    ],
+    "note": "Header and metadata inspection; no new geometric or anatomical validation."
+  },
+  {
+    "file": "public/models/anatomy/spine.glb",
+    "bytes": 547872,
+    "header_valid": true,
+    "nodes": 19,
+    "meshes": 19,
+    "extensionsUsed": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization"
+    ],
+    "note": "Header and metadata inspection; no new geometric or anatomical validation."
+  },
+  {
+    "file": "public/models/anatomy/supraclavicular_right.glb",
+    "bytes": 127704,
+    "header_valid": true,
+    "nodes": 10,
+    "meshes": 10,
+    "extensionsUsed": [
+      "EXT_meshopt_compression",
+      "KHR_mesh_quantization"
+    ],
+    "note": "Header and metadata inspection; no new geometric or anatomical validation."
+  }
+]

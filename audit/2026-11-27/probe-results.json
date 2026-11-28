@@ -1,0 +1,453 @@
+{
+  "warning": "Audit probes expose model behavior, not clinical validation.",
+  "findings": [
+    {
+      "id": "gas-fractions-exceed-100",
+      "observation": {
+        "o2": 100,
+        "argon": 0,
+        "agent": 7.903579459735011,
+        "total": 107.90357945973501
+      }
+    },
+    {
+      "id": "zero-fresh-gas-piston-30-min",
+      "observation": {
+        "deliveredVtMl": 478,
+        "fiO2": 2,
+        "bagFill": 0.3,
+        "alarms": [
+          "LOW_FiO2"
+        ]
+      }
+    },
+    {
+      "id": "bellows-leak-VCV",
+      "observation": {
+        "normalVt": 533,
+        "leakVt": 366,
+        "normalPressure": 5,
+        "leakPressure": 5
+      }
+    },
+    {
+      "id": "bellows-leak-PCV",
+      "observation": {
+        "normalVt": 478,
+        "leakVt": 478,
+        "normalPressure": 5,
+        "leakPressure": 5
+      }
+    },
+    {
+      "id": "fault-mechanics-stuckInspiratoryValve",
+      "observation": {
+        "normalVt": 533,
+        "faultVt": 533,
+        "normalFlow": -0.00002406335352400646,
+        "faultFlow": -0.00002406335352400646,
+        "normalPaw": 5,
+        "faultPaw": 5
+      }
+    },
+    {
+      "id": "fault-mechanics-stuckExpiratoryValve",
+      "observation": {
+        "normalVt": 533,
+        "faultVt": 533,
+        "normalFlow": -0.00002406335352400646,
+        "faultFlow": -0.00002406335352400646,
+        "normalPaw": 5,
+        "faultPaw": 5
+      }
+    },
+    {
+      "id": "fault-mechanics-curareCleft",
+      "observation": {
+        "normalVt": 533,
+        "faultVt": 533,
+        "normalFlow": -0.00002406335352400646,
+        "faultFlow": -0.00002406335352400646,
+        "normalPaw": 5,
+        "faultPaw": 5
+      }
+    },
+    {
+      "id": "rapid-shocks-ROSC",
+      "observation": {
+        "time": 0.5,
+        "rhythm": "ROSC",
+        "log": [
+          {
+            "tSec": 0,
+            "id": "pads",
+            "kind": "action"
+          },
+          {
+            "tSec": 0,
+            "id": "cpr",
+            "kind": "action"
+          },
+          {
+            "tSec": 0,
+            "id": "shock",
+            "kind": "action"
+          },
+          {
+            "tSec": 0,
+            "id": "shock",
+            "kind": "action"
+          },
+          {
+            "tSec": 0,
+            "id": "shock",
+            "kind": "action"
+          }
+        ],
+        "debrief": {
+          "criticalDone": [
+            {
+              "id": "cpr",
+              "tSec": 0,
+              "late": false
+            },
+            {
+              "id": "pads",
+              "tSec": 0,
+              "late": false
+            },
+            {
+              "id": "shock",
+              "tSec": 0,
+              "late": false
+            }
+          ],
+          "criticalMissed": [
+            "help",
+            "adrenaline",
+            "amiodarone",
+            "causes"
+          ],
+          "distractorsChosen": [],
+          "orderScore": 1,
+          "finalVitals": {
+            "hr": 2.4196286212234037,
+            "sbp": 2.0593379760974537,
+            "dbp": 1.2276822549811743,
+            "spo2": 90.0991712770703,
+            "etco2": 8.372665985183557,
+            "tempC": 36.4,
+            "rhythm": "ROSC"
+          }
+        }
+      }
+    },
+    {
+      "id": "reverse-order-same-time-score",
+      "observation": {
+        "criticalDone": [
+          {
+            "id": "help",
+            "tSec": 0,
+            "late": false
+          },
+          {
+            "id": "cpr",
+            "tSec": 0,
+            "late": false
+          },
+          {
+            "id": "pads",
+            "tSec": 0,
+            "late": false
+          },
+          {
+            "id": "shock",
+            "tSec": 0,
+            "late": false
+          },
+          {
+            "id": "adrenaline",
+            "tSec": 0,
+            "late": false
+          },
+          {
+            "id": "amiodarone",
+            "tSec": 0,
+            "late": false
+          },
+          {
+            "id": "causes",
+            "tSec": 0,
+            "late": false
+          }
+        ],
+        "criticalMissed": [],
+        "distractorsChosen": [],
+        "orderScore": 1,
+        "finalVitals": {
+          "hr": 0,
+          "sbp": 0,
+          "dbp": 0,
+          "spo2": 90,
+          "etco2": 8,
+          "tempC": 36.4,
+          "rhythm": "VF"
+        }
+      }
+    },
+    {
+      "id": "mh-dantrolene-only",
+      "observation": {
+        "time": 180,
+        "vitals": {
+          "hr": 92.13626887717635,
+          "sbp": 123.96653099333297,
+          "dbp": 71.94741107582124,
+          "spo2": 97.88630340484428,
+          "etco2": 41.91264424969725,
+          "tempC": 38.36436159473818,
+          "rhythm": "sinus"
+        },
+        "missed": [
+          "help",
+          "trigger",
+          "tiva",
+          "cool"
+        ]
+      }
+    },
+    {
+      "id": "distractors-no-physiology-effect",
+      "observation": {
+        "identical": true,
+        "clean": {
+          "hr": 0,
+          "sbp": 0,
+          "dbp": 0,
+          "spo2": 64.06005849709835,
+          "etco2": 5.6693904804452915,
+          "tempC": 36.4,
+          "rhythm": "VF"
+        },
+        "harmful": {
+          "hr": 0,
+          "sbp": 0,
+          "dbp": 0,
+          "spo2": 64.06005849709835,
+          "etco2": 5.6693904804452915,
+          "tempC": 36.4,
+          "rhythm": "VF"
+        }
+      }
+    },
+    {
+      "id": "unanswered-risk-scores",
+      "observation": [
+        {
+          "id": "asa",
+          "total": 1,
+          "band": {
+            "min": 1,
+            "max": 1,
+            "label": {
+              "fr": "ASA I",
+              "en": "ASA I"
+            },
+            "risk": {
+              "fr": "Ajouter « E » si urgence.",
+              "en": "Add \"E\" for an emergency."
+            },
+            "tone": "ok"
+          }
+        },
+        {
+          "id": "rcri",
+          "total": 0,
+          "band": {
+            "min": 0,
+            "max": 0,
+            "label": {
+              "fr": "Classe I (0 point)",
+              "en": "Class I (0 points)"
+            },
+            "risk": {
+              "fr": "0,4 % (cohorte de validation, 2/488)",
+              "en": "0.4% (validation cohort, 2/488)"
+            },
+            "tone": "ok"
+          }
+        },
+        {
+          "id": "stopbang",
+          "total": 0,
+          "band": {
+            "min": 0,
+            "max": 2,
+            "label": {
+              "fr": "Risque faible (0–2)",
+              "en": "Low risk (0–2)"
+            },
+            "risk": {
+              "fr": "Probabilité de SAOS modéré à sévère la plus basse (18 % pour 0–2 dans la cohorte de Chung 2016).",
+              "en": "Lowest probability of moderate-to-severe OSA (18% at 0–2 in the Chung 2016 cohort)."
+            },
+            "tone": "ok"
+          }
+        },
+        {
+          "id": "apfel",
+          "total": 0,
+          "band": {
+            "min": 0,
+            "max": 0,
+            "label": {
+              "fr": "0 facteur",
+              "en": "0 factors"
+            },
+            "risk": {
+              "fr": "Incidence 10 %",
+              "en": "Incidence 10%"
+            },
+            "tone": "ok"
+          }
+        },
+        {
+          "id": "ariscat",
+          "total": 0,
+          "band": {
+            "min": 0,
+            "max": 25,
+            "label": {
+              "fr": "Risque faible (< 26)",
+              "en": "Low risk (< 26)"
+            },
+            "risk": {
+              "fr": "1,6 % (à vérifier) ; validation externe PERISCOPE : 3,4 % observé",
+              "en": "1.6% (to verify); PERISCOPE external validation: 3.4% observed"
+            },
+            "tone": "ok"
+          }
+        }
+      ]
+    },
+    {
+      "id": "dlt-ventilation-gas-decoupling",
+      "observation": [
+        {
+          "rr": 4,
+          "vtMl": 150,
+          "gas": {
+            "shunt": 0.050000000000000044,
+            "pao2": 579.9058342436331,
+            "sao2": 0.9998800783298964,
+            "pAO2": 663
+          },
+          "delivered": 150
+        },
+        {
+          "rr": 12,
+          "vtMl": 450,
+          "gas": {
+            "shunt": 0.050000000000000044,
+            "pao2": 579.9058342436331,
+            "sao2": 0.9998800783298964,
+            "pAO2": 663
+          },
+          "delivered": 450
+        },
+        {
+          "rr": 30,
+          "vtMl": 900,
+          "gas": {
+            "shunt": 0.050000000000000044,
+            "pao2": 579.9058342436331,
+            "sao2": 0.9998800783298964,
+            "pAO2": 663
+          },
+          "delivered": 900
+        }
+      ]
+    },
+    {
+      "id": "m4-two-different-BIS-models",
+      "observation": {
+        "ce": 6.001376599712348,
+        "pkPredictedBis": 20.538694833810236,
+        "eegDisplayedRawBis": 23,
+        "suppression": 34
+      }
+    },
+    {
+      "id": "registry",
+      "observation": {
+        "total": 201,
+        "statuses": {
+          "sourced": 156,
+          "from-memory": 6,
+          "illustrative": 39
+        },
+        "namedReviewers": 0,
+        "evidence": 41,
+        "resources": 89,
+        "byModule": {
+          "M1": {
+            "sourced": 12,
+            "from-memory": 1,
+            "illustrative": 6
+          },
+          "M2": {
+            "sourced": 3,
+            "from-memory": 0,
+            "illustrative": 0
+          },
+          "M3": {
+            "sourced": 10,
+            "from-memory": 1,
+            "illustrative": 5
+          },
+          "M4": {
+            "sourced": 6,
+            "from-memory": 4,
+            "illustrative": 4
+          },
+          "M5": {
+            "sourced": 5,
+            "from-memory": 0,
+            "illustrative": 2
+          },
+          "M6": {
+            "sourced": 7,
+            "from-memory": 0,
+            "illustrative": 6
+          },
+          "M7": {
+            "sourced": 5,
+            "from-memory": 0,
+            "illustrative": 3
+          },
+          "M8": {
+            "sourced": 9,
+            "from-memory": 0,
+            "illustrative": 7
+          },
+          "M9": {
+            "sourced": 22,
+            "from-memory": 0,
+            "illustrative": 5
+          },
+          "M10": {
+            "sourced": 9,
+            "from-memory": 0,
+            "illustrative": 1
+          },
+          "M11": {
+            "sourced": 68,
+            "from-memory": 0,
+            "illustrative": 0
+          }
+        }
+      }
+    }
+  ]
+}

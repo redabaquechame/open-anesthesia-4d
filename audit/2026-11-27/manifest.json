@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-27",
+  "timezone": "America/Toronto",
+  "source_root": "C:\\Users\\redab\\OneDrive\\Bureau\\three.j anesthesia platform",
+  "commit": "c10a027977479b4f8a31630dff80c8234ced5599",
+  "findings": 46,
+  "high": 17,
+  "medium": 29,
+  "inventory_count": 175,
+  "inventory_bytes": 14423242,
+  "coverage_counts": {
+    "asset inventoried; visual/clinical content not individually reviewed": 33,
+    "finding-linked/selected-function inspection": 40,
+    "historical screenshot visually inspected": 6,
+    "structural and pattern scan only": 96
+  },
+  "artifacts": [
+    {
+      "file": "asset-summary.json",
+      "bytes": 1023,
+      "sha256": "31a7bf4d1d30bd473dc23b77365b42d3fc575b128ea4796c584785cc20223613"
+    },
+    {
+      "file": "build_report.py",
+      "bytes": 74008,
+      "sha256": "40c4a4469529b577b46f7c99ece95e1abd444cd1d739e225f92e6f1e6d532868"
+    },
+    {
+      "file": "dependency-audit.json",
+      "bytes": 2350,
+      "sha256": "f16d62af2f61579024fec628a8113688799af3ac6eae8cebc8a7bd1a593ee8a9"
+    },
+    {
+      "file": "findings.csv",
+      "bytes": 34010,
+      "sha256": "cff4902e17aa6c141c40f453728fa4aaeb2ba66dd83ccfedeea6726a9af3d708"
+    },
+    {
+      "file": "inventory.csv",
+      "bytes": 27075,
+      "sha256": "4618e5f8f5336d1a3943c241bc8efa5da0ed0bf72bd0385b0a5d2f36ede3cba3"
+    },
+    {
+      "file": "probe-results.json",
+      "bytes": 10519,
+      "sha256": "e419479d989f4075c6b7ca7df295dd5d85539cd866aa3ce065ff1b461d6b888b"
+    },
+    {
+      "file": "probes.ts",
+      "bytes": 6022,
+      "sha256": "9b88eb1106bd21db2c76694001f188a2c84a61d5548b755c613ff83583402fec"
+    },
+    {
+      "file": "REPORT.html",
+      "bytes": 3625783,
+      "sha256": "6f656ffefe18a1e51d8f2bc538874946ba44ef170726f7f53e2ba05b60045a9f"
+    },
+    {
+      "file": "REPORT.md",
+      "bytes": 73034,
+      "sha256": "504f80e36980caf8ffb1422a2d9e5c7089ef18ff9ca2a0c90cf3317cbdd6209a"
+    },
+    {
+      "file": "validation-record.json",
+      "bytes": 1201,
+      "sha256": "638ef2c4463945983db33d9dc05be5546141842ca0ec497ac6c40c78824aa61d"
+    },
+    {
+      "file": "verify_report.py",
+      "bytes": 1325,
+      "sha256": "0ef2120707c7c0849d69a54d348544f8ec32f2b611a7506f0aabe58202763429"
+    }
+  ]
+}

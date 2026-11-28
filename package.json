@@ -12,7 +12,8 @@
     "review:docs": "esbuild scripts/build-review-docs.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/review-docs.mjs --log-level=warning && node node_modules/.cache/review-docs.mjs",
     "sanity": "esbuild scripts/sanity/run.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/sanity.mjs --log-level=warning && node node_modules/.cache/sanity.mjs",
     "anatomy:build": "esbuild scripts/anatomy/build-anatomy.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/build-anatomy.mjs --log-level=warning && node node_modules/.cache/build-anatomy.mjs",
-    "anatomy:airway": "esbuild scripts/anatomy/build-airway-map.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/build-airway-map.mjs --log-level=warning && node node_modules/.cache/build-airway-map.mjs"
+    "anatomy:airway": "esbuild scripts/anatomy/build-airway-map.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/build-airway-map.mjs --log-level=warning && node node_modules/.cache/build-airway-map.mjs",
+    "adversarial": "esbuild scripts/adversarial/run.ts --bundle --platform=node --format=esm --packages=external --outfile=node_modules/.cache/adversarial.mjs --log-level=warning && node node_modules/.cache/adversarial.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",
