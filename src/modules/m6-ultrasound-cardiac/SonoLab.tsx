@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { NeedleHistory, OIP_THRESHOLD_PSI, depositRadius, openingPressurePsi, type LatchedKind, type TipZone } from './needleHistory';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { AlertOctagon, CheckCircle2, Eye, EyeOff, RotateCcw, ScanLine } from 'lucide-react';
@@ -24,7 +25,6 @@ interface Controls {
   gainDb: number;
   needleAngleDeg: number;
   needleAdvanceMm: number;
-  laMl: number;
   labels: boolean;
   doppler: boolean;
 }
@@ -78,7 +78,6 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
     gainDb: 0,
     needleAngleDeg: 22,
     needleAdvanceMm: 12,
-    laMl: 0,
     labels: true,
     doppler: false,
   });
@@ -94,6 +93,14 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
   const viewRef = useRef<HTMLDivElement | null>(null);
   const usRef = useRef<HTMLCanvasElement | null>(null);
   const stageRef = useRef<Stage | null>(null);
+  /** Procedure record: latched injuries and injectate deposits (survives locale switches). */
+  const historyRef = useRef(new NeedleHistory());
+  const tipRef = useRef(new THREE.Vector3());
+  const timeRef = useRef(0);
+  const [zone, setZone] = useState<TipZone>('tissue');
+  const zoneRef = useRef<TipZone>('tissue');
+  const [histRev, setHistRev] = useState(0);
+  const [lastInjection, setLastInjection] = useState<{ ml: number; psi: number; deposited: boolean } | null>(null);
 
   useEffect(() => {
     const container = viewRef.current;
@@ -257,9 +264,9 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
       const needleHub = new THREE.Mesh(new THREE.CylinderGeometry(0.0016, 0.0012, 0.008, 16), M.get('plastic'));
       s.scene.add(needleShaft, needleHub);
 
-      const laMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 20), M.get('localAnaesthetic'));
-      laMesh.visible = false;
-      s.scene.add(laMesh);
+      // Injectate deposits: one ellipsoid per deposit, fixed in world space where it was injected (audit F32).
+      const laGeo = new THREE.SphereGeometry(1, 32, 20);
+      const laMeshes: THREE.Mesh[] = [];
 
       // Labels
       const L = (en: string, frL: string) => (fr ? frL : en);
@@ -298,8 +305,7 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
       const veinIdx = meshKeys.indexOf('subclavianVein');
       const arteryFlow = new THREE.Vector3();
       const veinFlow = new THREE.Vector3();
-      let laCenter = new THREE.Vector3();
-      let laRadii = new THREE.Vector3(1e-6, 1e-6, 1e-6);
+      const history = historyRef.current;
       const analytic: AnalyticTissue[] = [
         {
           tissue: 'nerve',
@@ -310,12 +316,7 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
         {
           tissue: 'la',
           priority: 9,
-          inside: (p) => {
-            const x = (p.x - laCenter.x) / laRadii.x;
-            const y = (p.y - laCenter.y) / laRadii.y;
-            const z = (p.z - laCenter.z) / laRadii.z;
-            return x * x + y * y + z * z < 1;
-          },
+          inside: (p) => history.insideDeposit(p),
         },
       ];
       labelNames.push(L('Brachial plexus', 'Plexus brachial'), L('Pleura', 'Plèvre'), L('Local anaesthetic', 'Anesthésique local'));
@@ -362,31 +363,53 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
         needleHub.position.copy(hub).addScaledVector(dir, -0.004);
         needleHub.quaternion.copy(needleShaft.quaternion);
 
-        // Local anaesthetic spreads around the tip, elongated along the plexus sheath.
-        if (u.laMl > 0) {
-          const a = Math.cbrt((3 * u.laMl * 1e-6) / (8 * Math.PI)); // V = 4/3·π·(2a)·a·a
-          laCenter = tip.clone();
-          laMesh.visible = true;
-          laMesh.position.copy(laCenter);
-          laMesh.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), ARTERY_TANGENT);
-          laMesh.scale.set(2 * a, a, a);
-          laRadii = new THREE.Vector3(a, a, a); // simulator test uses a sphere of the short radius
-        } else {
-          laMesh.visible = false;
-          laRadii = new THREE.Vector3(1e-6, 1e-6, 1e-6);
-        }
+        tipRef.current.copy(tip);
+        timeRef.current = time;
 
-        // Safety: where is the tip?
+        // Deposits stay where they were injected; draw one ellipsoid each, elongated along the plexus sheath.
+        while (laMeshes.length < history.deposits.length) {
+          const m = new THREE.Mesh(laGeo, M.get('localAnaesthetic'));
+          m.quaternion.setFromUnitVectors(new THREE.Vector3(1, 0, 0), ARTERY_TANGENT);
+          s.scene.add(m);
+          laMeshes.push(m);
+        }
+        laMeshes.forEach((m, i) => {
+          const d = history.deposits[i];
+          m.visible = !!d;
+          if (!d) return;
+          const a = depositRadius(d.ml);
+          m.position.copy(d.center);
+          m.scale.set(2 * a, a, a);
+        });
+
+        // Safety: where is the tip? (zone → latched in the procedure record on entry, audit F11)
         let msg: string | null = null;
-        if (meshes.subclavianArtery && pointInMesh(tip, meshes.subclavianArtery))
+        let tipZone: TipZone = 'tissue';
+        const nerveDist = Math.min(...nerveSegs.map((n) => distToPolyline(tip, [n.a, n.mid, n.b]) - n.r));
+        if (meshes.subclavianArtery && pointInMesh(tip, meshes.subclavianArtery)) {
+          tipZone = 'artery';
           msg = fr ? 'PONCTION ARTÉRIELLE (artère subclavière) — retirer ; ne pas injecter (risque de LAST).' : 'ARTERIAL PUNCTURE (subclavian artery) — withdraw; do not inject (LAST risk).';
-        else if (meshes.subclavianVein && pointInMesh(tip, meshes.subclavianVein))
+        } else if (meshes.subclavianVein && pointInMesh(tip, meshes.subclavianVein)) {
+          tipZone = 'vein';
           msg = fr ? 'Ponction veineuse (veine subclavière) — retirer.' : 'Venous puncture (subclavian vein) — withdraw.';
-        else if (insideDome(tip))
+        } else if (insideDome(tip)) {
+          tipZone = 'pleura';
           msg = fr ? 'PLÈVRE FRANCHIE — risque de pneumothorax. Retirer immédiatement.' : 'PLEURA BREACHED — pneumothorax risk. Withdraw immediately.';
-        else if (nerveSegs.some((n) => distToPolyline(tip, [n.a, n.mid, n.b]) < n.r * 0.8))
+        } else if (nerveSegs.some((n) => distToPolyline(tip, [n.a, n.mid, n.b]) < n.r * 0.8)) {
+          tipZone = 'intraneural';
           msg = fr ? 'Pointe intraneurale probable — ne pas injecter contre résistance.' : 'Tip probably intraneural — do not inject against resistance.';
-        else if (meshes.firstRib && pointInMesh(tip, meshes.firstRib)) msg = fr ? 'Contact osseux (1re côte).' : 'Bone contact (first rib).';
+        } else if (meshes.firstRib && pointInMesh(tip, meshes.firstRib)) {
+          tipZone = 'bone';
+          msg = fr ? 'Contact osseux (1re côte).' : 'Bone contact (first rib).';
+        } else if (nerveDist < 0.0005) tipZone = 'nerveContact';
+        const before = history.events.size + [...history.events.values()].reduce((n, e) => n + e.count, 0);
+        history.observe(tipZone, time);
+        const after = history.events.size + [...history.events.values()].reduce((n, e) => n + e.count, 0);
+        if (after !== before) setHistRev((r) => r + 1);
+        if (tipZone !== zoneRef.current) {
+          zoneRef.current = tipZone;
+          setZone(tipZone);
+        }
         if (msg !== lastAlert) {
           lastAlert = msg;
           setAlert(msg);
@@ -398,7 +421,8 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
         {
           const near = nerveSegs.some((n) => distToPolyline(tip, [n.a, n.mid, n.b]) < n.r + 0.002);
           const tipVisible = tipBeamWeight(frame, tip, WIDTH_M, DEPTH_M) >= TIP_VISIBLE_WEIGHT;
-          const cue = perineuralCue({ hazard: msg !== null, nearNerve: near, tipVisible, laMl: u.laMl });
+          const spreadNear = history.deposits.some((d) => nerveSegs.some((n) => distToPolyline(d.center, [n.a, n.mid, n.b]) < n.r + 0.004));
+          const cue = perineuralCue({ hazard: msg !== null, nearNerve: near, tipVisible, laMl: spreadNear ? history.deposits.reduce((v, d) => v + d.ml, 0) : 0 });
           cueWarn = cue === 'tip-not-seen';
           if (cue === 'tip-not-seen')
             note = fr
@@ -462,6 +486,30 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
       stage?.dispose();
     };
   }, [fr]);
+
+  const inject = (ml: number) => {
+    const r = historyRef.current.inject(ml, tipRef.current, zoneRef.current, timeRef.current);
+    setLastInjection({ ml, psi: r.pressurePsi, deposited: r.deposited });
+    setHistRev((x) => x + 1);
+  };
+  const newProcedure = () => {
+    historyRef.current.reset();
+    setLastInjection(null);
+    setHistRev((x) => x + 1);
+  };
+  const livePsi = openingPressurePsi(zone);
+  const EVENT_TEXT: Record<LatchedKind, [string, string]> = {
+    arterialPuncture: ['Ponction artérielle (artère subclavière)', 'Arterial puncture (subclavian artery)'],
+    venousPuncture: ['Ponction veineuse (veine subclavière)', 'Venous puncture (subclavian vein)'],
+    pleuralBreach: ['Plèvre franchie (risque de pneumothorax)', 'Pleura breached (pneumothorax risk)'],
+    intraneural: ['Pointe intraneurale', 'Intraneural tip'],
+    boneContact: ['Contact osseux (1re côte)', 'Bone contact (first rib)'],
+    intravascularInjection: ['Injection intravasculaire (risque de LAST)', 'Intravascular injection (LAST risk)'],
+    highPressureInjection: [`Injection à pression d’ouverture ≥ ${OIP_THRESHOLD_PSI} psi`, `Injection at opening pressure ≥ ${OIP_THRESHOLD_PSI} psi`],
+  };
+  void histRev;
+  const record = [...historyRef.current.events.values()].sort((a, b) => a.firstSec - b.firstSec);
+  const depositedMl = historyRef.current.deposits.reduce((v, d) => v + d.ml, 0);
 
   useEffect(() => {
     stageRef.current?.setLabelsVisible(c.labels);
@@ -582,11 +630,78 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
           <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{fr ? 'Aiguille (dans le plan, postéro-latérale)' : 'Needle (in-plane, from posterolateral)'}</h3>
           {slider('needleAngleDeg', fr ? 'Angle avec la peau' : 'Angle to the skin', 10, 60, 1, '°')}
           {slider('needleAdvanceMm', fr ? 'Progression' : 'Advance', 0, 45, 0.5, ' mm', 'text-cyan-300')}
-          {slider('laMl', fr ? 'Injection d’anesthésique local' : 'Local anaesthetic injected', 0, 20, 1, ' mL', 'text-cyan-300')}
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-[11px]">
+              <span>{fr ? 'Pression d’ouverture si vous injectez ici' : 'Opening pressure if you inject here'}</span>
+              <span className={`font-mono ${livePsi >= OIP_THRESHOLD_PSI ? 'text-rose-300 font-bold' : 'text-emerald-300'}`}>
+                ~{fr ? String(livePsi).replace('.', ',') : livePsi} psi
+              </span>
+            </div>
+            {livePsi >= OIP_THRESHOLD_PSI && (
+              <p className="text-[10px] text-rose-200 bg-rose-950/60 border border-rose-500/50 rounded px-2 py-1">
+                {fr
+                  ? `≥ ${OIP_THRESHOLD_PSI} psi : contact aiguille-nerf probable. Ne pas injecter ; reculer légèrement l’aiguille.`
+                  : `≥ ${OIP_THRESHOLD_PSI} psi: needle-nerve contact likely. Do not inject; withdraw the needle slightly.`}
+              </p>
+            )}
+            <div className="flex gap-1.5">
+              {[1, 5].map((ml) => (
+                <button key={ml} onClick={() => inject(ml)} className="flex-1 h-9 rounded border border-cyan-600/60 bg-cyan-950/40 hover:bg-cyan-900/50 text-cyan-100 cursor-pointer">
+                  {fr ? `Injecter ${ml} mL` : `Inject ${ml} mL`}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-between text-[11px] text-slate-400">
+              <span>
+                {fr ? 'Injecté' : 'Injected'} <span className="font-mono text-cyan-300">{historyRef.current.totalMl} mL</span>
+                {depositedMl !== historyRef.current.totalMl && (
+                  <span className="text-rose-300"> ({fr ? 'dont' : 'of which'} {historyRef.current.totalMl - depositedMl} mL {fr ? 'dans un vaisseau' : 'into a vessel'})</span>
+                )}
+              </span>
+              {lastInjection && (
+                <span className={`font-mono ${lastInjection.psi >= OIP_THRESHOLD_PSI ? 'text-rose-300' : 'text-slate-300'}`}>
+                  {fr ? 'dernière' : 'last'} : {lastInjection.ml} mL · ~{fr ? String(lastInjection.psi).replace('.', ',') : lastInjection.psi} psi
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-slate-500 leading-relaxed">
+              {fr
+                ? 'Le dépôt reste où il a été injecté, même si l’aiguille bouge. Pressions : moyennes de Gadsden 2014 (8,2 psi à 1 mm de la racine, 20,9 psi au contact) ; modèle du simulateur, pas une mesure.'
+                : 'The deposit stays where it was injected, even if the needle moves. Pressures: Gadsden 2014 means (8.2 psi at 1 mm from the root, 20.9 psi on contact); simulator model, not a measurement.'}
+            </p>
+          </div>
           <p className="text-[10px] text-slate-400 leading-relaxed">
             {fr
               ? 'Une aiguille raide renvoie moins d’écho vers la sonde (réflexion spéculaire) ; une bascule de quelques degrés la sort du faisceau fin.'
               : 'A steep needle returns less echo to the probe (specular reflection); a few degrees of tilt moves it out of the thin beam.'}
+          </p>
+        </div>
+        <div className="bg-oa-surface border border-slate-800 rounded-xl p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400">{fr ? 'Relevé de la procédure' : 'Procedure record'}</h3>
+            <button onClick={newProcedure} className="h-7 px-2 rounded border border-slate-700 hover:border-cyan-500 text-[11px] flex items-center gap-1 cursor-pointer">
+              <RotateCcw className="w-3 h-3" /> {fr ? 'Nouvelle procédure' : 'New procedure'}
+            </button>
+          </div>
+          {record.length === 0 ? (
+            <p className="text-[11px] text-slate-500">{fr ? 'Aucun incident enregistré.' : 'No incident recorded.'}</p>
+          ) : (
+            <ul className="space-y-1">
+              {record.map((e) => (
+                <li key={e.kind} className="flex items-start gap-1.5 text-[11px]">
+                  <AlertOctagon className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${e.kind === 'boneContact' ? 'text-amber-400' : 'text-rose-400'}`} />
+                  <span className="text-slate-200">
+                    {fr ? EVENT_TEXT[e.kind][0] : EVENT_TEXT[e.kind][1]}
+                    {e.count > 1 && <span className="font-mono text-slate-400"> ×{e.count}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-[10px] text-slate-500">
+            {fr
+              ? 'Un incident reste inscrit même après le retrait de l’aiguille : une ponction artérielle ne s’efface pas en reculant.'
+              : 'An incident stays on the record after the needle is withdrawn: an arterial puncture is not undone by pulling back.'}
           </p>
         </div>
       </aside>

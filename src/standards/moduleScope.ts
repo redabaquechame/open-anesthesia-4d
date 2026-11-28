@@ -46,8 +46,8 @@ export const MODULE_SCOPE: Record<string, ModuleScope> = {
   M6: {
     status: 'prototype',
     notModelled: {
-      fr: 'Image échographique illustrative (pas une sonde calibrée), plexus schématique ; les ponctions ne laissent pas encore de trace et l’anesthésique suit la pointe.',
-      en: 'Illustrative ultrasound image (not a calibrated probe), schematic plexus; punctures leave no trace yet and the anaesthetic follows the tip.',
+      fr: 'Image échographique illustrative (pas une sonde calibrée), plexus schématique ; pression d’injection en valeurs fixes par zone (pas une simulation de pression) ; la diffusion de l’anesthésique n’est pas modélisée.',
+      en: 'Illustrative ultrasound image (not a calibrated probe), schematic plexus; injection pressure uses fixed values per zone (not a pressure simulation); anaesthetic spread is not modelled.',
     },
   },
   M7: {
