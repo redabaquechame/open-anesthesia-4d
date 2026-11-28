@@ -16,6 +16,7 @@ import { runSpineChecks } from './spine';
 import { runAirwayChecks } from './airway';
 import { runCrisisPreopChecks } from './crisisPreop';
 import { runSimClockChecks } from './simClock';
+import { runCircuitV2Checks } from './circuitV2';
 import { runParcoursChecks } from './parcours';
 import { runMonitorChecks } from './monitor';
 
@@ -119,6 +120,7 @@ await runSpineChecks(check);
 runAirwayChecks(check);
 runCrisisPreopChecks(check);
 runSimClockChecks(check);
+runCircuitV2Checks(check);
 runParcoursChecks(check);
 runMonitorChecks(check);
 

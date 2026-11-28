@@ -97,22 +97,28 @@ const CASES_LIST: Case[] = [
 
   // ── M1 workstation ───────────────────────────────────────────────────────
   {
-    id: 'gas-sum-le-100', finding: 'F01', status: 'open', plannedIn: 'PR 5 (circuit kernel v2)',
+    id: 'gas-sum-le-100', finding: 'F01', status: 'fixed',
     run: () => {
+      // Every species is an amount; fractions are amount / total, so the full inspired mixture is 100 %.
       const s = runCircuit({ ...base, fgfO2Lpm: 6, fgfAirLpm: 0, vaporizerDialPct: 8 }, 1800);
-      const total = s.circuitFiO2Pct + s.circuitArgonPct + s.circuitAgentPct;
-      return { ok: total <= 100.01, detail: `O2+Ar+agent = ${total.toFixed(3)} %` };
+      const total = s.circuitFiO2Pct + s.circuitArgonPct + s.circuitAgentPct + s.circuitN2OPct + s.circuitN2Pct + (s.fico2MmHg / 760) * 100;
+      return { ok: Math.abs(total - 100) < 0.01, detail: `O2+Ar+agent+N2O+N2+CO2 = ${total.toFixed(3)} %` };
     },
   },
   {
-    id: 'zero-fgf-reservoir-empties', finding: 'F18', status: 'open', plannedIn: 'PR 5',
+    id: 'zero-fgf-reservoir-empties', finding: 'F18', status: 'fixed',
+    // Re-specified in PR 5: a piston's negative-pressure relief valve opens at −8 cmH2O and draws room
+    // air (claim m1-piston-nprv), so the piston keeps its volume and the mixture turns hypoxic; an ascending
+    // bellows has no such valve and bottoms out, so its tidal volume falls.
     run: () => {
-      const s = runCircuit({ ...base, driveType: 'piston_fgd', fgfO2Lpm: 0, fgfAirLpm: 0 }, 1800);
-      return { ok: s.deliveredVtMl < 0.5 * base.vtMl, detail: `delivered Vt after 30 min without fresh gas = ${s.deliveredVtMl.toFixed(0)} mL` };
+      const asc = runCircuit({ ...base, driveType: 'ascending_bellows', fgfO2Lpm: 0, fgfAirLpm: 0 }, 1800);
+      const pis = runCircuit({ ...base, driveType: 'piston_fgd', fgfO2Lpm: 0, fgfAirLpm: 0 }, 1800);
+      const ok = asc.deliveredVtMl < 0.5 * base.vtMl && pis.circuitFiO2Pct < 21 && pis.alarms.includes('LOW_FiO2');
+      return { ok, detail: `ascending bellows Vt ${asc.deliveredVtMl.toFixed(0)} mL; piston Vt ${pis.deliveredVtMl.toFixed(0)} mL, FiO2 ${pis.circuitFiO2Pct.toFixed(1)} % (room air drawn in)` };
     },
   },
   {
-    id: 'pcv-leak-changes-volume', finding: 'F08', status: 'open', plannedIn: 'PR 5',
+    id: 'pcv-leak-changes-volume', finding: 'F08', status: 'fixed',
     run: () => {
       const p = { ...base, ventMode: 'PCV' as const };
       const a = runCircuit(p), b = runCircuit(withFault(p, 'bellowsLeak'));
@@ -120,11 +126,14 @@ const CASES_LIST: Case[] = [
     },
   },
   {
-    id: 'stuck-valve-changes-flow', finding: 'F16', status: 'open', plannedIn: 'PR 5',
+    id: 'stuck-valve-changes-flow', finding: 'F16', status: 'fixed',
+    // Re-specified in PR 5: an incompetent unidirectional valve causes rebreathing with little change in
+    // Vt or Paw. The test requires the CO2 to come from a computed backflow volume, not a scripted constant.
     run: () => {
       const a = runCircuit(base), b = runCircuit(withFault(base, 'stuckExpiratoryValve'));
-      const same = Math.abs(a.deliveredVtMl - b.deliveredVtMl) < 1 && Math.abs(a.pawCmH2O - b.pawCmH2O) < 0.1;
-      return { ok: !same, detail: same ? 'valve fault leaves Vt and Paw identical (CO2 only scripted)' : 'valve fault changes mechanics' };
+      const scripted = /0\.35\s*\*\s*this\.paco2/.test(src('src/physics/circuitLungKernel.ts'));
+      const ok = a.expValveBackflowMl === 0 && b.expValveBackflowMl > 0 && b.fico2MmHg > a.fico2MmHg + 2 && !scripted;
+      return { ok, detail: `backflow ${a.expValveBackflowMl} → ${b.expValveBackflowMl} mL, FiCO2 ${a.fico2MmHg.toFixed(1)} → ${b.fico2MmHg.toFixed(1)} mmHg${scripted ? ', scripted constant still present' : ''}` };
     },
   },
   {

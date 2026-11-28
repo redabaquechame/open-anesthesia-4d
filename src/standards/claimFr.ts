@@ -27,6 +27,14 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
     claim: 'Espace mort anatomique d’environ 150 mL chez l’adulte sain (près de 30 % d’un volume courant de 500 mL).',
     note: 'StatPearls est sous licence CC BY-NC-ND : texte paraphrasé.',
   },
+  'm1-piston-nprv': {
+    claim: 'Un ventilateur à piston possède une valve de sécurité de dépression : quand la pression dans le piston descend à −8 cmH2O, elle s’ouvre et l’air ambiant entre. Avec trop peu de gaz frais, le piston garde son volume mais le mélange est dilué par l’air ; un soufflet ascendant n’a pas cette valve et ne se remplit plus, donc le volume courant chute.',
+    note: 'Le simulateur compense exactement le déficit de volume par de l’air ambiant (modèle du simulateur) ; sans aucun gaz frais, l’O2 est consommé et le mélange devient hypoxique.',
+  },
+  'm1-circuit-budget': {
+    claim: 'Bilan gazeux du circuit : chaque gaz (O2, N2O, N2, argon, halogéné) est suivi en quantité ; les fractions inspirées valent quantité / total, donc leur somme avec le CO2 fait toujours 100 %. Le gaz frais et l’air ambiant ajoutent du gaz ; la captation, les fuites et la valve d’échappement / APL en retirent. Le soufflet, le sac du piston ou le ballon contiennent ce qui dépasse un volume fixe du circuit ; quand ce réservoir est vide, un soufflet ne délivre plus rien. Une fuite est un orifice, Q = K·√P, dans les deux phases et dans tous les modes. Une valve unidirectionnelle incompétente laisse repartir une partie du débit dans la mauvaise branche : le CO2 réinhalé vient de ce volume calculé. L’évaporateur ajoute l’agent au débit porteur × d/(1 − d), donc sa sortie égale la graduation.',
+    note: 'Modèle du simulateur. La conservation et la relation de l’évaporateur sont exactes ; les constantes (volume fixe, taille des réservoirs, K de fuite donnant 6 L/min à 20 cmH2O, volume de branche 0,5 L, moitié du débit à travers une valve incompétente, courbe pression–volume du ballon, captation décroissante de l’halogéné et du N2O) sont des choix pédagogiques, pas des valeurs publiées. Pas encore modélisés : capacité de la chaux, identité de l’agent dans la captation, N2 libéré par le patient.',
+  },
   'm1-co2-store': {
     claim: 'La PaCO2 augmente d’environ 8–9 mmHg pendant la première minute d’apnée, puis plus lentement (réservoir de CO2 global).',
     note: 'Ajusté sur l’augmentation pendant l’apnée décrite dans les manuels ; pas une valeur de compartiment publiée.',
