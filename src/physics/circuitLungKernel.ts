@@ -16,6 +16,21 @@
  *    (and the O2 flush during inspiration); the piston's decoupling valve blocks it
  *    (Jain & Swaminathan, Indian J Anaesth 2013, doi:10.4103/0019-5049.120150).
  *
+ * Kernel v2 (Gate 1 / PR 5) — the circuit is a gas budget, not a set of scripted fractions:
+ *  - Amounts (L) of O2, N2O, N2, Ar and agent in the breathing system; fractions are amount / total,
+ *    so they always add up to 100 % (audit F01). Gas moved into the lungs leaves the circuit and comes
+ *    back on expiration; uptake, leaks, the spill / APL valve and entrained room air change the total.
+ *  - The reservoir (bellows, piston bag or manual bag) is the gas above the fixed circuit volume. With no
+ *    fresh gas it empties (audit F18): an ascending bellows then cannot deliver the set volume; a piston
+ *    draws room air through its negative-pressure relief valve (≈ −8 cmH2O, AGM "Ventilators" course page),
+ *    so volume is kept but O2 and agent are diluted.
+ *  - Leaks are pressure-dependent orifices shared by VCV and PCV (audit F08); they also drain the reservoir.
+ *  - Unidirectional valves are diodes; an incompetent valve lets gas flow backwards, and the rebreathed
+ *    CO2 is computed from that backflow volume (audit F16).
+ *  - Vaporizer output: agent flow = carrier × d / (1 − d), so the vaporizer outlet concentration equals
+ *    the dial setting d (definition of a concentration-calibrated vaporizer; Simulator model otherwise).
+ *  - Manual / spontaneous mode: bag pressure from a bag pressure–volume curve, capped by the APL valve.
+ *
  * Units: volume mL (lungs) / L (circuit gas), flow L/s (lungs) / L/min (fresh gas),
  * pressure cmH2O, compliance mL/cmH2O, resistance cmH2O/(L/s), CO2 mmHg.
  */
@@ -96,12 +111,49 @@ export interface SimulationSnapshot {
   expValveOpenNorm: number;
   sodaLimeExhaustionNorm: number;
   bagFillNorm: number;
+  /** Inspired N2O and N2 (%). With O2, Ar, agent and CO2 they add up to 100 %. */
+  circuitN2OPct: number;
+  circuitN2Pct: number;
+  /** Gas in the reservoir above the fixed circuit volume (L). */
+  reservoirL: number;
+  reservoirEmpty: boolean;
+  /** Room air drawn in (negative-pressure relief valve, descending bellows or draw-over), L/min. */
+  airEntrainedLpm: number;
+  /** Per-edge flows for the visuals (L/min, averaged over the last step). */
+  edges: {
+    freshGasLpm: number;
+    agentLpm: number;
+    leakLpm: number;
+    spillLpm: number;
+    uptakeLpm: number;
+  };
+  /** Backflow through an incompetent valve during the last breath (mL). */
+  expValveBackflowMl: number;
+  inspValveBackflowMl: number;
   alarms: string[];
 }
 
 // ---- Model constants -------------------------------------------------------
 const ANATOMIC_DEAD_SPACE_ML = 150; // StatPearls, PMID 29494107 (claim m1-dead-space)
-const SYSTEM_GAS_VOLUME_L = 7; // circle + absorber + FRC mixing volume
+/** Fixed gas volume of hoses, absorber and machine (L). Simulator model (claim m1-circuit-budget). */
+const FIXED_CIRCUIT_L = 5.5;
+/** Reservoir capacity (L): bellows / piston bag / manual bag. Simulator model. */
+const RESERVOIR_MAX_L: Record<VentilatorDriveType, number> = {
+  ascending_bellows: 1.6,
+  descending_bellows: 1.6,
+  piston_fgd: 2,
+  turbine: 2,
+  volume_reflector: 2,
+  glostavent_drawover: 2,
+};
+const MANUAL_BAG_L = 2;
+/** Orifice leak: Q = K·√P. K chosen so a "major leak" loses 6 L/min at 20 cmH2O (Simulator model). */
+const LEAK_K_LPS_PER_SQRT_CMH2O = 0.1 / Math.sqrt(20);
+/** Corrugated limb gas volume available for backflow (L). Simulator model. */
+const LIMB_VOLUME_L = 0.5;
+/** Share of flow that takes the reverse path through a fully incompetent valve. Simulator model. */
+const INCOMPETENT_VALVE_SHARE = 0.5;
+const AIR = { o2: 0.2095, n2: 0.7812, ar: 0.0093 };
 const CO2_STORE_L = 20; // lumped body CO2 store: apnoea rise ≈ 8–9 mmHg/min
 const CONCENTRATOR_O2_FRACTION = 0.95;
 const CONCENTRATOR_ARGON_FRACTION = 0.045; // ~4.5–5% argon in zeolite concentrator O2
@@ -116,10 +168,20 @@ const SUBSTEPS = 4;
 
 const clamp = (x: number, lo: number, hi: number) => (x < lo ? lo : x > hi ? hi : x);
 
+/** Amounts (L at ambient conditions) of each species in the breathing system. */
 interface GasState {
   o2: number;
-  argon: number;
+  n2o: number;
+  n2: number;
+  ar: number;
   agent: number;
+}
+const total = (g: GasState) => g.o2 + g.n2o + g.n2 + g.ar + g.agent;
+
+/** Manual bag pressure (cmH2O) for a gas volume (L): floppy until full, then stiffens. Simulator model. */
+export function bagPressureCmH2O(volL: number, capL = MANUAL_BAG_L): number {
+  if (volL <= capL) return 2 * Math.max(0, volL / capL);
+  return Math.min(45, 2 + 25 * (volL - capL));
 }
 
 export class CircuitLungKernel {
@@ -143,6 +205,10 @@ export class CircuitLungKernel {
   private expValve = 0;
   private initialized = false;
   private breathsCompleted = 0;
+  private expBackflowMl = 0;
+  private inspBackflowMl = 0;
+  private lastExpBackflowMl = 0;
+  private lastInspBackflowMl = 0;
 
   public reset(): void {
     this.time = 0;
@@ -165,6 +231,10 @@ export class CircuitLungKernel {
     this.expValve = 0;
     this.initialized = false;
     this.breathsCompleted = 0;
+    this.expBackflowMl = 0;
+    this.inspBackflowMl = 0;
+    this.lastExpBackflowMl = 0;
+    this.lastInspBackflowMl = 0;
   }
 
   public step(p: MachineAndPatientParams, dt: number): SimulationSnapshot {
@@ -193,10 +263,14 @@ export class CircuitLungKernel {
         this.lastDeliveredVt = this.breathInspVolMl;
         this.lastEtco2 = this.capno;
         this.lastPeakPaw = this.peakPaw;
+        this.lastExpBackflowMl = this.expBackflowMl;
+        this.lastInspBackflowMl = this.inspBackflowMl;
         this.breathsCompleted++;
       }
       this.breathInspVolMl = 0;
       this.peakPaw = 0;
+      this.expBackflowMl = 0;
+      this.inspBackflowMl = 0;
     }
 
     // ---- Gas supply --------------------------------------------------------
@@ -221,30 +295,48 @@ export class CircuitLungKernel {
     if (f.scavengingObstruction) peepEff += 8;
     if (disconnected) peepEff = 0;
 
-    const leakFrac = f.bellowsLeak ? (compensatesLeak ? 0.03 : 0.35) : 0;
+    const leakK = f.bellowsLeak ? LEAK_K_LPS_PER_SQRT_CMH2O : 0;
     // Fresh-gas coupling (mL/s added during mechanical inspiration)
     const couplingLps = !spont && isBellows && !ventDriveLost ? totalIn / 60 : 0;
     const fgdClosed = drive === 'piston_fgd' && isInsp && !spont;
 
-    // ---- Fresh-gas composition (needed for first-step initialisation) ------
-    const inO2 = o2Flow * o2Purity + airFlow * 0.21 + flushFlow * o2Purity;
-    const inAr = (concentrator ? (o2Flow + flushFlow) * CONCENTRATOR_ARGON_FRACTION : 0) + airFlow * AIR_ARGON_FRACTION;
+    // ---- Fresh-gas composition (L/min of each species) ----------------------
+    const o2Gas = o2Flow + flushFlow; // flush bypasses the vaporizer
+    const inO2 = o2Gas * o2Purity + airFlow * AIR.o2;
+    const inAr = (concentrator ? o2Gas * CONCENTRATOR_ARGON_FRACTION : 0) + airFlow * AIR_ARGON_FRACTION;
+    const inN2 = (concentrator ? o2Gas * (1 - CONCENTRATOR_O2_FRACTION - CONCENTRATOR_ARGON_FRACTION) : 0) + airFlow * AIR.n2;
+    const inN2O = n2oFlow;
+    const dial = clamp(p.vaporizerDialPct, 0, 18) / 100;
+    // Concentration-calibrated vaporizer: the outlet carries the dial fraction, so agent = carrier·d/(1−d).
+    const agentIn = (fgf * dial) / (1 - dial);
     const vo2 = disconnected ? 0 : p.metabolicVO2MlMin / 1000;
-    const agentIn = fgf * (clamp(p.vaporizerDialPct, 0, 18) / 100); // flush bypasses the vaporizer
+    const resMax = spont ? MANUAL_BAG_L : RESERVOIR_MAX_L[drive];
 
     if (!this.gas) {
-      // Start at the circuit's steady state for the current flows, with no agent yet (wash-in)
-      const denom = Math.max(0.05, totalIn - vo2);
-      this.gas = {
-        o2: totalIn > vo2 ? clamp((inO2 - vo2) / denom, 0.05, 1) : 0.21,
-        argon: totalIn > vo2 ? clamp(inAr / denom, 0, 0.5) : AIR_ARGON_FRACTION,
-        agent: 0,
-      };
+      // Start full, at the steady state for the current flows, with no agent yet (wash-in).
+      const overflow = totalIn - vo2;
+      const fill = FIXED_CIRCUIT_L + resMax;
+      const frac =
+        overflow > 0.05
+          ? { o2: Math.max(0, inO2 - vo2) / overflow, n2o: inN2O / overflow, n2: inN2 / overflow, ar: inAr / overflow }
+          : { o2: AIR.o2, n2o: 0, n2: AIR.n2, ar: AIR.ar };
+      const sum = frac.o2 + frac.n2o + frac.n2 + frac.ar;
+      this.gas = { o2: (frac.o2 / sum) * fill, n2o: (frac.n2o / sum) * fill, n2: (frac.n2 / sum) * fill, ar: (frac.ar / sum) * fill, agent: 0 };
       const initPeep = spont ? 0 : peepEff;
       this.v1 = (initPeep * C) / 2;
       this.v2 = (initPeep * C) / 2;
       this.initialized = true;
     }
+
+    // Gas available to the ventilator above the fixed circuit volume (L).
+    const g0 = this.gas;
+    // Draw-over is open to air by design; a piston has a negative-pressure relief valve; a descending
+    // bellows refills by gravity, drawing room air in through an open circuit.
+    const entrains = drive === 'piston_fgd' || drive === 'glostavent_drawover' || (drive === 'descending_bellows' && disconnected);
+    const lungTidal0 = disconnected ? 0 : Math.max(0, (this.v1 + this.v2) / 1000 - (spont ? 0 : peepEff * C) / 1000);
+    let reservoir = total(g0) - FIXED_CIRCUIT_L - lungTidal0;
+    let movedToLungL = 0;
+    let leakL = 0;
 
     const C1 = C / 2;
     const C2 = C / 2;
@@ -285,11 +377,20 @@ export class CircuitLungKernel {
         paw = 0.3; // machine still sees a little FGF back-pressure
       } else if (ventDriveLost) {
         pressureSource(peepEff * 0.2);
+      } else if (isInsp && reservoir <= 0 && !entrains) {
+        // Bellows bottomed out: nothing left to push (audit F18). Lungs hold their volume.
+        const qEq = (E2 - E1) / (R1 + R2);
+        q1 = qEq;
+        q2 = -qEq;
+        paw = E1 + R1 * q1;
       } else if (isInsp) {
         if (p.ventMode === 'VCV') {
-          const qSet = (p.vtMl / 1000 / Ti) * (1 - leakFrac) + couplingLps;
-          q1 = (E2 - E1 + R2 * qSet) / (R1 + R2);
-          q2 = qSet - q1;
+          // Pressure-dependent leak at the circuit: part of the set flow never reaches the patient, unless
+          // the ventilator measures and compensates it (turbine / volume reflector, Simulator model).
+          const leakLpsGuess = leakK * Math.sqrt(Math.max(0, paw || peepEff));
+          const qSet = p.vtMl / 1000 / Ti + couplingLps - (compensatesLeak ? 0 : leakLpsGuess);
+          q1 = (E2 - E1 + R2 * Math.max(0, qSet)) / (R1 + R2);
+          q2 = Math.max(0, qSet) - q1;
           paw = E1 + R1 * q1; // E1 is absolute alveolar pressure (already includes PEEP)
           if (paw > VCV_PRESSURE_LIMIT) pressureSource(VCV_PRESSURE_LIMIT);
         } else {
@@ -304,6 +405,24 @@ export class CircuitLungKernel {
       this.v2 = Math.max(0, this.v2 + q2 * 1000 * h);
       qTotal = q1 + q2;
       if (isInsp && qTotal > 0) this.breathInspVolMl += qTotal * 1000 * h;
+      // Gas budget: what enters the lungs leaves the circuit; on a closed circuit it comes back on expiration.
+      if (!disconnected) {
+        movedToLungL += qTotal * h;
+        reservoir -= qTotal * h;
+      } else if (!spont && isInsp) {
+        // Open Y-piece: the ventilator empties its stroke into the room.
+        const stroke = Math.min(Math.max(0, reservoir), Math.max(0, p.vtMl / 1000 / Ti) * h);
+        movedToLungL += stroke;
+        reservoir -= stroke;
+      }
+      // Pressure-dependent leak, both phases, every mode (audit F08).
+      const lk = disconnected ? 0 : leakK * Math.sqrt(Math.max(0, paw)) * h;
+      leakL += lk;
+      reservoir -= lk;
+      // Valve backflow (diodes): incompetent expiratory valve → part of inspiration comes from the
+      // expiratory limb; incompetent inspiratory valve → part of expiration goes up the inspiratory limb.
+      if (!disconnected && f.stuckExpiratoryValve && isInsp && qTotal > 0) this.expBackflowMl += INCOMPETENT_VALVE_SHARE * qTotal * 1000 * h;
+      if (!disconnected && f.stuckInspiratoryValve && !isInsp && qTotal < 0) this.inspBackflowMl += INCOMPETENT_VALVE_SHARE * -qTotal * 1000 * h;
     }
 
     this.peakPaw = Math.max(this.peakPaw, paw);
@@ -312,14 +431,67 @@ export class CircuitLungKernel {
     const lungVol = this.v1 + this.v2;
     const palv = lungVol / C;
 
-    // ---- Circuit gas mass balance -----------------------------------------
+    // ---- Circuit gas budget --------------------------------------------------
     const g = this.gas;
-    const kUp = disconnected ? 0 : 0.35 + 1.2 * Math.exp(-this.time / 240); // agent uptake, L/min equivalent
-    const overflow = Math.max(0, totalIn - vo2 - kUp * g.agent);
     const dtMin = dt / 60;
-    g.o2 = clamp(g.o2 + ((inO2 - vo2 - g.o2 * overflow) / SYSTEM_GAS_VOLUME_L) * dtMin, 0.02, 1);
-    g.argon = clamp(g.argon + ((inAr - g.argon * overflow) / SYSTEM_GAS_VOLUME_L) * dtMin, 0, 0.6);
-    g.agent = clamp(g.agent + ((agentIn - kUp * g.agent - g.agent * overflow) / SYSTEM_GAS_VOLUME_L) * dtMin, 0, 0.2);
+    const tot0 = total(g);
+    const fr = (x: number) => (tot0 > 0 ? x / tot0 : 0);
+    // Agent and N2O uptake by the patient: same falling-rate shape (Simulator model, claim m1-circuit-budget).
+    const kUp = disconnected ? 0 : 0.35 + 1.2 * Math.exp(-this.time / 240);
+    const upO2 = Math.min(vo2 * dtMin, g.o2);
+    const upAgent = Math.min(kUp * fr(g.agent) * dtMin, g.agent);
+    const upN2O = Math.min(kUp * fr(g.n2o) * dtMin, g.n2o);
+    // Tidal exchange already moved `movedToLungL` out (and back) inside the loop; on a closed circuit the
+    // net over a breath is zero. Remove the leak at the mixed composition.
+    const mixOut = (vol: number) => {
+      const t = total(g);
+      if (vol <= 0 || t <= 0) return;
+      const k = Math.min(1, vol / t);
+      g.o2 -= g.o2 * k; g.n2o -= g.n2o * k; g.n2 -= g.n2 * k; g.ar -= g.ar * k; g.agent -= g.agent * k;
+    };
+    // Fresh gas in, uptake out.
+    g.o2 += inO2 * dtMin - upO2;
+    g.n2o += inN2O * dtMin - upN2O;
+    g.n2 += inN2 * dtMin;
+    g.ar += inAr * dtMin;
+    g.agent += agentIn * dtMin - upAgent;
+    // Leak and (when disconnected) the gas pushed out of the open Y-piece.
+    mixOut(leakL + (disconnected ? movedToLungL : 0));
+    // The lungs hold `lungGasL` of circuit gas at this instant (tidal part, closed circuit).
+    const lungTidalL = disconnected ? 0 : Math.max(0, (this.v1 + this.v2) / 1000 - (spont ? 0 : peepEff * C) / 1000);
+    // Entrained room air fills a deficit (piston relief valve, descending bellows, draw-over).
+    let entrainedL = 0;
+    const floor = FIXED_CIRCUIT_L + lungTidalL;
+    if (entrains && total(g) < floor) {
+      entrainedL = floor - total(g);
+      g.o2 += entrainedL * AIR.o2; g.n2 += entrainedL * AIR.n2; g.ar += entrainedL * AIR.ar;
+    }
+    // Spill / APL: excess above a full reservoir leaves at the mixed composition.
+    let spillL = 0;
+    const ceiling = FIXED_CIRCUIT_L + resMax + lungTidalL;
+    if (spont && !disconnected) {
+      // Manual bag: the APL valve opens when bag pressure exceeds its setting.
+      const bagVol = total(g) - (FIXED_CIRCUIT_L + lungTidalL);
+      if (bagPressureCmH2O(bagVol) > p.aplCmH2O) {
+        let lo = 0, hi = Math.max(0, bagVol);
+        for (let i = 0; i < 30; i++) { const m = (lo + hi) / 2; if (bagPressureCmH2O(m) > p.aplCmH2O) hi = m; else lo = m; }
+        spillL = Math.max(0, bagVol - lo);
+      }
+    } else if (total(g) > ceiling) {
+      spillL = total(g) - ceiling;
+    }
+    mixOut(spillL);
+    g.o2 = Math.max(0, g.o2); g.n2o = Math.max(0, g.n2o); g.agent = Math.max(0, g.agent);
+    const totNow = total(g);
+    const reservoirL = Math.max(0, totNow - (FIXED_CIRCUIT_L + lungTidalL));
+    const reservoirEmpty = !entrains && reservoirL < 0.02;
+    const frac = {
+      o2: totNow > 0 ? g.o2 / totNow : 0,
+      n2o: totNow > 0 ? g.n2o / totNow : 0,
+      n2: totNow > 0 ? g.n2 / totNow : 0,
+      ar: totNow > 0 ? g.ar / totNow : 0,
+      agent: totNow > 0 ? g.agent / totNow : 0,
+    };
 
     // ---- Soda lime ---------------------------------------------------------
     this.sodaLime = f.exhaustedSodaLime
@@ -328,12 +500,20 @@ export class CircuitLungKernel {
 
     // ---- Inspired CO2 ------------------------------------------------------
     const ve = Math.max(0.5, (this.lastDeliveredVt * clamp(p.rrBpm, 4, 60)) / 1000);
+    const vaNow = (Math.max(0, this.lastDeliveredVt - ANATOMIC_DEAD_SPACE_ML) * clamp(p.rrBpm, 4, 60)) / 1000;
+    // Mixed expired PCO2 = PaCO2 · VA/VE (Bohr; anatomical dead space only).
+    const peco2 = this.paco2 * clamp(vaNow / ve, 0, 1);
     const washout = clamp(1 - totalIn / ve, 0, 1); // FGF >= VE washes rebreathed CO2 out
     let fico2 = 0;
     if (!disconnected) {
-      fico2 += this.sodaLime * 0.5 * this.paco2 * washout;
-      if (f.stuckInspiratoryValve) fico2 += 0.3 * this.paco2 * (0.4 + 0.6 * washout);
-      if (f.stuckExpiratoryValve) fico2 += 0.35 * this.paco2; // FGF does not fix this one
+      // Exhausted absorber: gas recirculates with its CO2 (efficiency 1 − exhaustion).
+      fico2 += this.sodaLime * peco2 * washout;
+      // Valve backflow volumes from the last breath (diode model), capped by the limb volume.
+      const vtRef = Math.max(50, this.lastDeliveredVt || p.vtMl);
+      const expBack = Math.min(LIMB_VOLUME_L * 1000, this.lastExpBackflowMl);
+      const inspBack = Math.max(0, Math.min(LIMB_VOLUME_L * 1000, this.lastInspBackflowMl) - (totalIn / 60) * Te * 1000);
+      fico2 += (expBack / vtRef) * peco2;
+      fico2 += (inspBack / vtRef) * peco2;
       fico2 = Math.min(fico2, this.paco2 * 0.9);
     }
 
@@ -373,14 +553,14 @@ export class CircuitLungKernel {
     let bellowsPos = 1 - 0.65 * clamp(machineFrac, 0, 1);
     if (spont || ventDriveLost) bellowsPos = 1;
     if (drive === 'ascending_bellows' && !spont) {
-      // Ascending bellows fail to re-fill on disconnect / large leak (the visible safety feature)
-      const targetTop = disconnected ? 0.12 : f.bellowsLeak ? 0.7 : 1;
-      this.bellowsTop += (targetTop - this.bellowsTop) * (1 - Math.exp(-dt / 1.5));
+      // Ascending bellows show the gas actually left in the reservoir: they fail to re-fill on a
+      // disconnection or a large leak (the visible safety feature).
+      this.bellowsTop += (clamp(reservoirL / resMax, 0, 1) - this.bellowsTop) * (1 - Math.exp(-dt / 0.3));
       bellowsPos = Math.min(bellowsPos, this.bellowsTop);
     } else {
       this.bellowsTop = 1;
     }
-    // Descending bellows re-fill by gravity even when disconnected: the silent trap.
+    // Descending bellows re-fill by gravity even when disconnected (room air): the silent trap.
 
     const inspTarget = f.stuckInspiratoryValve ? 1 : spont ? (qTotal > 0.01 ? 1 : 0) : isInsp && !disconnected ? 1 : 0;
     const expTarget = f.stuckExpiratoryValve ? 1 : spont ? (qTotal < -0.01 ? 1 : 0) : !isInsp && !disconnected ? 1 : 0;
@@ -388,7 +568,8 @@ export class CircuitLungKernel {
     this.expValve += (expTarget - this.expValve) * (1 - Math.exp(-dt / 0.06));
 
     const tidalAbovePeep = Math.max(0, lungVol - peepEff * C);
-    const bagFill = spont ? clamp(1 - tidalAbovePeep / 600, 0.15, 1) : totalIn < vo2 ? 0.3 : 0.6;
+    void tidalAbovePeep;
+    const bagFill = clamp(reservoirL / resMax, 0, 1);
 
     // ---- Alarms ------------------------------------------------------------
     const alarms: string[] = [];
@@ -400,7 +581,9 @@ export class CircuitLungKernel {
       if (this.lastEtco2 < 20 && this.lastDeliveredVt >= 100) alarms.push('LOW_EtCO2');
     }
     if (fico2 > HIGH_FICO2_ALARM_MMHG) alarms.push('HIGH_FiCO2');
-    if (g.o2 * 100 < LOW_FIO2_ALARM_PCT) alarms.push('LOW_FiO2');
+    if (frac.o2 * 100 < LOW_FIO2_ALARM_PCT) alarms.push('LOW_FiO2');
+    if (reservoirEmpty) alarms.push('RESERVOIR_EMPTY');
+    if (entrainedL > 0 && !disconnected) alarms.push('AIR_ENTRAINED');
     if (o2Failed) alarms.push('O2_SUPPLY_FAILURE');
     if (ventDriveLost) alarms.push('VENT_DRIVE_GAS_LOSS');
     if (f.scavengingObstruction && !disconnected && this.lastEndExpPaw > p.peepSetCmH2O + 4) {
@@ -422,9 +605,10 @@ export class CircuitLungKernel {
       etco2MmHg: Math.max(0, this.lastEtco2),
       fico2MmHg: fico2,
       paco2MmHg: this.paco2,
-      circuitFiO2Pct: g.o2 * 100,
-      circuitAgentPct: g.agent * 100,
-      circuitArgonPct: g.argon * 100,
+      // Inspired fractions of the CO2-free circuit gas, scaled so that with FiCO2 they add up to 100 %.
+      circuitFiO2Pct: frac.o2 * (1 - fico2 / 760) * 100,
+      circuitAgentPct: frac.agent * (1 - fico2 / 760) * 100,
+      circuitArgonPct: frac.ar * (1 - fico2 / 760) * 100,
       bellowsOrPistonPos: bellowsPos,
       fgdValveClosed: fgdClosed,
       vriGasFrontNorm: drive === 'volume_reflector' ? 0.25 + 0.6 * (1 - bellowsPos) / 0.65 : 0.5,
@@ -432,6 +616,20 @@ export class CircuitLungKernel {
       expValveOpenNorm: this.expValve,
       sodaLimeExhaustionNorm: this.sodaLime,
       bagFillNorm: bagFill,
+      circuitN2OPct: frac.n2o * (1 - fico2 / 760) * 100,
+      circuitN2Pct: frac.n2 * (1 - fico2 / 760) * 100,
+      reservoirL,
+      reservoirEmpty,
+      airEntrainedLpm: entrainedL / dtMin,
+      edges: {
+        freshGasLpm: totalIn,
+        agentLpm: agentIn,
+        leakLpm: leakL / dtMin,
+        spillLpm: spillL / dtMin,
+        uptakeLpm: (upO2 + upAgent + upN2O) / dtMin,
+      },
+      expValveBackflowMl: Math.round(this.lastExpBackflowMl),
+      inspValveBackflowMl: Math.round(this.lastInspBackflowMl),
       alarms,
     };
   }
