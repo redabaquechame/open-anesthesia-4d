@@ -397,6 +397,10 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
     claim: 'HM : augmentation inexpliquée de l’EtCO2 avec tachycardie et augmentation de la consommation d’O2 (l’élévation de la température est tardive) ; les agents déclenchants sont tous les halogénés et la succinylcholine. Appeler à l’aide, noter l’heure, apporter le dantrolène, viser à terminer la chirurgie ; vaporisateurs fermés et retirés, O2 100 % au débit maximal, ventilation minute × 2–3, filtres à charbon activé (changer la chaux sodée/le circuit n’est pas une priorité) ; passer à une TIVA + curare non dépolarisant ; refroidissement actif (solutés IV froids, glace aux aisselles et aux plis inguinaux) ; monitorage invasif, diurèse > 2 mL/kg/h et pH urinaire > 7 ; gaz du sang artériel, K+, CK (pic à 12–24 h) ; soins critiques et adressage à un centre de référence.',
     note: 'Hopkins PM et al. Anaesthesia 2021;76:655-64 (la recommandation complète de l’Association) n’a pas pu être ouverte (contrôle anti-robot) ; seul son résumé a été lu.',
   },
+  'm9-mh-causality': {
+    claim: 'Modèle du simulateur : tant que l’halogéné déclenchant est administré, le dantrolène ne fait que ralentir la crise et le patient continue de s’aggraver ; la résolution exige l’arrêt du déclencheur et le dantrolène. Baisser l’halogéné n’est pas supprimer le déclencheur.',
+    note: 'Supprimer le déclencheur est la première étape du traitement (QRH 3-8). Recrudescence après traitement : 20 % (63/308, en moyenne à 13 h) dans Burkman 2007 (PMID 17457120, résumé seul) ; aucune source ne quantifie l’évolution avec un déclencheur maintenu : la forme est un choix pédagogique.',
+  },
   'm9-mh-dantrolene': {
     claim: 'Dantrolène 2–3 mg/kg IV (adulte ~200 mg), puis 1 mg/kg toutes les 5 min jusqu’à EtCO2 < 6 kPa et T < 38,5 °C ; la dose de 10 mg/kg peut être dépassée. Bicarbonate 50 mmol si pH < 7,2 malgré l’hyperventilation ; hyperkaliémie : 50 mL de glucosé à 50 % + 10 UI d’insuline, calcium 0,1 mmol/kg uniquement in extremis ; arythmie : amiodarone ou bêtabloquant, éviter les inhibiteurs calciques.',
     note: 'L’EMHG v2024 diffère : 2–2,5 mg/kg (poids réel, ≤ 300 mg par dose) répétés en dose complète toutes les 10 min jusqu’à PaCO2 < 6 kPa et baisse de la température centrale (contenu obtenu sous forme résumée — à vérifier avant de citer). L’application affiche le schéma du QRH et indique la différence avec l’EMHG.',
@@ -415,6 +419,14 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
   'm9-arrest-als': {
     claim: 'Rythme choquable : appeler l’équipe ; chocs uniques avec cycles de RCP de 2 min (premier choc biphasique ≥ 150 J, augmenter en cas d’échec) ; adrénaline 1 mg IV après le 3e choc, puis toutes les 3–5 min (patient monitoré avec un cathéter artériel : paliers de 50–100 µg) ; amiodarone 300 mg après 3 chocs, 150 mg après 5 (ou lidocaïne 100 mg, + 50 mg) ; 10 insufflations/min avec une sonde d’intubation ou un DSG et capnographie (courbe) ; pas de calcium, de bicarbonate ni de corticoïdes en routine.',
     note: 'Adaptation britannique ; le chapitre ALS de l’ERC 2025 lui-même était bloqué par un contrôle anti-robot. À vérifier par rapport au texte de l’ERC avant tout enseignement hors Royaume-Uni.',
+  },
+  'm9-arrest-timing': {
+    claim: 'Rythme choquable : après chaque choc unique, reprendre immédiatement le massage pendant 2 minutes avant l’analyse suivante ; adrénaline et amiodarone se comptent en nombre de chocs (après le 3e). Jusqu’à trois chocs rapprochés sont réservés à un arrêt devant témoin, monitoré, avec défibrillateur immédiatement disponible ; ils comptent alors comme le premier choc pour les médicaments.',
+    note: 'Dans le scénario, les électrodes sont posées après l’arrêt (défibrillateur dans le couloir) : c’est donc la séquence standard à choc unique qui s’applique. L’intervalle minimal de 110 s entre deux chocs comptés est une règle du simulateur (2 min moins 10 s de tolérance).',
+  },
+  'm9-arrest-scenario': {
+    claim: 'Script du scénario : la FV se réduit à l’analyse qui suit le troisième choc correctement espacé, à condition que le massage soit en cours. C’est un script pédagogique, pas une prédiction : aucun modèle validé ne prédit le retour d’une circulation spontanée ; le débriefing note le respect de la séquence et des délais.',
+    note: 'McEvoy MD et al., Resuscitation 2014 (PMC3886248) : le respect des étapes ACLS et le nombre d’erreurs sont associés au retour de circulation, ce qui justifie de noter l’adhérence plutôt que de modéliser la RACS.',
   },
   'm9-arrest-cpr': {
     claim: 'Compressions 100–120/min, 5–6 cm, relâchement complet, 30:2 sans voie aérienne avancée ; pauses minimales (< 5 s pour le choc et l’intubation). Causes réversibles : hypoxie, hypovolémie, troubles électrolytiques, hypothermie ; tamponnade, pneumothorax sous tension, thrombose, toxiques.',

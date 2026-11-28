@@ -27,6 +27,24 @@ function simulate(id: string, actions: string[], weightKg = 70) {
   return run.vitals;
 }
 
+/** Do actions at given scenario times (s), then run to the end. */
+function simulateTimeline(id: string, timeline: { id: string; atSec: number }[], weightKg = 70) {
+  const p = CRISES.find((c) => c.id === id)!;
+  let run = startRun(p);
+  const todo = [...timeline].sort((a, b) => a.atSec - b.atSec);
+  while (!run.ended) {
+    while (todo.length && todo[0].atSec <= run.tSec + 1e-9) run = doAction(p, run, todo.shift()!.id);
+    run = stepRun(p, run, 0.5, weightKg);
+  }
+  return run;
+}
+
+/** The guideline-correct run: the protocol's timeline when it has timing rules, else the sequence 10 s apart. */
+function simulateGuideline(id: string, weightKg = 70) {
+  const p = CRISES.find((c) => c.id === id)!;
+  return p.modelTimeline ? simulateTimeline(id, p.modelTimeline, weightKg).vitals : simulate(id, modelSequence(p), weightKg);
+}
+
 /** Crude severity: lower is better. */
 const badness = (v: { sbp: number; spo2: number; rhythm: string; tempC: number }) =>
   (v.rhythm === 'VF' || v.rhythm === 'PEA' || v.rhythm === 'asystole' ? 100 : 0) + Math.max(0, 90 - v.sbp) + Math.max(0, 94 - v.spo2) + Math.max(0, v.tempC - 38) * 10;
@@ -42,7 +60,7 @@ export function runCrisisPreopChecks(check: Check) {
     check(`M9 ${p.id}: every step backed by a claim`, missing.length === 0, missing.length ? `missing ${[...new Set(missing)].join(', ')}` : `${p.actions.length} steps`);
     check(`M9 ${p.id}: evidence entry exists`, evidenceIds.has(p.evidenceId), p.evidenceId);
     const untreated = simulate(p.id, []);
-    const treated = simulate(p.id, modelSequence(p));
+    const treated = simulateGuideline(p.id);
     check(
       `M9 ${p.id}: guideline sequence beats no treatment`,
       badness(treated) < badness(untreated),
@@ -62,11 +80,29 @@ export function runCrisisPreopChecks(check: Check) {
   if (mh) {
     const d = computeDose(mh.actions.find((a) => a.id === 'dantrolene')!.dose, 70)!;
     check('M9 MH dantrolene 70 kg = 140–210 mg', d.amount === 140 && d.amountHigh === 210, `${d.amount}–${d.amountHigh} mg`);
+    const both = simulateTimeline('mh', [{ id: 'help', atSec: 0 }, { id: 'trigger', atSec: 10 }, { id: 'dantrolene', atSec: 20 }]).vitals;
+    const dantOnly = simulateTimeline('mh', [{ id: 'help', atSec: 0 }, { id: 'dantrolene', atSec: 20 }]).vitals;
+    const lowered = simulateTimeline('mh', [{ id: 'help', atSec: 0 }, { id: 'lowerSevo', atSec: 10 }, { id: 'dantrolene', atSec: 20 }]).vitals;
+    check('M9 MH: trigger off + dantrolene resolves; dantrolene with trigger on does not', both.etco2 < 50 && both.hr < 100 && dantOnly.etco2 > 60 && dantOnly.hr > 120, `both HR ${Math.round(both.hr)} EtCO2 ${Math.round(both.etco2)} / dantrolene only HR ${Math.round(dantOnly.hr)} EtCO2 ${Math.round(dantOnly.etco2)}`);
+    check('M9 MH: turning the volatile down is not removing the trigger', lowered.etco2 > 60, `EtCO2 ${Math.round(lowered.etco2)}`);
   }
   if (CRISES.some((c) => c.id === 'arrest')) {
-    const oneShock = simulate('arrest', ['help', 'cpr', 'pads', 'shock']);
-    const threeShocks = simulate('arrest', ['help', 'cpr', 'pads', 'shock', 'shock', 'shock']);
-    check('M9 arrest: one shock leaves refractory VF, three shocks + CPR → ROSC', oneShock.rhythm === 'VF' && threeShocks.rhythm === 'ROSC', `${oneShock.rhythm} / ${threeShocks.rhythm}`);
+    const at = (ids: [string, number][]) => ids.map(([id, atSec]) => ({ id, atSec }));
+    const oneShock = simulateTimeline('arrest', at([['help', 0], ['cpr', 5], ['pads', 30], ['shock', 40]])).vitals;
+    const timed = simulateTimeline('arrest', at([['help', 0], ['cpr', 5], ['pads', 30], ['shock', 40], ['shock', 160], ['shock', 280]]));
+    // Three shocks 10 s apart (stacked, pads put on after the arrest): only the first counts → still VF.
+    const rapid = simulateTimeline('arrest', at([['help', 0], ['cpr', 5], ['pads', 30], ['shock', 40], ['shock', 50], ['shock', 60]]));
+    // Correct shocks but no CPR: no ROSC in this scenario.
+    const noCpr = simulateTimeline('arrest', at([['help', 0], ['pads', 30], ['shock', 40], ['shock', 160], ['shock', 280]])).vitals;
+    const rosc = timed.log.length > 0 && timed.vitals.rhythm === 'ROSC';
+    check('M9 arrest: one shock leaves refractory VF, three shocks 2 min apart + CPR → ROSC', oneShock.rhythm === 'VF' && rosc, `${oneShock.rhythm} / ${timed.vitals.rhythm}`);
+    check('M9 arrest: three rapid shocks do not count as three cycles (still VF)', rapid.vitals.rhythm === 'VF', rapid.vitals.rhythm);
+    check('M9 arrest: correct shocks without CPR → no ROSC', noCpr.rhythm === 'VF', noCpr.rhythm);
+    const arrestP = CRISES.find((c) => c.id === 'arrest')!;
+    const rapidIssues = arrestP.timingIssues?.(rapid.log, rapid.tSec) ?? [];
+    check('M9 arrest: premature shocks are reported in the debrief', rapidIssues.filter((i) => i.id === 'shock').length === 2, `${rapidIssues.length} issue(s)`);
+    const timedIssues = arrestP.timingIssues?.(timed.log, timed.tSec) ?? [];
+    check('M9 arrest: the guideline timeline has no timing issue', timedIssues.length === 0, timedIssues.map((i) => i.text.en).join(' | ') || 'none');
   }
   // ── M9 eclampsia (WHO MCPC 2017): BP treated below 160/110 but not below normal; no maintenance → relapse
   if (CRISES.some((c) => c.id === 'eclampsia')) {
