@@ -21,7 +21,7 @@ Generated 2026-11-28. One checklist per module; each takes about an hour.
 | [M6 — Ultrasound-guided block, LAST & cardiac loops](M6.md) | 13 | 7 | 0 | 6 |
 | [M7 — Thoracic & lumbar epidural](M7.md) | 8 | 5 | 0 | 3 |
 | [M8 — Bronchoscopy & double-lumen tube](M8.md) | 16 | 9 | 0 | 7 |
-| [M9 — Crisis management](M9.md) | 27 | 22 | 0 | 5 |
+| [M9 — Crisis management](M9.md) | 30 | 23 | 0 | 7 |
 | [M10 — Pre-operative assessment](M10.md) | 11 | 10 | 0 | 1 |
 | [M11 — Official curriculum & library](M11.md) | 68 | 68 | 0 | 0 |
 

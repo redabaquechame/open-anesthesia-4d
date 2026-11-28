@@ -229,25 +229,31 @@ const CASES_LIST: Case[] = [
 
   // ── M9 crises ────────────────────────────────────────────────────────────
   {
-    id: 'no-click-rosc', finding: 'F02', status: 'open', plannedIn: 'PR 2 (crisis state machines)',
+    id: 'no-click-rosc', finding: 'F02', status: 'fixed',
     run: () => {
+      // Five clicks in 0 s, then the whole scenario: three stacked shocks are one cycle, so never ROSC.
       let r = startRun(ARREST);
       for (const id of ['pads', 'cpr', 'shock', 'shock', 'shock']) r = doAction(ARREST, r, id);
-      r = stepRun(ARREST, r, 0.5, 80);
-      return { ok: r.vitals.rhythm !== 'ROSC', detail: `rhythm at t=${r.tSec}s: ${r.vitals.rhythm}` };
+      let rosc = false;
+      while (!r.ended) { r = stepRun(ARREST, r, 0.5, 80); if (r.vitals.rhythm === 'ROSC') rosc = true; }
+      return { ok: !rosc, detail: rosc ? `ROSC after instant clicks (t=${r.tSec}s)` : `rapid clicks: still ${r.vitals.rhythm} at ${r.tSec}s` };
     },
   },
   {
-    id: 'reversed-order-penalised', finding: 'F03', status: 'open', plannedIn: 'PR 2',
+    id: 'reversed-order-penalised', finding: 'F03', status: 'fixed',
     run: () => {
-      let r = startRun(ARREST);
-      for (const a of [...ARREST.actions.filter((x) => x.critical)].reverse()) r = doAction(ARREST, r, a.id);
-      const d = buildDebrief(ARREST, r);
-      return { ok: d.orderScore < 1, detail: `order score for reversed actions = ${d.orderScore}` };
+      // Reversed order at the same timestamp must score 0; guideline order must score 1.
+      let rev = startRun(ARREST);
+      for (const a of [...ARREST.actions.filter((x) => x.critical)].reverse()) rev = doAction(ARREST, rev, a.id);
+      let fwd = startRun(ARREST);
+      for (const a of ARREST.actions.filter((x) => x.critical)) fwd = doAction(ARREST, fwd, a.id);
+      const dr = buildDebrief(ARREST, rev).orderScore;
+      const df = buildDebrief(ARREST, fwd).orderScore;
+      return { ok: dr === 0 && df === 1, detail: `reversed = ${dr}, guideline order = ${df}` };
     },
   },
   {
-    id: 'mh-trigger-matters', finding: 'F04', status: 'open', plannedIn: 'PR 2',
+    id: 'mh-trigger-matters', finding: 'F04', status: 'fixed',
     run: () => {
       let r = startRun(MH);
       r = doAction(MH, r, 'dantrolene');
@@ -258,13 +264,19 @@ const CASES_LIST: Case[] = [
     },
   },
   {
-    id: 'distractors-cause-harm', finding: 'M9 probe', status: 'open', plannedIn: 'PR 2',
+    id: 'distractors-have-consequences', finding: 'M9 probe', status: 'fixed',
     run: () => {
-      let clean = startRun(ARREST), harmful = startRun(ARREST);
-      for (const d of ARREST.distractors) harmful = doAction(ARREST, harmful, d.id);
-      for (let i = 0; i < 120; i++) { clean = stepRun(ARREST, clean, 0.5, 80); harmful = stepRun(ARREST, harmful, 0.5, 80); }
-      const same = JSON.stringify(clean.vitals) === JSON.stringify(harmful.vitals);
-      return { ok: !same, detail: same ? 'distractors change nothing in the vitals' : 'distractors have consequences' };
+      // MH: turning sevoflurane down instead of removing it leaves the crisis running even with dantrolene.
+      let good = startRun(MH), bad = startRun(MH);
+      good = doAction(MH, good, 'trigger'); good = doAction(MH, good, 'dantrolene');
+      bad = doAction(MH, bad, 'lowerSevo'); bad = doAction(MH, bad, 'dantrolene');
+      for (let i = 0; i < 360; i++) { good = stepRun(MH, good, 0.5, 70); bad = stepRun(MH, bad, 0.5, 70); }
+      const g = good.vitals.etco2, b = bad.vitals.etco2;
+      // Arrest: adrenaline before the first shock is flagged in the debrief.
+      let ar = startRun(ARREST);
+      ar = doAction(ARREST, ar, 'adrenalineFirst');
+      const flagged = buildDebrief(ARREST, ar).timingIssues.some((t) => t.id === 'adrenalineFirst');
+      return { ok: b > g + 15 && flagged, detail: `MH EtCO2 trigger removed ${g.toFixed(0)} vs lowered ${b.toFixed(0)}; arrest adrenaline-first flagged: ${flagged}` };
     },
   },
 

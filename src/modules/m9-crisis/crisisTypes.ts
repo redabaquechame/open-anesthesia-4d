@@ -67,6 +67,29 @@ export interface LocalNote {
   resourceId: string;
 }
 
+/** One entry of the action log. `seq` is strictly increasing, so order never depends on clock ties (audit F03). */
+export interface LogEntry {
+  seq: number;
+  tSec: number;
+  id: string;
+  kind: 'action' | 'distractor';
+}
+
+/** A timing or sequencing error found in the log (shown in the debrief). */
+export interface TimingIssue {
+  id: string;
+  tSec: number;
+  text: Txt;
+  claimId?: string;
+}
+
+/** A clock the learner must respect, shown live (e.g. the 2-minute CPR cycle). */
+export interface CycleInfo {
+  label: Txt;
+  /** Seconds until the next event (e.g. rhythm check); null when not running. */
+  remainingSec: number | null;
+}
+
 export interface CrisisProtocol {
   id: string;
   title: Txt;
@@ -84,12 +107,21 @@ export interface CrisisProtocol {
    * `done` maps action id → time (s) it was first done; `counts` maps action id → times done
    * (for repeatable steps such as shocks).
    */
-  target: (tSec: number, done: Map<string, number>, weightKg: number, counts: Map<string, number>) => Partial<Vitals>;
+  target: (tSec: number, done: Map<string, number>, weightKg: number, counts: Map<string, number>, log: LogEntry[]) => Partial<Vitals>;
   /**
    * The guideline sequence in order, with repeats (e.g. three shocks). Used by the sanity checks
    * and shown as the model answer in the debrief. Defaults to the critical actions, once each.
    */
   modelSequence?: string[];
+  /**
+   * Guideline-correct timeline used by the sanity checks (action id → time in s). Needed when the
+   * protocol has timing rules, e.g. shocks two minutes apart. Defaults to modelSequence, 10 s apart.
+   */
+  modelTimeline?: { id: string; atSec: number }[];
+  /** Timing rules checked in the debrief (premature shocks, drugs before the right shock, …). */
+  timingIssues?: (log: LogEntry[], tNow: number) => TimingIssue[];
+  /** A live clock shown during the scenario (e.g. CPR cycle). */
+  cycle?: (log: LogEntry[], tNow: number) => CycleInfo | null;
   /** Seconds after which an unresolved scenario ends. */
   durationSec: number;
   /** Claim ids that back the scenario as a whole (source, dynamics). */

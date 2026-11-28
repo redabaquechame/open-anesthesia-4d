@@ -102,16 +102,43 @@ export const MH: CrisisProtocol = {
     { id: 'ccb', label: { fr: 'Inhibiteur calcique pour l’arythmie', en: 'Calcium-channel blocker for the arrhythmia' }, why: { fr: 'À éviter (QRH) : amiodarone ou bêtabloquant.', en: 'Avoid (QRH): use amiodarone or a beta-blocker.' }, claimId: 'm9-mh-dantrolene' },
   ],
   initial: { hr: 118, sbp: 138, dbp: 80, spo2: 96, etco2: 58, tempC: 37.9, rhythm: 'sinusTachy' },
+  // Simulator model (claim m9-mh-causality): dantrolene only resolves the crisis once the trigger is removed.
+  // With the volatile still running, dantrolene slows the course but the patient keeps deteriorating.
   target: (t, done) => {
     const dant = after(done, 'dantrolene', t, 60);
     const off = done.has('trigger');
     const cool = done.has('cool');
-    if (dant) return { hr: 92, sbp: 124, dbp: 72, spo2: 98, etco2: 40, tempC: cool ? 37.3 : 38.1, rhythm: 'sinus' };
+    if (dant && off) return { hr: 92, sbp: 124, dbp: 72, spo2: 98, etco2: 40, tempC: cool ? 37.3 : 38.1, rhythm: 'sinus' };
+    if (dant && !off) {
+      // Partial, transient response, then worsening while exposure continues.
+      const since = t - (done.get('dantrolene') as number);
+      const worse = since > 240;
+      return { hr: worse ? 146 : 128, sbp: worse ? 104 : 116, dbp: worse ? 58 : 64, spo2: worse ? 91 : 94, etco2: worse ? 78 : 66, tempC: cool ? 39.2 : 40.2, rhythm: 'sinusTachy' };
+    }
     if (t > 540) return { hr: 0, sbp: 0, dbp: 0, spo2: 70, etco2: 20, tempC: 41, rhythm: 'VF' };
     return { hr: off ? 132 : 150, sbp: 118, dbp: 64, spo2: off ? 96 : 91, etco2: off ? 62 : 85, tempC: cool ? 38.8 : 40.8, rhythm: 'sinusTachy' };
   },
+  timingIssues: (log) => {
+    const trig = log.find((l) => l.id === 'trigger');
+    const dan = log.find((l) => l.id === 'dantrolene');
+    const issues = [];
+    if (dan && (!trig || trig.seq > dan.seq))
+      issues.push({
+        id: 'dantrolene',
+        tSec: dan.tSec,
+        claimId: 'm9-mh-steps',
+        text: {
+          fr: 'Dantrolène donné alors que l’halogéné était encore administré : couper et retirer l’évaporateur d’abord (ou en même temps), sinon la crise continue.',
+          en: 'Dantrolene given while the volatile was still running: turn off and remove the vaporiser first (or at the same time), otherwise the crisis continues.',
+        },
+      });
+    const low = log.find((l) => l.id === 'lowerSevo');
+    if (low)
+      issues.push({ id: 'lowerSevo', tSec: low.tSec, claimId: 'm9-mh-steps', text: { fr: 'Baisser l’halogéné ne supprime pas le déclencheur.', en: 'Turning the volatile down does not remove the trigger.' } });
+    return issues;
+  },
   durationSec: 600,
-  claimIds: ['m9-mh-steps', 'm9-mh-dantrolene', 'm9-dynamics'],
+  claimIds: ['m9-mh-steps', 'm9-mh-dantrolene', 'm9-mh-causality', 'm9-dynamics'],
   evidenceId: 'aoa-qrh-mh-2021',
   localNotes: [
     { region: 'ma', resourceId: 'ma-smar-referentiels-2016', text: { fr: 'Maroc : le dantrolène figurait parmi les médicaments indisponibles dans les référentiels SMAR 2016. Vérifiez où se trouve le kit dans votre établissement.', en: 'Morocco: dantrolene was listed as unavailable in the SMAR 2016 standards. Check where the kit is in your hospital.' } },

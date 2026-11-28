@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, CheckCircle2, Clock, EyeOff, Minus, Pause, Play, Plus, RotateCcw, XCircle } from 'lucide-react';
 import type { LocaleCode } from '../../standards/clinicalStandards';
 import { CLAIMS } from '../../standards/claimRegistry';
+import { CLAIM_FR } from '../../standards/claimFr';
 import { EVIDENCE_REGISTRY } from '../../evidence/evidenceRegistry';
 import type { CrisisProtocol, Txt, Vitals } from './crisisTypes';
 import { buildDebrief, doAction, formatDose, modelSequence, startRun, stepRun, type CrisisRun } from './crisisEngine';
@@ -112,6 +113,8 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
   };
 
   const debrief = useMemo(() => buildDebrief(protocol, run), [protocol, run]);
+  const cycle = protocol.cycle?.(run.log, run.tSec) ?? null;
+  const cycleDue = cycle?.remainingSec != null && cycle.remainingSec <= 10;
   const v = run.vitals;
   const noOutput = v.rhythm === 'VF' || v.rhythm === 'PEA' || v.rhythm === 'asystole';
   const alarm = {
@@ -184,6 +187,16 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
             <span className="flex items-center gap-1 font-mono text-slate-300 me-2">
               <Clock className="w-3.5 h-3.5" /> {fmtTime(run.tSec)}
             </span>
+            {cycle && cycle.remainingSec !== null && (
+              <span
+                role="timer"
+                aria-live="off"
+                className={`flex items-center gap-1 h-7 px-2 rounded border font-mono text-[11px] me-1 ${cycleDue ? 'border-amber-400 bg-amber-950/60 text-amber-200' : 'border-oa-hairline bg-oa-raised text-slate-200'}`}
+                title={L('Règle des recommandations : un choc, puis 2 min de massage avant l’analyse suivante.', 'Guideline rule: one shock, then 2 min of CPR before the next rhythm check.')}
+              >
+                <span className="font-sans text-slate-400">{T(cycle.label)}</span> {fmtTime(Math.ceil(cycle.remainingSec))}
+              </span>
+            )}
             <button
               onClick={() => setRunning(!running)}
               disabled={run.ended || blindLocked}
@@ -332,6 +345,45 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
               {L('Gestes clés faits', 'Key steps done')}: {debrief.criticalDone.length}/{debrief.criticalDone.length + debrief.criticalMissed.length} · {L('ordre', 'order')}{' '}
               {Math.round(debrief.orderScore * 100)} %
             </div>
+            <p className="text-[10px] text-slate-500 -mt-1">
+              {L(
+                'Ordre = part des paires de gestes clés faites dans l’ordre de la recommandation (100 % = même ordre, 0 % = ordre inversé).',
+                'Order = share of pairs of key steps done in the guideline’s order (100 % = same order, 0 % = reversed).',
+              )}
+            </p>
+            {debrief.orderViolations.length > 0 && (
+              <div>
+                <div className="font-bold text-amber-300">{L('Ordre à revoir', 'Order to review')}</div>
+                <ul className="space-y-0.5 text-slate-300">
+                  {debrief.orderViolations.slice(0, 6).map(([first, then]) => (
+                    <li key={first + then}>
+                      {L('La recommandation place', 'The guideline puts')} <span className="text-slate-100">{actionLabel(first)}</span> {L('avant', 'before')} <span className="text-slate-100">{actionLabel(then)}</span>
+                    </li>
+                  ))}
+                  {debrief.orderViolations.length > 6 && <li className="text-slate-500">+{debrief.orderViolations.length - 6}</li>}
+                </ul>
+              </div>
+            )}
+            {debrief.timingIssues.length > 0 && (
+              <div>
+                <div className="font-bold text-amber-300">{L('Délais et séquence', 'Timing and sequence')}</div>
+                <ul className="space-y-1">
+                  {debrief.timingIssues.map((ti, i) => {
+                    const src = ti.claimId ? claimSource(ti.claimId) : undefined;
+                    return (
+                      <li key={ti.id + i} className="flex gap-1.5">
+                        <XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5 text-amber-400" />
+                        <span>
+                          <span className="font-mono text-slate-400">{fmtTime(ti.tSec)} · </span>
+                          <span className="text-slate-100">{T(ti.text)}</span>
+                          {src && <span className="block text-[10px] text-slate-500">{src.status === 'sourced' ? '✓ ' : '⚠ '}{src.source ?? src.note}</span>}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
             <ul className="space-y-1">
               {protocol.actions
                 .filter((a) => a.critical)
@@ -352,6 +404,15 @@ export function CrisisModule({ locale }: { locale: LocaleCode }) {
                   );
                 })}
             </ul>
+            {protocol.claimIds
+              .map((id) => CLAIMS.find((c) => c.id === id))
+              .filter((c) => c && c.status === 'illustrative' && c.id !== 'm9-dynamics')
+              .map((c) => (
+                <p key={c!.id} className="text-[11px] text-amber-200/90 border border-amber-500/30 rounded px-2 py-1">
+                  <span className="font-semibold">{L('Modèle du simulateur : ', 'Simulator model: ')}</span>
+                  {fr ? (CLAIM_FR[c!.id]?.claim ?? c!.claim) : c!.claim}
+                </p>
+              ))}
             {protocol.modelSequence && (
               <div className="text-[11px] text-slate-300">
                 <span className="font-bold text-slate-200">{L('Séquence de référence', 'Guideline sequence')}: </span>
