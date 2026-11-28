@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Eye, Gauge, RotateCcw, Tag, Wind } from 'lucide-react';
 import type { LocaleCode } from '../../standards/clinicalStandards';
-import { ANATOMY_CREDIT } from '../../engine/loadAnatomy';
+import { anatomyCredit } from '../../engine/loadAnatomy';
 import { createAirwayScene, type AirwayMapJson, type AirwayScene, type AirwayView, type ScopeInputs, type ScopeOverlay } from './airwayScene';
 import type { Lobe } from './airwayGeometry';
 import * as D from './dltModel';
@@ -409,7 +409,7 @@ export function BronchoscopyDltModule({ locale }: { locale: LocaleCode }) {
               'Simulator model: real airway (BodyParts3D, one adult male) rescaled to the Benumof 1987 averages; Brodsky 1991 depth; Severinghaus 1979 saturation. Compliance, resistances, baseline shunt, gravity and HPV weights, lumen sizes (VERIFY) and lobe volumes are illustrative.'
             )}
           </p>
-          <p className="text-[9px] text-slate-600">{ANATOMY_CREDIT}</p>
+          <p className="text-[9px] text-slate-600">{anatomyCredit(locale !== 'en-INT')}</p>
         </div>
       </aside>
     </main>
