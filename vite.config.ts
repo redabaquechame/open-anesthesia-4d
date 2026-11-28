@@ -4,8 +4,22 @@ import tailwindcss from '@tailwindcss/vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string };
+
+/** Immutable build identity: the commit the build came from (GITHUB_SHA in CI, else local git), plus "-dirty" for uncommitted local builds. */
+function commitId(): string {
+  const ci = process.env.GITHUB_SHA;
+  if (ci) return ci.slice(0, 7);
+  try {
+    const sha = execSync('git rev-parse --short=7 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const dirty = execSync('git status --porcelain --untracked-files=no', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    return dirty ? `${sha}-dirty` : sha;
+  } catch {
+    return 'unknown';
+  }
+}
 
 export default defineConfig({
   // Relative base so the build works on GitHub Pages under /<repo-name>/
@@ -13,6 +27,7 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
+    __BUILD_COMMIT__: JSON.stringify(commitId()),
   },
   plugins: [
     react(),

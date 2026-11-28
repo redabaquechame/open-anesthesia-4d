@@ -1,0 +1,46 @@
+{
+  "date": "2026-11-27 America/Toronto",
+  "commit": "c10a027977479b4f8a31630dff80c8234ced5599",
+  "build": {
+    "command": "npm run build",
+    "exit_code": 0,
+    "large_chunk_warning": true,
+    "index_kb": 856.2,
+    "three_kb": 552.0,
+    "precache_entries": 41,
+    "precache_KiB": 3619.38
+  },
+  "sanity": {
+    "command": "npm run sanity",
+    "exit_code": 0,
+    "observed_result": "All sanity checks passed",
+    "meaning": "Selected implementation/reference checks, not clinical validation"
+  },
+  "probes": {
+    "exit_code": 0,
+    "result": "probe-results.json",
+    "meaning": "Observed behavior; an exit code of zero does not mean model correctness"
+  },
+  "browser": {
+    "local_DOM": [
+      "HOME",
+      "M1_M2",
+      "M3",
+      "M4",
+      "M5",
+      "M6",
+      "M7",
+      "M8"
+    ],
+    "limited_or_loading": [
+      "M7",
+      "M8"
+    ],
+    "current_screenshot_capture": "unavailable",
+    "later_browser_control": "M8 CDP timeout; product fault not established",
+    "public_deployment": "not checked"
+  },
+  "clinical_signoff": "None recorded in claim registry",
+  "findings": 46,
+  "tracked_files_inventoried": 175
+}

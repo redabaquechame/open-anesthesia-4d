@@ -5,16 +5,19 @@ import { CLAIMS } from '../../standards/claimRegistry';
 import { EVIDENCE_REGISTRY } from '../../evidence/evidenceRegistry';
 import type { ScoreDef, Txt } from './preopTypes';
 import { CASES, FASTING, SCORES } from './preopScores';
-import { bandForPicks, scoreTotal } from './preopMath';
+import { answeredCount, bandForPicks, itemCorrect, scoreTotal } from './preopMath';
 
 /** ASA physical status is a classification (I–VI, + « E » for emergency), not a points score:
  *  show the class, never a number or « +n » next to the options. Other scores show their total. */
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 const isClassification = (def: { id: string }) => def.id === 'asa';
 function shownTotal(def: Parameters<typeof scoreTotal>[0], picks: Record<string, number> | undefined): string {
-  if (!isClassification(def)) return String(scoreTotal(def, picks));
-  const cls = ROMAN[(picks?.class ?? 0)] ?? '';
-  return picks?.emergency === 1 ? `${cls} E` : cls;
+  const total = scoreTotal(def, picks);
+  // Incomplete: show how many items are answered, never a number that looks like a result.
+  if (total === null) return `${answeredCount(def, picks)}/${def.items.length}`;
+  if (!isClassification(def)) return String(total);
+  const cls = ROMAN[picks!.class] ?? '';
+  return picks!.emergency === 1 ? `${cls} E` : cls;
 }
 
 /** Patient-chart mode: a worked clinical case, or free scoring. */
@@ -77,8 +80,8 @@ function ScoreSection({
         <div className="oa-num text-xl text-white shrink-0" dir="ltr">{shownTotal(def, picks)}</div>
       </div>
       {def.items.map((it) => {
-        const cur = picks?.[it.id] ?? 0;
-        const wrong = answerKey && answerKey[it.id] !== undefined && answerKey[it.id] !== cur;
+        const cur = picks?.[it.id];
+        const wrong = answerKey && answerKey[it.id] !== undefined && !itemCorrect(answerKey[it.id], cur);
         return (
           <div
             key={it.id}
@@ -87,7 +90,8 @@ function ScoreSection({
             <div className="text-start md:max-w-[50%]">
               <div className="text-slate-200">{T(it.label)}</div>
               {it.hint && <div className="text-[10px] text-slate-500">{T(it.hint)}</div>}
-              {wrong && <div className="text-[10px] text-rose-300 mt-0.5">{L('Réponse attendue', 'Expected')} : {T(it.options[answerKey![it.id]].label)}</div>}
+              {cur === undefined && !wrong && <div className="text-[10px] text-amber-300/80 mt-0.5">{L('Sans réponse', 'Not answered')}</div>}
+              {wrong && <div className="text-[10px] text-rose-300 mt-0.5">{cur === undefined ? L('Sans réponse — attendu', 'Not answered — expected') : L('Réponse attendue', 'Expected')} : {T(it.options[answerKey![it.id]].label)}</div>}
             </div>
             <div className="flex flex-wrap gap-1 md:justify-end">
               {it.options.map((o, i) => (
@@ -104,6 +108,14 @@ function ScoreSection({
           </div>
         );
       })}
+      {!band && (
+        <div className={`${ROW} text-amber-200 bg-amber-950/30`}>
+          {L(
+            `Incomplet : ${def.items.length - answeredCount(def, picks)} item(s) sans réponse. Aucune classe n’est calculée tant que tout n’est pas renseigné (une donnée manquante n’est pas une donnée normale).`,
+            `Incomplete: ${def.items.length - answeredCount(def, picks)} item(s) not answered. No class is computed until every item is answered (missing information is not normal information).`
+          )}
+        </div>
+      )}
       {band && (
         <div className={`${ROW} ${TONE[band.tone]}`}>
           <div className="font-bold">{T(band.label)}</div>
@@ -149,7 +161,7 @@ export function PreopModule({ locale }: { locale: LocaleCode }) {
     for (const [sid, items] of Object.entries(kase.answers)) {
       for (const [iid, idx] of Object.entries(items)) {
         total++;
-        if ((caseAnswers[sid]?.[iid] ?? 0) === idx) right++;
+        if (itemCorrect(idx, caseAnswers[sid]?.[iid])) right++;
       }
     }
     return { right, total };
@@ -182,7 +194,7 @@ export function PreopModule({ locale }: { locale: LocaleCode }) {
   const wrongCount = (def: ScoreDef) => {
     if (tab !== 'cases' || !checked || !kase) return 0;
     const key = kase.answers[def.id] ?? {};
-    return Object.entries(key).filter(([iid, idx]) => (caseAnswers[def.id]?.[iid] ?? 0) !== idx).length;
+    return Object.entries(key).filter(([iid, idx]) => !itemCorrect(idx, caseAnswers[def.id]?.[iid])).length;
   };
 
   return (
@@ -362,8 +374,8 @@ export function PreopModule({ locale }: { locale: LocaleCode }) {
               </div>
               <p className={`${ROW} text-slate-400`}>
                 {L(
-                  'Règles pour patients sans facteur de vidange gastrique retardée. Diabète, grossesse, obésité, agonistes du GLP-1, urgence : appliquer les règles spécifiques et votre protocole local.',
-                  'Rules for patients without delayed gastric emptying. Diabetes, pregnancy, obesity, GLP-1 agonists, emergencies: apply the specific rules and your local protocol.'
+                  'Champ d’application : adulte, chirurgie programmée, sans facteur de vidange gastrique retardée (consensus international 2026). Ce consensus laisse chaque établissement fixer son protocole pour les liquides clairs (jusqu’à 2 h, ou plus libéral). Diabète, gastroparésie, insuffisance rénale terminale, agonistes du GLP-1, grossesse, reflux sévère, urgence : règles spécifiques, décision au cas par cas. Exercice sur cas fictifs : ce n’est pas une consigne pour un patient.',
+                  'Scope: adult, elective surgery, no factor delaying gastric emptying (2026 international consensus). The consensus lets each institution set its clear-liquid protocol (until 2 h, or more liberal). Diabetes, gastroparesis, end-stage kidney disease, GLP-1 agonists, pregnancy, severe reflux, emergencies: specific rules, case-by-case decision. Exercise on fictional cases: not an instruction for a patient.'
                 )}
               </p>
             </div>

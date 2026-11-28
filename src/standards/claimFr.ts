@@ -220,6 +220,10 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
   'm5-sugammadex-doses': {
     claim: 'Sugammadex (adulte) : 4 mg/kg si la récupération a atteint au moins 1–2 PTC ; 2 mg/kg à la réapparition de T2 ; 16 mg/kg pour une décurarisation immédiate (étudiée 3 min après rocuronium 1,2 mg/kg). Obèse : dose calculée sur le poids réel.',
   },
+  'm5-sugammadex-mechanism': {
+    claim: 'Le sugammadex forme un complexe 1:1 avec le rocuronium (ou le vécuronium) dans le plasma ; la baisse du rocuronium libre plasmatique crée un gradient de concentration qui fait sortir le rocuronium de la jonction neuromusculaire, ce qui réduit la quantité disponible pour les récepteurs nicotiniques. Une assistance ventilatoire est nécessaire jusqu’au retour d’une ventilation spontanée adéquate.',
+    note: 'La notice ne nomme pas le plasma ; Kleijn 2011 le fait. La vue 3D place donc les anneaux dorés dans un capillaire. La vitesse de liaison du module est un modèle du simulateur.',
+  },
   'm5-sugammadex-renal': {
     claim: 'Sugammadex non recommandé en cas d’insuffisance rénale sévère, y compris en dialyse (clairance de la créatinine < 30 mL/min).',
   },
@@ -254,7 +258,7 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
     note: 'Modèle du simulateur. Vitesses en unités d’affichage, sans chiffre ; flux pris parallèle à l’axe de l’artère au niveau de la 1re côte ; repliement (aliasing) non modélisé ; seules l’artère et la veine subclavières sont colorées.',
   },
   'm6-perineural-feedback': {
-    claim: 'Repère vert quand la pointe est à ~2 mm d’un tronc du plexus (et quand l’anesthésique local s’y étale), avec le principe : aiguille visible en entier, aspirer, petits volumes, sans résistance.',
+    claim: 'Repère vert quand la pointe est à ~2 mm d’un tronc du plexus ET dans le plan de l’image (élévation ≤ ~0,6 mm, règle du simulateur) ; alerte orange si la pointe est près du plexus mais hors de l’image (et quand l’anesthésique local s’y étale), avec le principe : aiguille visible en entier, aspirer, petits volumes, sans résistance.',
     note: 'Repère pédagogique sur un plexus schématique : ce n’est pas une zone cible validée et jamais une garantie de bloc sûr ou efficace. La distance de 2 mm est illustrative. Profondeur : Yadav 2016 (PMC4784208) rapporte une poche du coin à 1,7 ± 0,8 cm ; l’artère du modèle est à 1,8 cm (m6-sono-anatomy reste illustratif).',
   },
   'm6-anisotropy': {
@@ -467,6 +471,9 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
   'm10-fasting-adult': {
     claim: 'Adultes : liquides clairs jusqu’à 2 h (thé/café avec jusqu’à ~1/5 de lait comptent comme liquides clairs), solides 6 h ; ne pas annuler pour un chewing-gum, un bonbon ou le tabac. Les adultes en bonne santé peuvent boire des liquides clairs glucidiques (jusqu’à 400 mL) jusqu’à 2 h avant la chirurgie.',
     note: 'La mise à jour adulte de l’ESAIC n’est encore qu’un protocole (2026).',
+  },
+  'm10-fasting-adult-2026': {
+    claim: 'Adultes, chirurgie programmée : aliments solides au moins 6 h ; après un repas copieux ou gras, 8 h ou plus peuvent être nécessaires ; liquides non clairs (lait, produits laitiers, boissons de substitution de repas, nutrition entérale) 6 h ; liquides clairs (eau, thé, café avec sucre ou miel et lait jusqu’à un cinquième du volume, jus clairs, limonade, boissons glucidiques claires) jusqu’à 2 h, sauf protocole d’établissement plus libéral ; pas de limite de volume ; sucettes et chewing-gum jusqu’au transfert. Hors champ : situations qui augmentent nettement le risque d’inhalation ; une vidange retardée (diabète, gastroparésie, insuffisance rénale terminale, agonistes du GLP-1) peut imposer un jeûne solide plus long.',
   },
   'm10-fasting-child': {
     claim: 'Enfants : liquides clairs jusqu’à 1 h, lait maternel 3 h, lait infantile ou lait non humain 4 h avant l’induction.',

@@ -559,6 +559,12 @@ function OlvMonitor({ out, rr, peep, fr }: { out: D.DltOutputs | null; rr: numbe
         <Vital label="Qs/Qt" value={g ? `${(g.shunt * 100).toFixed(0)}%` : '—'} color="text-slate-100" big />
       </div>
       <p className="text-[9px] text-slate-500 leading-snug">
+        <span className="block font-semibold text-amber-200">
+          {L(
+            'Illustration du shunt à l’équilibre : la PaCO2 est fixée à 40 mmHg et le volume courant ou la fréquence ne changent PAS la PaO2 ni la SpO2 ici. Ils ne modifient que les pressions et volumes ventilatoires.',
+            'Steady-state shunt illustration: PaCO2 is fixed at 40 mmHg and tidal volume or rate do NOT change PaO2 or SpO2 here. They only change airway pressures and volumes.'
+          )}
+        </span>
         {L('PaO2 à l’équilibre (gaz alvéolaire + shunt, Hb 13,5, VO2 250, Qt 5 L/min) ; la SpO2 la suit avec un retard (τ 30 s, illustratif).', 'PaO2 at steady state (alveolar gas + shunt, Hb 13.5, VO2 250, Qt 5 L/min); SpO2 follows with a lag (τ 30 s, illustrative).')}
       </p>
     </div>

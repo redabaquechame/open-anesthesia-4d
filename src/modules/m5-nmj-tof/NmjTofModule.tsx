@@ -107,6 +107,16 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
     postMembrane.position.set(0, -1.6, 0);
     scene.add(postMembrane);
 
+    // Capillary = plasma compartment. Sugammadex captures rocuronium in plasma (the model binds rocPlasma);
+    // the falling free plasma concentration then draws rocuronium out of the junction (Kleijn 2011, BRIDION label §12.1).
+    const capillary = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.55, 0.55, 3.4, 20, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0xb91c1c, roughness: 0.5, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false })
+    );
+    capillary.rotation.x = Math.PI / 2;
+    capillary.position.set(3.55, -0.6, 0);
+    scene.add(capillary);
+
     // 10 Nicotinic AChR pentameric channels across the motor endplate
     const receptorMeshes: THREE.Mesh[] = [];
     for (let i = 0; i < 10; i++) {
@@ -244,10 +254,11 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
         const visibleSuga = Math.round(Math.min(1, s.sugaFree * 1.6) * sugaCount);
         for (let i = 0; i < sugaCount; i++) {
           if (i < visibleSuga) {
+            // Inside the capillary (plasma), not in the synaptic cleft.
             dummy.position.set(
-              Math.sin(now * 0.0015 + i * 0.9) * 2.3,
-              -0.2 + Math.cos(now * 0.002 + i) * 0.7,
-              Math.cos(i * 1.4) * 0.9
+              3.55 + Math.sin(now * 0.0015 + i * 0.9) * 0.3,
+              -0.6 + Math.cos(now * 0.002 + i) * 0.3,
+              ((i * 0.37 + now * 0.0004) % 3.0) - 1.5
             );
             dummy.rotation.set(now * 0.002 + i, now * 0.001, 0);
             dummy.scale.setScalar(1);
@@ -324,8 +335,8 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
           `Fixed 200 mg vial in ${avatarWeightKg} kg avatar (${effectiveMgKg.toFixed(1)} mg/kg) — watch temporary recovery followed by REBOUND RECURARIZATION from peripheral redistribution!`
         )
       : L(
-          `Sugammadex ${doseMgKg} mg/kg : encapsulation des molécules de rocuronium dans la fente synaptique. Vérifiez un rapport T4/T1 ≥ 0,90 à l’adducteur du pouce avant l’extubation.`,
-          `Sugammadex ${doseMgKg} mg/kg encapsulating rocuronium molecules in synaptic cleft. Verify Adductor Pollicis TOF Ratio >= 0.90 before extubation.`
+          `Sugammadex ${doseMgKg} mg/kg : il forme un complexe avec le rocuronium dans le plasma (anneaux dorés dans le capillaire). La baisse du rocuronium libre plasmatique attire le rocuronium hors de la jonction, qui se libère des récepteurs. Objectif : rapport T4/T1 ≥ 0,90 à l’adducteur du pouce — condition nécessaire, pas suffisante, pour extuber.`,
+          `Sugammadex ${doseMgKg} mg/kg forms a complex with rocuronium in plasma (gold rings in the capillary). The fall in free plasma rocuronium draws rocuronium out of the junction, freeing the receptors. Target: adductor pollicis TOF ratio ≥ 0.90 — necessary, not sufficient, before extubation.`
         );
   };
 
@@ -369,6 +380,8 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
     );
   };
 
+  // TOF ≥ 0.9 is ONE condition (neuromuscular recovery). It is never presented as an overall extubation verdict (audit F12):
+  // the BRIDION label also requires adequate spontaneous respiration and a patent airway, which this module does not model.
   const thumbSafeToExtubate = state.thumbTofRatio >= 0.9;
 
   return (
@@ -426,10 +439,18 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
               <span className="font-bold text-emerald-300">{L('Nerf ulnaire / adducteur du pouce', 'Ulnar / Adductor Pollicis')}</span>
               <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded ${thumbSafeToExtubate ? 'bg-emerald-500/20 text-emerald-200' : 'bg-rose-500/25 text-rose-200'}`}>
                 {thumbSafeToExtubate
-                  ? L('EXTUBATION POSSIBLE SI TOF ≥ 0,90', 'SAFE EXTUBATION >= 0.90')
+                  ? L('RÉCUPÉRATION NEUROMUSCULAIRE : TOF ≥ 0,90', 'NEUROMUSCULAR RECOVERY: TOF ≥ 0.90')
                   : L('BLOC RÉSIDUEL — NE PAS EXTUBER', 'RESIDUAL BLOCK — DO NOT EXTUBATE')}
               </span>
             </div>
+            {thumbSafeToExtubate && (
+              <div className="text-[11px] text-slate-300 leading-snug">
+                {L(
+                  'Condition nécessaire, pas suffisante. Avant d’extuber, vérifier aussi : ventilation spontanée adéquate, voies aériennes perméables, état de conscience. Ce module ne simule que la jonction neuromusculaire.',
+                  'Necessary, not sufficient. Before extubation also check: adequate spontaneous breathing, patent airway, level of consciousness. This module only simulates the neuromuscular junction.'
+                )}
+              </div>
+            )}
             <div className="flex items-end gap-3 h-24 bg-slate-950 rounded-lg p-3 border border-slate-800">
               {state.thumbTwitches.map((h, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">

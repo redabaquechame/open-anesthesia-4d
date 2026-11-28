@@ -170,13 +170,35 @@ export const SCORES: ScoreDef[] = [ASA, RCRI, STOPBANG, APFEL, ARISCAT];
 export const FASTING: FastingRule[] = [
   {
     id: 'adultClear',
-    intake: { fr: 'Liquides clairs (dont thé/café avec ≤ 1/5 de lait, boisson glucidique ≤ 400 mL)', en: 'Clear fluids (incl. tea/coffee with ≤ 1/5 milk, carbohydrate drink ≤ 400 mL)' },
+    intake: {
+      fr: 'Liquides clairs : eau, thé, café sucré (lait ≤ 1/5 du volume), jus clairs, limonade, boissons glucidiques claires',
+      en: 'Clear liquids: water, tea, coffee with sugar (milk ≤ 1/5 of the volume), clear juices, lemonade, clear carbohydrate drinks',
+    },
     hours: 2,
     population: 'adult',
-    claimId: 'm10-fasting-adult',
-    note: { fr: 'Boisson glucidique : ASA 2023 (adulte sain).', en: 'Carbohydrate drink: ASA 2023 (healthy adults).' },
+    claimId: 'm10-fasting-adult-2026',
+    note: {
+      fr: 'Jusqu’à 2 h, sauf protocole d’établissement plus libéral (« Sip Til Send »). Pas de limite de volume dans le consensus ; l’établissement peut en fixer une.',
+      en: 'Until 2 h, unless an institutional protocol is more liberal ("Sip Til Send"). The consensus sets no volume limit; the institution may set one.',
+    },
   },
-  { id: 'adultSolid', intake: { fr: 'Solides', en: 'Solids' }, hours: 6, population: 'adult', claimId: 'm10-fasting-adult' },
+  {
+    id: 'adultNonClear',
+    intake: { fr: 'Liquides non clairs : lait, produits laitiers, boissons de substitution de repas, nutrition entérale', en: 'Non-clear liquids: milk, milk products, meal-replacement drinks, enteral feeds' },
+    hours: 6,
+    population: 'adult',
+    claimId: 'm10-fasting-adult-2026',
+    note: { fr: 'Nutrition par sonde : en général pas d’arrêt si les voies aériennes sont déjà protégées (trachéotomie à ballonnet, sonde en place).', en: 'Tube feeding: usually not stopped when the airway is already secured (cuffed tracheostomy, tube in situ).' },
+  },
+  { id: 'adultSolid', intake: { fr: 'Repas solide léger', en: 'Light solid meal' }, hours: 6, population: 'adult', claimId: 'm10-fasting-adult-2026' },
+  {
+    id: 'adultFatty',
+    intake: { fr: 'Repas copieux ou gras', en: 'Large or fatty meal' },
+    hours: 8,
+    population: 'adult',
+    claimId: 'm10-fasting-adult-2026',
+    note: { fr: '« 8 h ou plus peuvent être nécessaires » : minimum indicatif, pas une garantie.', en: '"8 h or longer may be necessary": an indicative minimum, not a guarantee.' },
+  },
   { id: 'childClear', intake: { fr: 'Liquides clairs', en: 'Clear fluids' }, hours: 1, population: 'child', claimId: 'm10-fasting-child' },
   { id: 'childBreast', intake: { fr: 'Lait maternel', en: 'Breast milk' }, hours: 3, population: 'child', claimId: 'm10-fasting-child' },
   { id: 'childFormula', intake: { fr: 'Lait infantile / lait non humain', en: 'Formula / non-human milk' }, hours: 4, population: 'child', claimId: 'm10-fasting-child' },
@@ -223,7 +245,7 @@ export const CASES: PreopCase[] = [
     teaching: [
       { text: { fr: 'Apfel 4/4 : 79 % de NVPO sans prophylaxie dans la cohorte d’origine.', en: 'Apfel 4/4: 79% PONV without prophylaxis in the original cohort.' }, claimId: 'm10-apfel' },
       { text: { fr: 'Piège : la cœlioscopie reste « intrapéritonéale » au sens du RCRI (1 point).', en: 'Trap: laparoscopy is still "intraperitoneal" in RCRI terms (1 point).' }, claimId: 'm10-rcri' },
-      { text: { fr: 'Jeûne : liquides clairs jusqu’à 2 h avant, y compris une boisson glucidique (≤ 400 mL) chez l’adulte sain.', en: 'Fasting: clear fluids until 2 h before, including a carbohydrate drink (≤ 400 mL) in a healthy adult.' }, claimId: 'm10-fasting-adult' },
+      { text: { fr: 'Jeûne : liquides clairs (dont boissons glucidiques claires) jusqu’à 2 h avant, sauf protocole d’établissement plus libéral ; repas léger 6 h, repas copieux ou gras 8 h ou plus.', en: 'Fasting: clear liquids (including clear carbohydrate drinks) until 2 h before, unless an institutional protocol is more liberal; light meal 6 h, large or fatty meal 8 h or longer.' }, claimId: 'm10-fasting-adult-2026' },
     ],
   },
   {

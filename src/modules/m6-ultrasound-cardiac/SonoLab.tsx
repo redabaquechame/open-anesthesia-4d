@@ -7,6 +7,7 @@ import { createLabel, type AnatomyLabel } from '../../engine/labels';
 import { loadAnatomy, anatomyCredit } from '../../engine/loadAnatomy';
 import type { MaterialKey } from '../../engine/materials';
 import type { LocaleCode } from '../../standards/clinicalStandards';
+import { TIP_VISIBLE_WEIGHT, perineuralCue, tipBeamWeight } from './sonoFeedback';
 import { UltrasoundSimulator, pointInMesh, type AnalyticTissue, type DopplerSettings, type MeshTissue, type ProbeFrame, type Tissue } from './ultrasoundSim';
 
 /**
@@ -83,6 +84,8 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
   });
   const [alert, setAlert] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  /** The current note is a caution (tip not seen), not positive feedback. */
+  const [infoWarn, setInfoWarn] = useState(false);
   const [dop, setDop] = useState<{ peak: number; vessel: boolean }>({ peak: 0, vessel: false });
   const [needleVis, setNeedleVis] = useState(1);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -389,20 +392,30 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
           setAlert(msg);
         }
         // Positive feedback: a teaching principle only, never proof of a safe or successful block.
+        // It needs the TIP itself in the ultrasound slice (audit F10): a perineural position you cannot see is not a success.
         let note: string | null = null;
-        if (!msg) {
+        let cueWarn = false;
+        {
           const near = nerveSegs.some((n) => distToPolyline(tip, [n.a, n.mid, n.b]) < n.r + 0.002);
-          if (near && u.laMl > 0)
+          const tipVisible = tipBeamWeight(frame, tip, WIDTH_M, DEPTH_M) >= TIP_VISIBLE_WEIGHT;
+          const cue = perineuralCue({ hazard: msg !== null, nearNerve: near, tipVisible, laMl: u.laMl });
+          cueWarn = cue === 'tip-not-seen';
+          if (cue === 'tip-not-seen')
+            note = fr
+              ? 'Pointe près du plexus mais HORS du plan de l’image : vous ne la voyez pas. Ne pas avancer ni injecter tant que la pointe n’est pas retrouvée (inclinez ou glissez la sonde).'
+              : 'Tip near the plexus but OUT of the image plane: you cannot see it. Do not advance or inject until the tip is found again (tilt or slide the probe).';
+          else if (cue === 'perineural-spread')
             note = fr
               ? 'Pointe périneurale, l’anesthésique s’étale autour des troncs : c’est l’image recherchée. Principe : aspirer, injecter par petits volumes, sans résistance, en surveillant le patient.'
               : 'Perineural tip, local anaesthetic spreading around the trunks: this is the image you look for. Principle: aspirate, inject small volumes without resistance, watch the patient.';
-          else if (near)
+          else if (cue === 'perineural')
             note = fr
               ? 'Pointe au contact du plexus (périneurale). Principe : garder toute l’aiguille visible, aspirer, puis injecter un petit volume pour voir la diffusion.'
               : 'Tip next to the plexus (perineural). Principle: keep the whole needle in view, aspirate, then inject a small volume to see the spread.';
         }
         if (note !== lastInfo) {
           lastInfo = note;
+          setInfoWarn(cueWarn);
           setInfo(note);
         }
 
@@ -496,7 +509,13 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
               {alert}
             </div>
           )}
-          {!alert && info && (
+          {!alert && info && infoWarn && (
+            <div className="px-3 py-1.5 bg-amber-950/80 border-t border-amber-500 text-[11px] text-amber-100 flex items-start gap-1.5">
+              <EyeOff className="w-4 h-4 text-amber-300 shrink-0" />
+              <span>{info}</span>
+            </div>
+          )}
+          {!alert && info && !infoWarn && (
             <div className="px-3 py-1.5 bg-emerald-950/80 border-t border-emerald-600 text-[11px] text-emerald-200 flex items-start gap-1.5">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>

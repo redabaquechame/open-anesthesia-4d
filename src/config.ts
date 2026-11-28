@@ -7,5 +7,9 @@
  */
 export const REPORT_ISSUE_URL = 'https://github.com/redabaquechame/open-anesthesia-4d/issues/new';
 
-/** Build identifier shown in reports so a reviewer's comment can be matched to a version. */
-export const BUILD_ID: string = `${__APP_VERSION__} (${__BUILD_DATE__})`;
+/**
+ * Build identifier shown in reports so a reviewer's comment can be matched to an exact build.
+ * The commit hash is unique per build; the date alone was shared by every build of the same day (audit F41).
+ */
+export const BUILD_COMMIT: string = __BUILD_COMMIT__;
+export const BUILD_ID: string = `${__APP_VERSION__}+${__BUILD_COMMIT__} (${__BUILD_DATE__})`;
