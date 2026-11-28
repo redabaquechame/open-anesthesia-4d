@@ -25,6 +25,7 @@ import { perineuralCue, tipBeamWeight, TIP_VISIBLE_WEIGHT } from '../../src/modu
 import { MODULE_SCOPE } from '../../src/standards/moduleScope';
 import * as THREE from 'three';
 import { SimClock } from '../../src/sim/simClock';
+import { NeedleHistory, OIP_THRESHOLD_PSI } from '../../src/modules/m6-ultrasound-cardiac/needleHistory';
 import { NMJ_STEP_SEC, freshNmj, stepNmj } from '../../src/modules/m5-nmj-tof/nmjDynamics';
 
 type Status = 'fixed' | 'open';
@@ -204,18 +205,33 @@ const CASES_LIST: Case[] = [
     },
   },
   {
-    id: 'needle-injury-latched', finding: 'F11', status: 'open', plannedIn: 'PR 4 (needle history)',
+    id: 'needle-injury-latched', finding: 'F11', status: 'fixed',
     run: () => {
-      const s = src('src/modules/m6-ultrasound-cardiac/SonoLab.tsx');
-      return { ok: /injuryLog|complications/i.test(s) && /latch/i.test(s), detail: 'hazards are instantaneous, nothing is latched' };
+      // Enter the artery, withdraw to tissue: the puncture must still be on the record.
+      const h = new NeedleHistory();
+      h.observe('tissue', 0); h.observe('artery', 1); h.observe('tissue', 2); h.observe('nerveContact', 3);
+      const kept = h.has('arterialPuncture');
+      // Injecting against a nerve is recorded as a ≥ 15 psi injection.
+      const r = h.inject(1, new THREE.Vector3(), 'nerveContact', 4);
+      const wired = /history\.observe\(tipZone/.test(src('src/modules/m6-ultrasound-cardiac/SonoLab.tsx'));
+      const ok = kept && r.pressurePsi >= OIP_THRESHOLD_PSI && h.has('highPressureInjection') && wired;
+      return { ok, detail: ok ? 'arterial puncture still recorded after withdrawal; high-pressure injection recorded' : `kept ${kept}, psi ${r.pressurePsi}, wired ${wired}` };
     },
   },
   {
-    id: 'injectate-deposits-stay', finding: 'F32', status: 'open', plannedIn: 'PR 4',
+    id: 'injectate-deposits-stay', finding: 'F32', status: 'fixed',
     run: () => {
-      const s = src('src/modules/m6-ultrasound-cardiac/SonoLab.tsx');
-      const teleports = /laCenter = tip\.clone\(\)/.test(s);
-      return { ok: !teleports, detail: teleports ? 'injectate follows the needle tip' : 'deposits stay in world space' };
+      const h = new NeedleHistory();
+      const at = new THREE.Vector3(0.01, 0, 0);
+      h.inject(5, at, 'tissue', 0);
+      // The needle moves 15 mm away; the deposit must stay at the injection site.
+      const moved = new THREE.Vector3(0.025, 0, 0);
+      const stays = h.insideDeposit(at) && !h.insideDeposit(moved) && h.deposits[0].center.equals(at);
+      // Into the artery: recorded, nothing deposited.
+      const iv = h.inject(2, moved, 'artery', 1);
+      const teleports = /laCenter = tip\.clone\(\)/.test(src('src/modules/m6-ultrasound-cardiac/SonoLab.tsx'));
+      const ok = stays && !iv.deposited && h.has('intravascularInjection') && h.deposits.length === 1 && !teleports;
+      return { ok, detail: ok ? 'deposit fixed at the injection site; intravascular injection recorded, not drawn' : `stays ${stays}, iv deposited ${iv.deposited}, teleports ${teleports}` };
     },
   },
 

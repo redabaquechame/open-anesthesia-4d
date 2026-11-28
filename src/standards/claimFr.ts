@@ -257,6 +257,14 @@ export const CLAIM_FR: Record<string, ClaimFr> = {
     claim: 'Aspect du Doppler couleur : artère subclavière pulsatile et latérale (vers le bras), veine subclavière plus lente, phasique et médiale ; le filtre de paroi supprime les flux lents ; flux plus lent près de la paroi.',
     note: 'Modèle du simulateur. Vitesses en unités d’affichage, sans chiffre ; flux pris parallèle à l’axe de l’artère au niveau de la 1re côte ; repliement (aliasing) non modélisé ; seules l’artère et la veine subclavières sont colorées.',
   },
+  'm6-injection-pressure': {
+    claim: 'Pression d’ouverture à l’injection : pointe à 1 mm d’une racine du plexus brachial, pic moyen 8,2 ± 2,4 psi ; au contact aiguille-nerf, 20,9 ± 3,7 psi. Un seuil de 15 psi a détecté le contact dans 35 injections sur 36 (bloc interscalénique, 16 patients). Le simulateur affiche ~8,2 psi à distance du nerf et ~20,9 psi au contact ou en intraneural, et alerte à partir de 15 psi.',
+    note: 'Racines en interscalénique, transposées ici aux troncs supraclaviculaires par analogie. La pression par zone de la pointe est un modèle du simulateur (moyennes fixes de l’étude), pas une simulation de pression ; le contact osseux affiche aussi la valeur haute (règle du simulateur).',
+  },
+  'm6-needle-record': {
+    claim: 'Les incidents d’aiguille (ponction artérielle ou veineuse, plèvre franchie, pointe intraneurale, contact osseux, injection intravasculaire ou à haute pression) restent inscrits au relevé après le retrait ; l’anesthésique reste où il a été injecté, et une injection dans un vaisseau ne laisse aucun dépôt visible.',
+    note: 'Règles du simulateur pour le débriefing (audit F11, F32). Forme du dépôt : ellipsoïde 2a × a × a contenant le volume, allongé le long de l’artère ; la dynamique de diffusion n’est pas modélisée.',
+  },
   'm6-perineural-feedback': {
     claim: 'Repère vert quand la pointe est à ~2 mm d’un tronc du plexus ET dans le plan de l’image (élévation ≤ ~0,6 mm, règle du simulateur) ; alerte orange si la pointe est près du plexus mais hors de l’image (et quand l’anesthésique local s’y étale), avec le principe : aiguille visible en entier, aspirer, petits volumes, sans résistance.',
     note: 'Repère pédagogique sur un plexus schématique : ce n’est pas une zone cible validée et jamais une garantie de bloc sûr ou efficace. La distance de 2 mm est illustrative. Profondeur : Yadav 2016 (PMC4784208) rapporte une poche du coin à 1,7 ± 0,8 cm ; l’artère du modèle est à 1,8 cm (m6-sono-anatomy reste illustratif).',
