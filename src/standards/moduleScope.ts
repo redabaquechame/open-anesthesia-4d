@@ -32,8 +32,8 @@ export const MODULE_SCOPE: Record<string, ModuleScope> = {
   M4: {
     status: 'prototype',
     notModelled: {
-      fr: 'Temps des médicaments accéléré (×15) ; EEG et DSA synthétiques ; contrôleur AIVOC heuristique, pas l’algorithme d’une pompe réelle.',
-      en: 'Drug time is accelerated (×15); synthetic EEG and DSA; heuristic TCI controller, not a real pump algorithm.',
+      fr: 'EEG et DSA synthétiques ; contrôleur AIVOC heuristique, pas l’algorithme d’une pompe réelle. (Le temps des médicaments peut être accéléré : la vitesse est affichée.)',
+      en: 'Synthetic EEG and DSA; heuristic TCI controller, not a real pump algorithm. (Drug time can be accelerated: the speed is shown.)',
     },
   },
   M5: {

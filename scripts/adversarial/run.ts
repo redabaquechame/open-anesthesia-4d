@@ -24,6 +24,8 @@ import * as D from '../../src/modules/m8-bronchoscopy-dlt/dltModel';
 import { perineuralCue, tipBeamWeight, TIP_VISIBLE_WEIGHT } from '../../src/modules/m6-ultrasound-cardiac/sonoFeedback';
 import { MODULE_SCOPE } from '../../src/standards/moduleScope';
 import * as THREE from 'three';
+import { SimClock } from '../../src/sim/simClock';
+import { NMJ_STEP_SEC, freshNmj, stepNmj } from '../../src/modules/m5-nmj-tof/nmjDynamics';
 
 type Status = 'fixed' | 'open';
 interface Case {
@@ -135,20 +137,33 @@ const CASES_LIST: Case[] = [
 
   // ── M4 timing ────────────────────────────────────────────────────────────
   {
-    id: 'm4-no-hidden-speed', finding: 'F14', status: 'open', plannedIn: 'PR 3 (one simulation clock)',
+    id: 'm4-no-hidden-speed', finding: 'F14', status: 'fixed',
     run: () => {
       const s = src('src/modules/m4-aivoc-eeg/AivocEegModule.tsx');
-      const hidden = /\(dtSec \/ 60\) \* 15/.test(s);
-      return { ok: !hidden, detail: hidden ? 'drug clock multiplied by a hidden 15' : 'no hidden multiplier' };
+      // No literal time multiplier on any dt, and the speed is a visible control bound to the clock.
+      const hidden = /dt\w*\s*(\/\s*60\s*\))?\s*\*\s*\d+/.test(s.replace(/\/\/.*$/gm, ''));
+      const visible = /<SimSpeedControl[\s\S]*?speed=\{pkSpeed\}/.test(s) && /pkClockRef\.current\.speed = pkSpeed/.test(s);
+      return { ok: !hidden && visible, detail: hidden ? 'a dt is still multiplied by a literal factor' : visible ? 'PK speed is a visible control on the shared clock' : 'no visible speed control' };
     },
   },
   {
-    id: 'physics-not-in-render-loop', finding: 'F23', status: 'open', plannedIn: 'PR 3',
+    id: 'physics-not-in-render-loop', finding: 'F23', status: 'fixed',
     run: () => {
       const files = ['src/modules/m3-volatile-eco/VolatileEcoModule.tsx', 'src/modules/m4-aivoc-eeg/AivocEegModule.tsx', 'src/modules/m5-nmj-tof/NmjTofModule.tsx'];
-      // Pattern of the frame-clamped integrators: Math.min((now - last) / 1000, 0.05) inside requestAnimationFrame.
-      const bad = files.filter((f) => /Math\.min\(\(now - last\) \/ 1000,\s*0\.05\)/.test(src(f)));
-      return { ok: bad.length === 0, detail: bad.length ? `frame-clamped integration in ${bad.length} modules` : 'shared fixed-step clock' };
+      // Old pattern: Math.min((now - last) / 1000, 0.05) fed straight into the integrator.
+      const clamped = files.filter((f) => /Math\.min\(\(now - last\) \/ 1000,\s*0\.05\)/.test(src(f)));
+      const onClock = files.filter((f) => /makeFrameDriver\(/.test(src(f)) && /bindPageVisibility\(/.test(src(f)));
+      // Behaviour: the same physics run at 144 Hz and 24 Hz frames gives the same answer.
+      const runAt = (hz: number) => {
+        const c = new SimClock({ stepSec: NMJ_STEP_SEC, speed: 10 });
+        const st = freshNmj('');
+        st.rocPlasma = 0.87; st.rocPeripheral = 0.66;
+        for (let i = 0; i < hz * 20; i++) { const n = c.tick(1 / hz); for (let k = 0; k < n; k++) stepNmj(st, c.stepSec); }
+        return st.thumbOcc;
+      };
+      const diff = Math.abs(runAt(144) - runAt(24));
+      const ok = clamped.length === 0 && onClock.length === files.length && diff < 1e-3;
+      return { ok, detail: `frame-clamped: ${clamped.length}, on shared clock: ${onClock.length}/3, 144 vs 24 Hz difference ${diff.toExponential(1)}` };
     },
   },
 

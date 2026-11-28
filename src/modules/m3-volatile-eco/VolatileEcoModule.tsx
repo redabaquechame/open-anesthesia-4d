@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { SimClock, bindPageVisibility, makeFrameDriver } from '../../sim/simClock';
+import { SimSpeedControl } from '../../components/SimSpeedControl';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Leaf, RotateCcw, AlertTriangle, FastForward } from 'lucide-react';
@@ -86,8 +88,11 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
   const kernelRef = useRef(new VolatileKineticsKernel());
   const paramsRef = useRef(params);
   paramsRef.current = params;
-  const timeScaleRef = useRef(timeScale);
-  timeScaleRef.current = timeScale;
+  const [paused, setPaused] = useState(false);
+  /** Shared clock: 0.5 s of simulated time per kernel step, speed shown in the header. */
+  const clockRef = useRef(new SimClock({ stepSec: 0.5, speed: timeScale }));
+  clockRef.current.speed = timeScale;
+  clockRef.current.paused = paused;
   const historyRef = useRef<{ t: number; fd: number; fi: number; fa: number; brain: number; muscle: number }[]>([]);
 
   useEffect(() => {
@@ -123,6 +128,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
     let lungL: THREE.Mesh;
     let lungR: THREE.Mesh;
     let ro: ResizeObserver | null = null;
+    let unbindVisibility: (() => void) | null = null;
 
     createTieredRenderer(canvas).then((handle) => {
       if (disposed) {
@@ -209,18 +215,23 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
       ro = new ResizeObserver(resize);
       ro.observe(container);
 
-      let last = performance.now();
+      const driver = makeFrameDriver(clockRef.current);
+      unbindVisibility = bindPageVisibility([clockRef.current]);
+      let lastUi = performance.now();
       let uiTick = 0;
+      let st = kernelRef.current.step(paramsRef.current, 0);
 
       const loop = () => {
         if (disposed) return;
         rafId = requestAnimationFrame(loop);
         const now = performance.now();
-        const dtSec = Math.min((now - last) / 1000, 0.05);
-        last = now;
+        const dtSec = Math.min((now - lastUi) / 1000, 1);
+        lastUi = now;
 
+        // Physics on the shared clock: fixed simulated steps, independent of the frame rate.
         const p = paramsRef.current;
-        const st = kernelRef.current.step(p, (dtSec / 60) * timeScaleRef.current);
+        const steps = driver.frame(now);
+        for (let k = 0; k < steps; k++) st = kernelRef.current.step(p, clockRef.current.stepSec / 60);
         const spec = VOLATILE_AGENTS[p.agent];
         const agentCol = new THREE.Color(spec.iso5360ColorHex);
 
@@ -273,6 +284,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
 
     return () => {
       disposed = true;
+      unbindVisibility?.();
       ro?.disconnect();
       if (rafId !== null) cancelAnimationFrame(rafId);
       controls?.dispose();
@@ -284,6 +296,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
 
   const resetSim = (nextParams?: VolatileParams) => {
     kernelRef.current.reset();
+    clockRef.current.reset();
     historyRef.current = [];
     if (nextParams) setParams(nextParams);
   };
@@ -303,19 +316,7 @@ export function VolatileEcoModule({ locale }: { locale: LocaleCode }) {
               )}
             </span>
             <div className="flex items-center gap-2 font-mono text-[11px]">
-              <FastForward className="w-3.5 h-3.5 text-amber-400" />
-              {[4, 12, 30].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setTimeScale(s)}
-                  title={L(`Vitesse de simulation ×${s}`, `Simulation speed ×${s}`)}
-                  className={`px-2 py-0.5 rounded border cursor-pointer ${
-                    timeScale === s ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'
-                  }`}
-                >
-                  {s}x
-                </button>
-              ))}
+              <SimSpeedControl fr={fr} speeds={[1, 4, 12, 30]} speed={timeScale} onSpeed={setTimeScale} paused={paused} onTogglePause={() => setPaused((x) => !x)} simTimeSec={(state?.timeMin ?? 0) * 60} />
               <button
                 onClick={() => resetSim()}
                 className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1 cursor-pointer"

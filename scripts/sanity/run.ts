@@ -15,6 +15,7 @@ import { simulateHeart } from '../../src/physics/cardiovascularKernel';
 import { runSpineChecks } from './spine';
 import { runAirwayChecks } from './airway';
 import { runCrisisPreopChecks } from './crisisPreop';
+import { runSimClockChecks } from './simClock';
 import { runParcoursChecks } from './parcours';
 import { runMonitorChecks } from './monitor';
 
@@ -117,6 +118,7 @@ check('M6 MS: small EDV, transmitral gradient > 5', hms.edv < hn.edv && hms.mean
 await runSpineChecks(check);
 runAirwayChecks(check);
 runCrisisPreopChecks(check);
+runSimClockChecks(check);
 runParcoursChecks(check);
 runMonitorChecks(check);
 

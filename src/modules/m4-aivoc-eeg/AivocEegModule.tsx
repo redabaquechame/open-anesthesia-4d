@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { SimClock, bindPageVisibility, makeFrameDriver } from '../../sim/simClock';
+import { SimSpeedControl } from '../../components/SimSpeedControl';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { Brain, Layers, RotateCcw, Zap } from 'lucide-react';
@@ -20,6 +22,9 @@ import {
 
 const DSA_COLS = 44; // time columns
 const DSA_ROWS = 30; // 1..30 Hz
+/** Raw EEG sampling rate (Hz) and trace length (4 s). */
+const EEG_SAMPLE_HZ = 128;
+const EEG_TRACE_SAMPLES = EEG_SAMPLE_HZ * 4;
 
 // French display text for the kernel's brain-state labels (keys must match aivocEegKernel output exactly;
 // unknown labels fall back to the kernel's English text).
@@ -78,6 +83,16 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
   const ghostEngRef = useRef(new ThreeCompartmentEngine());
   const remiEngRef = useRef(new ThreeCompartmentEngine());
   const bisSmootherRef = useRef(new BisDisplaySmoother());
+  /** Pharmacokinetics: 0.25 s simulated steps at the speed shown in the header (no hidden factor). */
+  const [pkSpeed, setPkSpeed] = useState(15);
+  const [paused, setPaused] = useState(false);
+  const [simTimeSec, setSimTimeSec] = useState(0);
+  const pkClockRef = useRef(new SimClock({ stepSec: 0.25, speed: pkSpeed }));
+  /** Raw EEG trace: 128 samples per second of real time, whatever the PK speed. */
+  const eegClockRef = useRef(new SimClock({ stepSec: 1 / EEG_SAMPLE_HZ, speed: 1 }));
+  pkClockRef.current.speed = pkSpeed;
+  pkClockRef.current.paused = paused;
+  eegClockRef.current.paused = paused;
   const rawBufRef = useRef<number[]>([]);
   const dsaGridRef = useRef<Float32Array[]>(
     Array.from({ length: DSA_COLS }, () => new Float32Array(DSA_ROWS))
@@ -128,6 +143,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
     let controls: OrbitControls | null = null;
     let handleDispose: (() => void) | null = null;
     let ro: ResizeObserver | null = null;
+    let unbindVisibility: (() => void) | null = null;
 
     // Group A: 3D-to-2D Unfolding DSA Terrain
     const dsaGroup = new THREE.Group();
@@ -210,48 +226,64 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
       ro.observe(container);
 
       const dummy = new THREE.Object3D();
-      let last = performance.now();
-      let simTimeSec = 0;
+      const pkDriver = makeFrameDriver(pkClockRef.current);
+      const eegDriver = makeFrameDriver(eegClockRef.current);
+      unbindVisibility = bindPageVisibility([pkClockRef.current, eegClockRef.current]);
+      let lastUi = performance.now();
       let uiAcc = 0;
       let dsaAcc = 0;
+      const c0 = cfgRef.current;
+      let pSt = primEngRef.current.stepTci(c0.primaryPk, c0.targetCe, 0);
+      let gSt = ghostEngRef.current.stepTci(c0.ghostPk, c0.targetCe, 0);
+      let rSt = remiEngRef.current.stepTci(c0.remiPk, c0.remiCeTarget, 0);
+      let shownBis = 0;
+      let eeg: ReturnType<typeof synthesizeEegSpectrum> | null = null;
 
       const loop = () => {
         if (disposed) return;
         rafId = requestAnimationFrame(loop);
         const now = performance.now();
-        const dtSec = Math.min((now - last) / 1000, 0.05);
-        last = now;
-        simTimeSec += dtSec;
-
+        const dtSec = Math.min((now - lastUi) / 1000, 1);
+        lastUi = now;
         const c = cfgRef.current;
-        // Advance PK 15x faster than wall clock so bolus/redistribution/elimination are immediately observable
-        const dtMin = (dtSec / 60) * 15;
-        const pSt = primEngRef.current.stepTci(c.primaryPk, c.targetCe, dtMin);
-        const gSt = ghostEngRef.current.stepTci(c.ghostPk, c.targetCe, dtMin);
-        const rSt = remiEngRef.current.stepTci(c.remiPk, c.remiCeTarget, dtMin);
 
-        const eeg = synthesizeEegSpectrum({
-          propofolCe: pSt.ce,
-          ce50: c.primaryPk.ce50,
-          ageYears: c.ageYears,
-          nmbParalyzedAwakeTrap: c.nmbTrap,
-          untreatedPain: c.painDropout,
-          bis2HzFilterOn: c.bisFilterOn,
-          timeSec: simTimeSec,
-        });
+        // Pharmacokinetics on the shared clock: fixed 0.25 s simulated steps (frame-rate independent).
+        const pkClock = pkClockRef.current;
+        const pkSteps = pkDriver.frame(now);
+        const dtMin = pkClock.stepSec / 60;
+        for (let k = 0; k < pkSteps; k++) {
+          pSt = primEngRef.current.stepTci(c.primaryPk, c.targetCe, dtMin);
+          gSt = ghostEngRef.current.stepTci(c.ghostPk, c.targetCe, dtMin);
+          rSt = remiEngRef.current.stepTci(c.remiPk, c.remiCeTarget, dtMin);
+        }
 
-        // Displayed BIS lags the raw index (smoothing in simulated seconds; PK runs at 15x)
-        const shownBis = bisSmootherRef.current.update(eeg.displayedBisLag, dtSec * 15);
+        // Raw EEG at a fixed 128 Hz in real time (the trace's frequencies stay true at any PK speed).
+        const eegClock = eegClockRef.current;
+        const eegSteps = eegDriver.frame(now);
+        for (let k = 0; k < eegSteps; k++) {
+          const tEeg = eegClock.simTimeSec - (eegSteps - 1 - k) * eegClock.stepSec;
+          eeg = synthesizeEegSpectrum({
+            propofolCe: pSt.ce,
+            ce50: c.primaryPk.ce50,
+            ageYears: c.ageYears,
+            nmbParalyzedAwakeTrap: c.nmbTrap,
+            untreatedPain: c.painDropout,
+            bis2HzFilterOn: c.bisFilterOn,
+            timeSec: tEeg,
+          });
+          rawBufRef.current.push(eeg.rawSampleUv);
+          if (rawBufRef.current.length > EEG_TRACE_SAMPLES) rawBufRef.current.shift();
+        }
+        // Displayed BIS lags the raw index; smoothing runs in simulated seconds, like the PK.
+        if (eeg) shownBis = bisSmootherRef.current.update(eeg.displayedBisLag, pkSteps * pkClock.stepSec);
 
-        rawBufRef.current.push(eeg.rawSampleUv);
-        if (rawBufRef.current.length > 220) rawBufRef.current.shift();
-
-        dsaAcc += dtSec;
-        if (dsaAcc > 0.12) {
+        if (eeg && eegSteps > 0) dsaAcc += eegSteps * eegClock.stepSec;
+        if (eeg && dsaAcc > 0.12) {
           dsaAcc = 0;
           dsaGridRef.current.shift();
           dsaGridRef.current.push(eeg.spectrum30Hz);
         }
+        const simTimeSec = eegClock.simTimeSec;
 
         // Toggle visible 4D lens
         dsaGroup.visible = c.viewMode === 'dsa_3d';
@@ -309,8 +341,9 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
         }
 
         uiAcc += dtSec;
-        if (uiAcc > 0.14) {
+        if (uiAcc > 0.14 && eeg) {
           uiAcc = 0;
+          setSimTimeSec(pkClock.simTimeSec);
           setPrimState(pSt);
           setGhostState(gSt);
           setRemiState(rSt);
@@ -330,6 +363,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
 
     return () => {
       disposed = true;
+      unbindVisibility?.();
       ro?.disconnect();
       if (rafId !== null) cancelAnimationFrame(rafId);
       controls?.dispose();
@@ -344,6 +378,7 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
     ghostEngRef.current.reset();
     remiEngRef.current.reset();
     bisSmootherRef.current.reset();
+    pkClockRef.current.reset();
   };
 
   // Synthetic manual-pump educational schedule (strictly fictional avatar exercise)
@@ -373,6 +408,15 @@ export function AivocEegModule({ locale }: { locale: LocaleCode }) {
               >
                 <Layers className="w-3.5 h-3.5" /> {L('Compartiments 3D + synapse GABA_A', '3D Compartments + GABA_A Synapse')}
               </button>
+            </div>
+            <div className="w-full flex flex-wrap items-center gap-2">
+              <SimSpeedControl fr={fr} speeds={[1, 5, 15, 60]} speed={pkSpeed} onSpeed={setPkSpeed} paused={paused} onTogglePause={() => setPaused((x) => !x)} simTimeSec={simTimeSec} />
+              <span className="text-[10px] text-slate-500">
+                {L(
+                  'La vitesse s’applique à la pharmacocinétique et à l’index affiché. Le tracé EEG brut reste en temps réel (128 Hz, 4 s).',
+                  'Speed applies to the pharmacokinetics and the displayed index. The raw EEG trace stays in real time (128 Hz, 4 s).',
+                )}
+              </span>
             </div>
 
             {viewMode === 'dsa_3d' && (
@@ -592,7 +636,8 @@ function drawRawEeg(canvas: HTMLCanvasElement | null, buf: number[], fr: boolean
   ctx.lineWidth = 1.6;
   ctx.beginPath();
   buf.forEach((uv, i) => {
-    const x = (i / (buf.length - 1)) * w;
+    // Fixed time base: the trace always spans EEG_TRACE_SAMPLES samples (4 s at 128 Hz).
+    const x = ((i + EEG_TRACE_SAMPLES - buf.length) / (EEG_TRACE_SAMPLES - 1)) * w;
     const y = h / 2 - (uv / 85) * (h * 0.44);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
@@ -601,7 +646,7 @@ function drawRawEeg(canvas: HTMLCanvasElement | null, buf: number[], fr: boolean
 
   ctx.fillStyle = '#94a3b8';
   ctx.font = '600 10px ui-monospace, monospace';
-  ctx.fillText(fr ? 'EEG frontal brut, monovoie (µV)' : 'Single-Channel Raw Frontal EEG (µV)', 8, 13);
+  ctx.fillText(fr ? 'EEG frontal brut, monovoie (µV) · 4 s, temps réel' : 'Single-channel raw frontal EEG (µV) · 4 s, real time', 8, 13);
   ctx.restore();
 }
 
