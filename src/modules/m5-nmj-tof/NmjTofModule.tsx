@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { SimClock, bindPageVisibility, makeFrameDriver } from '../../sim/simClock';
+import { SimSpeedControl } from '../../components/SimSpeedControl';
+import { NMJ_STEP_SEC, freshNmj, stepNmj, type NmjSim } from './nmjDynamics';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AlertTriangle, RotateCcw, Syringe, Zap } from 'lucide-react';
@@ -61,18 +64,11 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
   });
 
   const viewportRef = useRef<HTMLDivElement | null>(null);
-  const simRef = useRef({
-    tSec: 0,
-    rocPlasma: 0,
-    rocPeripheral: 0,
-    sugaFree: 0,
-    eyelidOcc: 0,
-    thumbOcc: 0,
-    ptcCooldown: 0,
-    banner: baselineBanner,
-  });
-  const speedRef = useRef(speedX);
-  speedRef.current = speedX;
+  const simRef = useRef<NmjSim>(freshNmj(baselineBanner));
+  const [paused, setPaused] = useState(false);
+  const clockRef = useRef(new SimClock({ stepSec: NMJ_STEP_SEC, speed: speedX }));
+  clockRef.current.speed = speedX;
+  clockRef.current.paused = paused;
 
   useEffect(() => {
     if (!viewportRef.current) return;
@@ -91,6 +87,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
     let controls: OrbitControls | null = null;
     let handleDispose: (() => void) | null = null;
     let ro: ResizeObserver | null = null;
+    let unbindVisibility: (() => void) | null = null;
 
     // 4D Cellular Neuromuscular Junction
     const preSyn = new THREE.Mesh(
@@ -178,37 +175,21 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
       ro.observe(container);
 
       const dummy = new THREE.Object3D();
-      let last = performance.now();
+      const driver = makeFrameDriver(clockRef.current);
+      unbindVisibility = bindPageVisibility([clockRef.current]);
+      let lastUi = performance.now();
       let uiAcc = 0;
 
       const loop = () => {
         if (disposed) return;
         rafId = requestAnimationFrame(loop);
         const now = performance.now();
-        const dtWall = Math.min((now - last) / 1000, 0.05);
-        last = now;
-        const dtSim = dtWall * speedRef.current;
-
+        // Physics on the shared clock: fixed simulated steps, independent of the frame rate.
+        const steps = driver.frame(now);
         const s = simRef.current;
-        s.tSec += dtSim;
-        s.ptcCooldown = Math.max(0, s.ptcCooldown - dtSim);
-
-        // Sugammadex rapid 1:1 encapsulation of plasma rocuronium (leaves peripheral reservoir if underdosed!)
-        if (s.sugaFree > 0.001 && s.rocPlasma > 0.001) {
-          const bind = Math.min(s.sugaFree, s.rocPlasma) * Math.min(1, dtSim * 0.14);
-          s.sugaFree -= bind;
-          s.rocPlasma -= bind;
-        }
-        // Redistribution between peripheral reservoir and plasma (causes recurarization if sugammadex underdosed!)
-        const flux = (s.rocPeripheral - s.rocPlasma) * 0.0045 * dtSim;
-        s.rocPlasma = Math.max(0, s.rocPlasma + flux - s.rocPlasma * 0.00055 * dtSim);
-        s.rocPeripheral = Math.max(0, s.rocPeripheral - flux * 0.35);
-
-        // Site-specific equilibration: Eyelid (corrugator) ~3x faster onset/recovery than Adductor Pollicis!
-        const targetOccEyelid = Math.min(0.99, (s.rocPlasma * 1.15) / (s.rocPlasma * 1.15 + 0.28));
-        const targetOccThumb = Math.min(0.99, (s.rocPlasma * 1.35) / (s.rocPlasma * 1.35 + 0.18));
-        s.eyelidOcc += (targetOccEyelid - s.eyelidOcc) * Math.min(1, dtSim * 0.045);
-        s.thumbOcc += (targetOccThumb - s.thumbOcc) * Math.min(1, dtSim * 0.015);
+        for (let k = 0; k < steps; k++) stepNmj(s, clockRef.current.stepSec);
+        const dtWall = Math.min((now - lastUi) / 1000, 1);
+        lastUi = now;
 
         // Update 3D Cellular Receptors & Molecules
         const blockedCount = Math.round(s.thumbOcc * receptorMeshes.length);
@@ -300,6 +281,7 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
 
     return () => {
       disposed = true;
+      unbindVisibility?.();
       ro?.disconnect();
       if (rafId !== null) cancelAnimationFrame(rafId);
       controls?.dispose();
@@ -396,13 +378,8 @@ export function NmjTofModule({ locale }: { locale: LocaleCode }) {
               )}
             </span>
             <div className="flex items-center gap-1.5 font-mono text-[11px]">
-              <span>t = {Math.round(state.elapsedSec)} s</span>
-              {[1, 10, 25].map((x) => (
-                <button key={x} onClick={() => setSpeedX(x)} className={`px-2 py-0.5 rounded border cursor-pointer ${speedX === x ? 'bg-cyan-600 border-cyan-400 text-white' : 'bg-slate-900 border-slate-700 text-slate-400'}`}>
-                  {x}x
-                </button>
-              ))}
-              <button onClick={() => { simRef.current = { tSec: 0, rocPlasma: 0, rocPeripheral: 0, sugaFree: 0, eyelidOcc: 0, thumbOcc: 0, ptcCooldown: 0, banner: L('Retour à l’état de base.', 'Reset to baseline.') }; }} title={L('Réinitialiser', 'Reset')} aria-label={L('Réinitialiser', 'Reset')} className="px-2 py-0.5 rounded bg-slate-800 text-slate-200 cursor-pointer">
+              <SimSpeedControl fr={fr} speeds={[1, 10, 25]} speed={speedX} onSpeed={setSpeedX} paused={paused} onTogglePause={() => setPaused((x) => !x)} simTimeSec={state.elapsedSec} />
+              <button onClick={() => { simRef.current = freshNmj(L('Retour à l’état de base.', 'Reset to baseline.')); clockRef.current.reset(); }} title={L('Réinitialiser', 'Reset')} aria-label={L('Réinitialiser', 'Reset')} className="h-7 px-2 rounded bg-slate-800 text-slate-200 cursor-pointer">
                 <RotateCcw className="w-3 h-3" />
               </button>
             </div>
