@@ -50,7 +50,7 @@ export function ModuleRouter({
     <Suspense
       fallback={
         <div className="flex-1 flex items-center justify-center p-10 text-xs font-mono text-cyan-300">
-          {locale !== 'en-INT' ? 'Chargement du module' : 'Loading module'} ({activeModule.replace('_', '+')})…
+          {locale !== 'en-INT' ? 'Chargement du module' : 'Loading module'}…
         </div>
       }
     >

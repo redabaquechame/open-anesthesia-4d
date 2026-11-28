@@ -6,11 +6,13 @@ interface BedsideMonitorProps {
   showEquationZones: boolean;
   projectorMode: boolean;
   blindMode: boolean;
+  /** French labels (every locale except en-INT). */
+  fr?: boolean;
 }
 
 const BUFFER_LEN = 260; // ~5.2 seconds of live 50 Hz telemetry
 
-export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMode, blindMode }: BedsideMonitorProps) {
+export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMode, blindMode, fr = true }: BedsideMonitorProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const ringRef = useRef<SimulationSnapshot[]>([]);
   const lastPushedRef = useRef<SimulationSnapshot | null>(null);
@@ -100,7 +102,11 @@ export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMod
     ctx.fillStyle = '#fbbf24';
     ctx.font = `600 ${fontSize}px ui-monospace, SFMono-Regular, monospace`;
     ctx.fillText(
-      showEquationZones ? 'Paw (cmH2O)  [Amber: F*R Resistive | Cyan: V/C Elastic]' : 'Paw (cmH2O)',
+      showEquationZones
+        ? fr
+          ? 'Paw (cmH₂O)  [ambre : débit × R, résistif | cyan : V/C, élastique]'
+          : 'Paw (cmH₂O)  [amber: flow × R, resistive | cyan: V/C, elastic]'
+        : 'Paw (cmH₂O)',
       8,
       14
     );
@@ -127,7 +133,7 @@ export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMod
     ctx.stroke();
 
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText('Flow (L/s)', 8, bandH + 14);
+    ctx.fillText(fr ? 'Débit (L/s)' : 'Flow (L/s)', 8, bandH + 14);
 
     // --- BAND 3: Capnography (0..60 mmHg) ---
     const capBaseY = bandH * 3 - 10;
@@ -162,7 +168,7 @@ export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMod
     }
 
     ctx.fillStyle = '#f8fafc';
-    ctx.fillText('CO2 Capnogram (mmHg)  [Baseline = 0]', 8, bandH * 2 + 14);
+    ctx.fillText(fr ? 'Capnogramme CO₂ (mmHg)  [ligne de base = 0]' : 'CO₂ capnogram (mmHg)  [baseline = 0]', 8, bandH * 2 + 14);
     ctx.restore();
   }, [snapshot, showEquationZones, projectorMode]);
 
@@ -180,7 +186,7 @@ export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMod
           </div>
         </div>
         <div className="bg-slate-900/90 rounded-lg p-1.5 border border-cyan-500/20">
-          <div className="text-[10px] text-cyan-400">Vt deliv</div>
+          <div className="text-[10px] text-cyan-400">{fr ? 'Vt délivré' : 'Vt delivered'}</div>
           <div className={`${big} text-cyan-300`}>
             {snapshot ? snapshot.deliveredVtMl : '--'}
             <span className="text-[10px] font-normal text-slate-400 ml-0.5">mL</span>

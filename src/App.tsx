@@ -98,8 +98,8 @@ const DEFAULT_PARAMS: MachineAndPatientParams = {
   },
 };
 
-/** Navigation order follows the workflow: programme, pre-op, machine, drugs, airway, regional, crisis. */
-const NAV_ORDER: Exclude<ModuleId, 'HOME'>[] = ['M11', 'M10', 'M1_M2', 'M3', 'M4', 'M5', 'M8', 'M6', 'M7', 'M9'];
+/** Navigation order follows the five rooms: OR, procedures, emergencies, pre-op and tools, programmes. */
+const NAV_ORDER: Exclude<ModuleId, 'HOME'>[] = ['M1_M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'M10', 'M11'];
 const MODULES_META = NAV_ORDER.map((id) => {
   const g = MODULE_GUIDES.find((x) => x.id === id)!;
   return { id, short: id.replace('_', '+'), titleFr: g.title.fr, titleEn: g.title.en };
@@ -358,10 +358,21 @@ export default function App() {
               aria-haspopup="menu"
             >
               {activeModule === 'HOME' ? (
-                <span>{L('Modules', 'Modules')}</span>
+                <span>{L('Explorer', 'Explore')}</span>
               ) : (
                 <>
-                  <span className="font-mono text-[10px] text-slate-400">{activeModule.replace('_', '+')}</span>
+                  {(() => {
+                    // Room name as a breadcrumb, only when the room holds more than one screen.
+                    const roomId = MODULE_GUIDES.find((x) => x.id === activeModule)?.group;
+                    const room = GROUPS.find((g) => g.id === roomId);
+                    if (!room || MODULE_GUIDES.filter((x) => x.group === roomId).length < 2) return null;
+                    return (
+                      <>
+                        <span className="hidden sm:inline text-slate-400">{fr ? room.title.fr : room.title.en}</span>
+                        <span className="hidden sm:inline text-slate-600" aria-hidden>/</span>
+                      </>
+                    );
+                  })()}
                   <span className="truncate">{fr ? MODULES_META.find((m) => m.id === activeModule)?.titleFr : MODULES_META.find((m) => m.id === activeModule)?.titleEn}</span>
                 </>
               )}
@@ -384,7 +395,6 @@ export default function App() {
                             onClick={() => { goTo(m.id); setShowModMenu(false); }}
                             className={`w-full text-start px-2 py-1.5 rounded flex items-center gap-2 text-xs cursor-pointer ${activeModule === m.id ? 'bg-oa-hover text-white' : 'text-slate-300 hover:bg-oa-raised hover:text-white'}`}
                           >
-                            <span className="font-mono text-[10px] text-slate-500 w-9 shrink-0">{m.short}</span>
                             <span>{fr ? m.titleFr : m.titleEn}</span>
                           </button>
                         ))}
@@ -400,7 +410,7 @@ export default function App() {
           {isM1 && (
             <div className="hidden sm:flex items-center gap-1 ms-1">
               <span className={`px-1.5 h-6 rounded border text-[10px] font-mono flex items-center ${paused ? 'border-amber-500/40 text-amber-300' : 'border-oa-hairline text-sig-ecg'}`}>
-                {paused ? L('PAUSE', 'PAUSED') : 'LIVE 50 Hz'}
+                {paused ? L('PAUSE', 'PAUSED') : L('DIRECT 50 Hz', 'LIVE 50 Hz')}
               </span>
               <button
                 onClick={() => setPaused((p) => !p)}
@@ -645,6 +655,7 @@ export default function App() {
                 showEquationZones={showEqZones}
                 projectorMode={projectorMode}
                 blindMode={cogMode === 'blind_crisis' && !mysteryRevealed}
+                fr={fr}
               />
             </div>
           </section>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, Crosshair, RotateCcw, Scissors, Tag } from 'lucide-react';
 import type { LocaleCode } from '../../standards/clinicalStandards';
-import { ANATOMY_CREDIT } from '../../engine/loadAnatomy';
+import { anatomyCredit } from '../../engine/loadAnatomy';
 import { createSpineScene, REGIONS, spaceName, type Approach, type SpineOutputs, type SpineRegion, type SpineScene, type SpineView } from './spineScene';
 import { TISSUE_INFO, type SpineTissue } from './spineGeometry';
 import type { FluoroProjection } from './fluoroView';
@@ -348,7 +348,7 @@ export function NeuraxialSpineModule({ locale }: { locale: LocaleCode }) {
               'Published reference: median skin-to-epidural distance 4.7 cm (L3–L4: 4.93 cm) in 1000 parturients (Harrison & Clowes, Anaesthesia 1985). Never rely on a fixed depth.'
             )}
           </p>
-          <p className="text-[9px] text-slate-600">{ANATOMY_CREDIT}</p>
+          <p className="text-[9px] text-slate-600">{anatomyCredit(locale !== 'en-INT')}</p>
         </div>
       </aside>
     </main>

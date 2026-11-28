@@ -48,3 +48,5 @@ export async function loadAnatomy(file: string): Promise<THREE.Group> {
 }
 
 export const ANATOMY_CREDIT = 'Anatomy: BodyParts3D, © The Database Center for Life Science (CC BY-SA 2.1 JP / CC BY 4.0)';
+export const ANATOMY_CREDIT_FR = 'Anatomie : BodyParts3D, © The Database Center for Life Science (CC BY-SA 2.1 JP / CC BY 4.0)';
+export const anatomyCredit = (fr: boolean) => (fr ? ANATOMY_CREDIT_FR : ANATOMY_CREDIT);

@@ -4,6 +4,7 @@ import { CLAIM_FR } from '../standards/claimFr';
 import { claimsForModule, statusCounts, type ClaimStatus, type ClinicalClaim } from '../standards/claimRegistry';
 import type { LocaleCode } from '../standards/clinicalStandards';
 import { reportMistake } from '../utils/reportIssue';
+import { guideFor } from '../standards/moduleGuides';
 
 const STATUS_META: Record<ClaimStatus, { label: Record<'fr' | 'en' | 'ar', string>; cls: string; Icon: typeof BadgeCheck }> = {
   sourced: {
@@ -81,7 +82,7 @@ export function ReviewDrawer({ moduleTab, locale, onClose }: { moduleTab: string
         <div className="p-4 border-b border-slate-800 flex items-start justify-between gap-3">
           <div>
             <h3 className="font-bold text-white text-sm">
-              {L === 'fr' ? 'Statut de relecture clinique' : 'Clinical review status'} — {moduleTab.replace('_', '+')}
+              {L === 'fr' ? 'Statut de relecture clinique' : 'Clinical review status'} — {(L === 'fr' ? guideFor(moduleTab)?.title.fr : guideFor(moduleTab)?.title.en) ?? moduleTab}
             </h3>
             <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
               {L === 'fr'

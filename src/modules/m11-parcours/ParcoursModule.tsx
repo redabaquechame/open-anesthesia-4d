@@ -18,16 +18,16 @@ const REGION_ORDER: { id: RegionId; label: string; flag: string }[] = [
 const DEFAULT_REGION: Record<LocaleCode, RegionId> = { 'ar-MA': 'ma', 'fr-FR': 'fr', 'fr-CA': 'ca', 'en-INT': 'eu' };
 
 const MODULE_LABEL: Record<AppModuleId, string> = {
-  M1_M2: 'M1+M2 Poste & ventilation',
-  M3: 'M3 Halogénés',
-  M4: 'M4 AIVOC & EEG',
-  M5: 'M5 Curares',
-  M6: 'M6 Écho-ALR & cœur',
-  M7: 'M7 Rachis & péridurale',
-  M8: 'M8 Fibroscopie & DLT',
-  M9: 'M9 Crises',
-  M10: 'M10 Consultation',
-  M11: 'M11 Parcours',
+  M1_M2: 'Poste & ventilation',
+  M3: 'Halogénés',
+  M4: 'AIVOC & EEG',
+  M5: 'Curares',
+  M6: 'Écho-ALR & cœur',
+  M7: 'Rachis & péridurale',
+  M8: 'Fibroscopie & DLT',
+  M9: 'Crises',
+  M10: 'Consultation',
+  M11: 'Parcours',
 };
 
 const READING_CLS: Record<string, string> = {

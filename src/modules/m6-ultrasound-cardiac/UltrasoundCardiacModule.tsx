@@ -57,7 +57,15 @@ export function UltrasoundCardiacModule({ locale }: { locale: LocaleCode }) {
               </ul>
             </div>
             <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/30 text-[11px] text-rose-200 leading-relaxed">
-              <strong>LAST (ASRA checklist):</strong> call for help, get the LAST rescue kit, consider the cardiopulmonary bypass team, and give <strong>20% lipid emulsion</strong> early: over 70 kg → bolus ~100 mL over 2–3 min, then infuse ~250 mL over 15–20 min; under 70 kg → bolus ~1.5 mL/kg over 2–3 min, then ~0.25 mL/kg/min. Still unstable → repeat bolus and double the infusion. Continue ≥15 min once stable; maximum 12 mL/kg. Seizure: ensure an adequate airway, benzodiazepine preferred (if only propofol, small doses, e.g. 20 mg). Epinephrine: smaller than usual, start with ≤1 mcg/kg. Avoid local anaesthetics, beta-blockers, calcium-channel blockers and vasopressin. (ASRA LAST checklist 2020 v1.1 — under review, update expected 2027.)
+              {fr ? (
+                <>
+                  <strong>LAST (check-list ASRA) :</strong> appeler à l’aide, apporter le kit LAST, envisager d’alerter l’équipe de CEC, et donner tôt l’<strong>émulsion lipidique à 20 %</strong> : plus de 70 kg → bolus ~100 mL en 2–3 min, puis perfusion ~250 mL en 15–20 min ; moins de 70 kg → bolus ~1,5 mL/kg en 2–3 min, puis ~0,25 mL/kg/min. Toujours instable → répéter le bolus et doubler la perfusion. Poursuivre ≥ 15 min après stabilisation ; maximum 12 mL/kg. Convulsions : assurer les voies aériennes, benzodiazépine de préférence (si seulement du propofol, petites doses, p. ex. 20 mg). Adrénaline : doses plus faibles que d’habitude, commencer à ≤ 1 µg/kg. Éviter anesthésiques locaux, bêtabloquants, inhibiteurs calciques et vasopressine. (Check-list LAST de l’ASRA 2020 v1.1 — en révision, mise à jour attendue en 2027.)
+                </>
+              ) : (
+                <>
+                    <strong>LAST (ASRA checklist):</strong> call for help, get the LAST rescue kit, consider the cardiopulmonary bypass team, and give <strong>20% lipid emulsion</strong> early: over 70 kg → bolus ~100 mL over 2–3 min, then infuse ~250 mL over 15–20 min; under 70 kg → bolus ~1.5 mL/kg over 2–3 min, then ~0.25 mL/kg/min. Still unstable → repeat bolus and double the infusion. Continue ≥15 min once stable; maximum 12 mL/kg. Seizure: ensure an adequate airway, benzodiazepine preferred (if only propofol, small doses, e.g. 20 mg). Epinephrine: smaller than usual, start with ≤1 mcg/kg. Avoid local anaesthetics, beta-blockers, calcium-channel blockers and vasopressin. (ASRA LAST checklist 2020 v1.1 — under review, update expected 2027.)
+                </>
+              )}
             </div>
           </div>
         </>

@@ -11,8 +11,8 @@ export interface ModuleGuide {
   id: AppModuleId;
   /** Short, plain title used in the navigation. */
   title: Txt;
-  /** Where it sits in the anaesthesia workflow (for grouping on the home page). */
-  group: 'preop' | 'machine' | 'pharma' | 'airway' | 'regional' | 'crisis' | 'programme';
+  /** Which room of the app it belongs to (navigation and home page). */
+  group: RoomId;
   /** One sentence: what the module is for. */
   purpose: Txt;
   /** Learning objectives. */
@@ -25,20 +25,56 @@ export interface ModuleGuide {
   teach?: Txt;
 }
 
-export const GROUPS: { id: ModuleGuide['group']; title: Txt }[] = [
-  { id: 'programme', title: { fr: 'Votre programme officiel', en: 'Your official programme' } },
-  { id: 'preop', title: { fr: 'Avant l’anesthésie', en: 'Before anaesthesia' } },
-  { id: 'machine', title: { fr: 'Appareil, ventilation et gaz', en: 'Machine, ventilation and gases' } },
-  { id: 'pharma', title: { fr: 'Pharmacologie et monitorage', en: 'Pharmacology and monitoring' } },
-  { id: 'airway', title: { fr: 'Voies aériennes et thorax', en: 'Airway and thorax' } },
-  { id: 'regional', title: { fr: 'Anesthésie locorégionale et échographie', en: 'Regional anaesthesia and ultrasound' } },
-  { id: 'crisis', title: { fr: 'Situations critiques', en: 'Critical events' } },
+export type RoomId = 'or' | 'procedures' | 'crisis' | 'tools' | 'learn';
+
+/** The five rooms of the app, in navigation order. Plain names: no module codes in the interface. */
+export const GROUPS: { id: RoomId; title: Txt; tagline: Txt }[] = [
+  {
+    id: 'or',
+    title: { fr: 'Le bloc', en: 'The operating room' },
+    tagline: {
+      fr: 'L’appareil d’anesthésie ouvert, la ventilation, les halogénés, l’AIVOC et les curares, calculés en direct.',
+      en: 'The anaesthesia machine opened up, ventilation, volatile agents, TCI and neuromuscular block, computed live.',
+    },
+  },
+  {
+    id: 'procedures',
+    title: { fr: 'Gestes et échographie', en: 'Procedures and ultrasound' },
+    tagline: {
+      fr: 'Bloc échoguidé, péridurale, fibroscopie et sonde double lumière sur une anatomie humaine réelle.',
+      en: 'Ultrasound-guided block, epidural, bronchoscopy and double-lumen tube on real human anatomy.',
+    },
+  },
+  {
+    id: 'crisis',
+    title: { fr: 'Urgences du bloc', en: 'OR emergencies' },
+    tagline: {
+      fr: 'Crises en temps réel avec moniteur, gestes dans l’ordre, doses au poids et débriefing sourcé.',
+      en: 'Real-time crises with a monitor, ordered actions, weight-based doses and a sourced debrief.',
+    },
+  },
+  {
+    id: 'tools',
+    title: { fr: 'Consultation et outils', en: 'Pre-op and tools' },
+    tagline: {
+      fr: 'Scores de risque validés, règles de jeûne et cas de consultation corrigés.',
+      en: 'Validated risk scores, fasting rules and corrected pre-op cases.',
+    },
+  },
+  {
+    id: 'learn',
+    title: { fr: 'Programmes et bibliothèque', en: 'Programmes and library' },
+    tagline: {
+      fr: 'Votre maquette officielle (Maroc, France, Québec, Canada, Europe) étape par étape, et les textes de référence.',
+      en: 'Your official programme (Morocco, France, Québec, Canada, Europe) stage by stage, and the reference texts.',
+    },
+  },
 ];
 
 export const MODULE_GUIDES: ModuleGuide[] = [
   {
     id: 'M11',
-    group: 'programme',
+    group: 'learn',
     title: { fr: 'Programmes officiels et bibliothèque', en: 'Official programmes and library' },
     purpose: {
       fr: 'Retrouver votre programme de formation officiel (Maroc, France, Canada/Québec, Europe), étape par étape, relié aux simulateurs et aux textes de référence.',
@@ -63,7 +99,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M10',
-    group: 'preop',
+    group: 'tools',
     title: { fr: 'Consultation pré-anesthésique', en: 'Pre-operative assessment' },
     purpose: {
       fr: 'S’entraîner à la consultation : scores de risque validés, règles de jeûne et cas cliniques corrigés.',
@@ -86,7 +122,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M1_M2',
-    group: 'machine',
+    group: 'or',
     title: { fr: 'Appareil d’anesthésie et ventilation', en: 'Anaesthesia machine and ventilation' },
     purpose: {
       fr: 'Voir à l’intérieur d’un appareil d’anesthésie en fonctionnement : trajet des gaz, ventilateur, valves, absorbeur, et leur effet sur les courbes du patient.',
@@ -113,7 +149,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M3',
-    group: 'machine',
+    group: 'or',
     title: { fr: 'Halogénés et bas débit', en: 'Volatile agents and low flow' },
     purpose: {
       fr: 'Comprendre la cinétique des halogénés (FD, FI, FA, cerveau), l’intérêt du bas débit et l’empreinte carbone de chaque agent.',
@@ -135,7 +171,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M4',
-    group: 'pharma',
+    group: 'or',
     title: { fr: 'AIVOC et profondeur d’anesthésie', en: 'TCI and depth of anaesthesia' },
     purpose: {
       fr: 'Piloter une AIVOC propofol/rémifentanil et comparer les modèles pharmacocinétiques, avec l’EEG frontal et sa matrice spectrale.',
@@ -157,7 +193,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M5',
-    group: 'pharma',
+    group: 'or',
     title: { fr: 'Curares et monitorage (TOF)', en: 'Neuromuscular block and TOF' },
     purpose: {
       fr: 'Comprendre le monitorage de la curarisation : train-de-quatre, compte post-tétanique, site de mesure et décurarisation.',
@@ -178,7 +214,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M8',
-    group: 'airway',
+    group: 'procedures',
     title: { fr: 'Fibroscopie et sonde double lumière', en: 'Bronchoscopy and double-lumen tube' },
     purpose: {
       fr: 'Placer et vérifier une sonde double lumière gauche sur un arbre bronchique réel, avec la vue du fibroscope.',
@@ -201,7 +237,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M6',
-    group: 'regional',
+    group: 'procedures',
     title: { fr: 'Échographie (ALR) et hémodynamique', en: 'Ultrasound blocks and haemodynamics' },
     purpose: {
       fr: 'Relier la sonde d’échographie à l’image en coupe sur une anatomie réelle, et comprendre les boucles pression-volume et les vasopresseurs selon le choc.',
@@ -221,7 +257,7 @@ export const MODULE_GUIDES: ModuleGuide[] = [
   },
   {
     id: 'M7',
-    group: 'regional',
+    group: 'procedures',
     title: { fr: 'Péridurale et rachis', en: 'Epidural and spine' },
     purpose: {
       fr: 'Réaliser une péridurale lombaire ou thoracique sur un rachis réel : niveau, abord médian ou paramédian, angles et perte de résistance.',

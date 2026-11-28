@@ -4,7 +4,7 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { AlertOctagon, CheckCircle2, Eye, EyeOff, RotateCcw, ScanLine } from 'lucide-react';
 import { createStage, type Stage } from '../../engine/createStage';
 import { createLabel, type AnatomyLabel } from '../../engine/labels';
-import { loadAnatomy, ANATOMY_CREDIT } from '../../engine/loadAnatomy';
+import { loadAnatomy, anatomyCredit } from '../../engine/loadAnatomy';
 import type { MaterialKey } from '../../engine/materials';
 import type { LocaleCode } from '../../standards/clinicalStandards';
 import { UltrasoundSimulator, pointInMesh, type AnalyticTissue, type DopplerSettings, type MeshTissue, type ProbeFrame, type Tissue } from './ultrasoundSim';
@@ -504,7 +504,7 @@ export function SonoLab({ locale }: { locale: LocaleCode }) {
               </span>
             </div>
           )}
-          <div className="px-3 py-1 text-[9px] text-slate-500 border-t border-slate-800">{ANATOMY_CREDIT}. {fr ? 'Plexus et dôme pleural : schématiques.' : 'Plexus and pleural dome: schematic.'}</div>
+          <div className="px-3 py-1 text-[9px] text-slate-500 border-t border-slate-800">{anatomyCredit(locale !== 'en-INT')}. {fr ? 'Plexus et dôme pleural : schématiques.' : 'Plexus and pleural dome: schematic.'}</div>
         </div>
 
         <div className="bg-black border border-slate-800 rounded-xl overflow-hidden flex flex-col">
