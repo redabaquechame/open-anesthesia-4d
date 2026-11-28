@@ -714,6 +714,65 @@ export default function App() {
                 ))}
               </div>
 
+              {params.ventMode !== 'MANUAL_APL_SPONT' && (
+                <div className="grid grid-cols-2 gap-x-3 gap-y-2.5 pt-1 text-xs" aria-label={L('Réglages du ventilateur', 'Ventilator settings')}>
+                  {params.ventMode === 'VCV' ? (
+                    <ClinicalStepper
+                      label={L('Volume courant (Vt)', 'Tidal volume (Vt)')}
+                      value={params.vtMl}
+                      min={50}
+                      max={1000}
+                      step={10}
+                      unit="mL"
+                      presets={[300, 420, 480, 600]}
+                      onChange={(v) => setParams((p) => ({ ...p, vtMl: v }))}
+                    />
+                  ) : (
+                    <ClinicalStepper
+                      label={L('Pinsp au-dessus de la PEP', 'Pinsp above PEEP')}
+                      value={params.pcvPinspCmH2O}
+                      min={2}
+                      max={40}
+                      step={1}
+                      unit="cmH₂O"
+                      presets={[8, 12, 15, 20]}
+                      onChange={(v) => setParams((p) => ({ ...p, pcvPinspCmH2O: v }))}
+                    />
+                  )}
+                  <ClinicalStepper
+                    label={L('Fréquence (FR)', 'Rate (RR)')}
+                    value={params.rrBpm}
+                    min={4}
+                    max={40}
+                    step={1}
+                    unit="/min"
+                    presets={[8, 12, 16, 20]}
+                    onChange={(v) => setParams((p) => ({ ...p, rrBpm: v }))}
+                  />
+                  <ClinicalStepper
+                    label={L('Rapport I:E (1:x)', 'I:E ratio (1:x)')}
+                    value={params.ieExpiratoryPart}
+                    min={1}
+                    max={4}
+                    step={0.5}
+                    decimals={1}
+                    unit=""
+                    presets={[1, 2, 3]}
+                    onChange={(v) => setParams((p) => ({ ...p, ieExpiratoryPart: v }))}
+                  />
+                  <div className="text-[10px] text-slate-400 self-end leading-snug">
+                    {L('Ti', 'Ti')} {(60 / params.rrBpm / (1 + params.ieExpiratoryPart)).toFixed(2)} s · {L('Te', 'Te')}{' '}
+                    {((60 / params.rrBpm) * params.ieExpiratoryPart / (1 + params.ieExpiratoryPart)).toFixed(2)} s
+                    {params.ventMode === 'VCV' && (
+                      <>
+                        {' · '}
+                        {L('VE réglée', 'Set VE')} {((params.vtMl * params.rrBpm) / 1000).toFixed(1)} L/min
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
                 <div>
                   <label className="text-[10px] text-slate-400 block mb-1">{L('Source d’O₂', 'O₂ supply')}</label>

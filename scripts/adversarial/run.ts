@@ -137,11 +137,24 @@ const CASES_LIST: Case[] = [
     },
   },
   {
-    id: 'ventilator-controls-exposed', finding: 'F06', status: 'open', plannedIn: 'PR 6 (ventilator panel)',
+    id: 'ventilator-controls-exposed', finding: 'F06', status: 'fixed',
     run: () => {
+      // Each ventilator setting has a control that writes it into the simulation parameters,
+      // and changing it changes what the kernel delivers.
       const a = src('src/App.tsx');
-      const ok = ['setVtMl', 'setRrBpm', 'setIe', 'setPinsp'].every((x) => a.includes(x)) || /vtMl:\s*v\b/.test(a);
-      return { ok, detail: ok ? 'Vt/RR/I:E/Pinsp controls present' : 'Vt, RR, I:E, Pinsp have no control' };
+      const fields = ['vtMl', 'rrBpm', 'ieExpiratoryPart', 'pcvPinspCmH2O', 'peepSetCmH2O'];
+      const missing = fields.filter((f) => !new RegExp(`\\.\\.\\.p, ${f}: (v|val)\\b`).test(a));
+      const vt300 = runCircuit({ ...base, vtMl: 300 }).deliveredVtMl;
+      const vt600 = runCircuit({ ...base, vtMl: 600 }).deliveredVtMl;
+      const pcvLo = runCircuit({ ...base, ventMode: 'PCV', pcvPinspCmH2O: 8 }).deliveredVtMl;
+      const pcvHi = runCircuit({ ...base, ventMode: 'PCV', pcvPinspCmH2O: 16 }).deliveredVtMl;
+      const ok = missing.length === 0 && vt600 > vt300 + 200 && pcvHi > pcvLo + 200;
+      return {
+        ok,
+        detail: ok
+          ? `controls bound; Vt 300→${vt300.toFixed(0)}, 600→${vt600.toFixed(0)} mL; PCV +8→${pcvLo.toFixed(0)}, +16→${pcvHi.toFixed(0)} mL`
+          : `missing controls: ${missing.join(', ') || 'none'}; Vt ${vt300.toFixed(0)}/${vt600.toFixed(0)}, PCV ${pcvLo.toFixed(0)}/${pcvHi.toFixed(0)}`,
+      };
     },
   },
 

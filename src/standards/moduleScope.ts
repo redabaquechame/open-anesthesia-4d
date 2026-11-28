@@ -18,8 +18,8 @@ export const MODULE_SCOPE: Record<string, ModuleScope> = {
   M1_M2: {
     status: 'prototype',
     notModelled: {
-      fr: 'Pas encore : capacité de la chaux, azote libéré par le patient, captation propre à chaque halogéné ; Vt, FR, I:E et Pinsp ne sont pas encore réglables. Constantes du circuit pédagogiques.',
-      en: 'Not yet: absorbent capacity, nitrogen released by the patient, agent-specific uptake; Vt, RR, I:E and Pinsp cannot be set yet. Circuit constants are teaching values.',
+      fr: 'Pas encore : capacité de la chaux, azote libéré par le patient, captation propre à chaque halogéné, modes assistés (VS-AI, PRVC). Constantes du circuit pédagogiques.',
+      en: 'Not yet: absorbent capacity, nitrogen released by the patient, agent-specific uptake, assisted modes (PSV, PRVC). Circuit constants are teaching values.',
     },
   },
   M3: {

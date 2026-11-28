@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { alarmLabel } from '../standards/alarmLabels';
 import type { SimulationSnapshot } from '../physics/circuitLungKernel';
 
 interface BedsideMonitorProps {
@@ -216,13 +217,14 @@ export function BedsideMonitorCanvas({ snapshot, showEquationZones, projectorMod
       {/* Active Alarms Ribbon */}
       {snapshot && snapshot.alarms.length > 0 && (
         <div className="px-3 py-1.5 bg-rose-950/80 border-b border-rose-500/40 flex flex-wrap gap-1.5 items-center">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-300">ALARMS:</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-rose-300">{fr ? 'ALARMES :' : 'ALARMS:'}</span>
           {snapshot.alarms.map((a) => (
             <span
               key={a}
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-500/25 text-rose-100 border border-rose-400/40"
+              title={a}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/25 text-rose-100 border border-rose-400/40"
             >
-              {blindMode && a.includes('SCAVENGING') ? 'HIGH_PEEP_ALARM' : a}
+              {alarmLabel(blindMode && a.includes('SCAVENGING') ? 'HIGH_PEEP_ALARM' : a, fr)}
             </span>
           ))}
         </div>
